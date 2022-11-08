@@ -1,6 +1,9 @@
 use pyo3::{PyAny, FromPyObject, PyResult};
+use proc_macro2::TokenStream;
+use quote::quote;
 
 use crate::tree::FunctionDef;
+use crate::codegen::{CodeGen, CodeGenError, Result};
 
 // This is just a way of extracting type information from Pyo3.
 #[derive(Clone, Debug, FromPyObject)]
@@ -33,4 +36,49 @@ impl<'a> FromPyObject<'a> for Statement {
         }
 
     }
+}
+
+impl CodeGen for Statement {
+    fn to_rust(self) -> Result<TokenStream> {
+        match self {
+            Statement::Break => Ok(quote!{break;}),
+            Statement::Continue => Ok(quote!{continue;}),
+            Statement::Pass => Ok(quote!{}),
+            Statement::FunctionDef(f) => f.to_rust(),
+            _ => Err(CodeGenError(format!("Statement not implemented {:?}", self), None))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn check_pass_statement() {
+        let statement = Statement::Pass;
+        let tokens = statement.clone().to_rust();
+
+        println!("statement: {:?}, tokens: {:?}", statement, tokens);
+        assert_eq!(tokens.unwrap().is_empty(), true);
+    }
+
+    #[test]
+    fn check_break_statement() {
+        let statement = Statement::Break;
+        let tokens = statement.clone().to_rust();
+
+        println!("statement: {:?}, tokens: {:?}", statement, tokens);
+        assert_eq!(tokens.unwrap().is_empty(), false);
+    }
+
+    #[test]
+    fn check_continue_statement() {
+        let statement = Statement::Continue;
+        let tokens = statement.clone().to_rust();
+
+        println!("statement: {:?}, tokens: {:?}", statement, tokens);
+        assert_eq!(tokens.unwrap().is_empty(), false);
+    }
+
 }
