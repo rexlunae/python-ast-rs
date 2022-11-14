@@ -17,7 +17,11 @@ pub mod arguments;
 pub use arguments::*;
 use arguments::{Arg, Arguments};
 
-use crate::codegen::{CodeGen, CodeGenError, Result};
+pub mod import;
+pub use import::*;
+use import::{Import};
+
+use crate::codegen::{CodeGen, CodeGenError, PythonContext, Result};
 
 #[derive(Clone, Debug)]
 pub enum Type {
@@ -38,10 +42,10 @@ pub struct Module {
 }
 
 impl CodeGen for Module {
-    fn to_rust(self) -> Result<TokenStream> {
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
         let mut stream = TokenStream::new();
         for s in self.body.iter() {
-            stream.extend(s.clone().to_rust()?);
+            stream.extend(s.clone().to_rust(ctx)?);
         }
         Ok(stream)
     }
@@ -51,6 +55,7 @@ impl CodeGen for Module {
 mod tests {
     use super::*;
 
+    /*
     #[test]
     fn does_module_compile() {
         let result = crate::parse("#test comment
@@ -62,6 +67,27 @@ def foo():
         //println!("{}", result);
 
         let code = result.to_rust();
+        println!("module: {:?}", code);
+    }*/
+
+    /*
+    #[test]
+    fn can_we_import() {
+        let result = crate::parse("import ast", "ast").unwrap();
+        let mut ctx = PythonContext::default();
+        println!("{:?}", result);
+
+        let code = result.to_rust(&mut ctx);
+        println!("module: {:?}", code);
+    }*/
+
+    #[test]
+    fn can_we_import2() {
+        let result = crate::parse("import ast.test as test", "ast").unwrap();
+        let mut ctx = PythonContext::default();
+        println!("{:?}", result);
+
+        let code = result.to_rust(&mut ctx);
         println!("module: {:?}", code);
     }
 

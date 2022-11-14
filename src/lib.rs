@@ -36,9 +36,25 @@ pub fn parse(input: &str, filename: &str) -> PyResult<tree::Module> {
         let t = pymodule.getattr("parse")?;
         assert!(t.is_callable());
         let args = (input, filename);
+
         let tree: tree::Module = t.call1(args)?.extract()?;
         
         Ok(tree)
+    })
+}
+
+pub fn sys_path() -> PyResult<Vec<String>> {
+
+    let pymodule_code = include_str!("path.py");
+
+    Python::with_gil(|py| -> PyResult<Vec<String>> {
+        let pymodule = PyModule::from_code(py, pymodule_code, "path.py", "path")?;
+        let t = pymodule.getattr("path")?;
+        assert!(t.is_callable());
+        let args = ();
+        let paths: Vec<String> = t.call1(args)?.extract()?;
+
+        Ok(paths)
     })
 }
 
@@ -46,6 +62,7 @@ pub fn parse(input: &str, filename: &str) -> PyResult<tree::Module> {
 mod tests {
     use super::*;
 
+    /*
     #[test]
     fn check_token_stream() {
         let result = parse("#test comment
@@ -67,6 +84,6 @@ def foo():
         assert_eq!(result[11].token_text, "DEDENT");
         assert_eq!(result[12].token_text, "ENDMARKER");*/
         println!("{:?}", result);
-    }
+    }*/
 
 }

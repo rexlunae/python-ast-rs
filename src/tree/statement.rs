@@ -2,8 +2,8 @@ use pyo3::{PyAny, FromPyObject, PyResult};
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::tree::FunctionDef;
-use crate::codegen::{CodeGen, CodeGenError, Result};
+use crate::tree::{FunctionDef, Import, ImportFrom};
+use crate::codegen::{CodeGen, CodeGenError, PythonContext, Result};
 
 // This is just a way of extracting type information from Pyo3.
 #[derive(Clone, Debug, FromPyObject)]
@@ -16,7 +16,8 @@ pub enum Statement {
     Break,
     Continue,
     Pass,
-    Import(String),
+    Import(Import),
+    ImportFrom(ImportFrom),
     FunctionDef(FunctionDef),
 
     Unimplemented(String),
@@ -32,6 +33,8 @@ impl<'a> FromPyObject<'a> for Statement {
             "Continue" => Ok(Statement::Continue),
             "Break" => Ok(Statement::Break),
             "FunctionDef" => Ok(Statement::FunctionDef(FunctionDef::extract(ob)?)),
+            "Import" => Ok(Statement::Import(Import::extract(ob)?)),
+            "ImportFrom" => Ok(Statement::ImportFrom(ImportFrom::extract(ob)?)),
             _ => Ok(Statement::Unimplemented(String::from(parts[0]))),
         }
 
@@ -39,12 +42,14 @@ impl<'a> FromPyObject<'a> for Statement {
 }
 
 impl CodeGen for Statement {
-    fn to_rust(self) -> Result<TokenStream> {
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
         match self {
             Statement::Break => Ok(quote!{break;}),
             Statement::Continue => Ok(quote!{continue;}),
             Statement::Pass => Ok(quote!{}),
-            Statement::FunctionDef(f) => f.to_rust(),
+            Statement::FunctionDef(s) => s.to_rust(ctx),
+            Statement::Import(s) => s.to_rust(ctx),
+            Statement::ImportFrom(s) => s.to_rust(ctx),
             _ => Err(CodeGenError(format!("Statement not implemented {:?}", self), None))
         }
     }
@@ -57,7 +62,8 @@ mod tests {
     #[test]
     fn check_pass_statement() {
         let statement = Statement::Pass;
-        let tokens = statement.clone().to_rust();
+        let mut ctx = PythonContext::default();
+        let tokens = statement.clone().to_rust(&mut ctx);
 
         println!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), true);
@@ -66,7 +72,8 @@ mod tests {
     #[test]
     fn check_break_statement() {
         let statement = Statement::Break;
-        let tokens = statement.clone().to_rust();
+        let mut ctx = PythonContext::default();
+        let tokens = statement.clone().to_rust(&mut ctx);
 
         println!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);
@@ -75,7 +82,8 @@ mod tests {
     #[test]
     fn check_continue_statement() {
         let statement = Statement::Continue;
-        let tokens = statement.clone().to_rust();
+        let mut ctx = PythonContext::default();
+        let tokens = statement.clone().to_rust(&mut ctx);
 
         println!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);
