@@ -6,6 +6,7 @@ use std::default::Default;
 use std::env::SplitPaths;
 use std::collections::{BTreeMap, HashSet};
 use std::borrow::Borrow;
+use std::path::{Path, MAIN_SEPARATOR};
 
 use crate::sys_path;
 
@@ -49,6 +50,18 @@ impl Default for PythonContext {
 }
 
 impl PythonContext {
+
+    /// Scans the Python path for the short name given, and returns the full path.
+    pub fn search_path<S: Into<String> + Clone + Ord + Borrow<S>>(&self, file: S) -> Result<String> {
+        for entry in self.python_path.clone() {
+            let path_string = format!("{}{}{}", entry, MAIN_SEPARATOR, file.clone().into());
+            if Path::new(path_string.as_str()).exists() {
+                return Ok(path_string)
+            }
+        }
+        Err(CodeGenError(String::from("Not found"), None))
+    }
+
     pub fn import<S: Into<String> + Clone + Ord + Borrow<S>>(&mut self, from: S, to: S) {
         let f: String = from.into();
         let t: String = to.into();
