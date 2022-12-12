@@ -66,6 +66,7 @@ impl PythonContext {
         Err(CodeGenError(String::from("Not found"), None))
     }
 
+    /// Searches the Python path for the module and returns its contents.
     pub fn load<S: Into<String> + Clone + Ord + Borrow<S>>(&self, module: S) -> std::io::Result<String> {
         let module_string:String = module.into();
         let module_parts: Vec<&str> = module_string.split('.').collect();
@@ -73,7 +74,7 @@ impl PythonContext {
             self.search_path(format!("{}.py", module_parts[0]))?
         } else {
             let first = self.search_path(module_parts[0]);
-            module_parts[1..].join(format!("{}", MAIN_SEPARATOR).as_str())
+            format!("{}.py", module_parts[1..].join(format!("{}", MAIN_SEPARATOR).as_str()))
         };
 
         let mut file = File::open(&module_path)?;
