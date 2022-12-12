@@ -6,7 +6,10 @@ use std::default::Default;
 use std::env::SplitPaths;
 use std::collections::{BTreeMap, HashSet};
 use std::borrow::Borrow;
-use std::path::{Path, MAIN_SEPARATOR};
+use std::path::{Path, MAIN_SEPARATOR, MAIN_SEPARATOR_STR};
+use std::str::Split;
+use std::fs::File;
+use std::io::prelude::*;
 
 use crate::sys_path;
 
@@ -51,7 +54,8 @@ impl Default for PythonContext {
 
 impl PythonContext {
 
-    /// Scans the Python path for the short name given, and returns the full path.
+    /// Scans the Python path for the short name given, and returns the full path. Note that it only searches
+    /// for the path itself, not any subpath.
     pub fn search_path<S: Into<String> + Clone + Ord + Borrow<S>>(&self, file: S) -> Result<String> {
         for entry in self.python_path.clone() {
             let path_string = format!("{}{}{}", entry, MAIN_SEPARATOR, file.clone().into());
@@ -61,6 +65,24 @@ impl PythonContext {
         }
         Err(CodeGenError(String::from("Not found"), None))
     }
+
+    pub fn load<S: Into<String> + Clone + Ord + Borrow<S>>(&self, module: S) -> std::io::Result<String> {
+        let module_string:String = module.into();
+        let module_parts: Vec<&str> = module_string.split('.').collect();
+        let module_path = if (module_parts.len() == 1) {
+            self.search_path(format!("{}.py", module_parts[0]))?
+        } else {
+            let first = self.search_path(module_parts[0]);
+            module_parts[1..].join(format!("{}", MAIN_SEPARATOR).as_str())
+        };
+
+        let mut file = File::open(&module_path)?;
+        let mut s = String::new();
+
+        file.read_to_string(&mut s)?;
+        Ok(s)
+    }
+
 
     pub fn import<S: Into<String> + Clone + Ord + Borrow<S>>(&mut self, from: S, to: S) {
         let f: String = from.into();
