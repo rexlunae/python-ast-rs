@@ -6,9 +6,11 @@ pub use tree::*;
 pub mod codegen;
 pub use codegen::*;
 
+pub mod scope;
+pub use scope::*;
+
 use pyo3::prelude::*;
 use std::include_str;
-use std::collections::HashMap;
 
 /*
 /// The direct Rust equivalent of the Python class of the same name,
@@ -60,7 +62,7 @@ pub fn sys_path() -> PyResult<Vec<String>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    //use super::*;
 
     /*
     #[test]
