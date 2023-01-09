@@ -3,11 +3,11 @@ use proc_macro2::TokenStream;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::default::Default;
-use std::env::SplitPaths;
+//use std::env::SplitPaths;
 use std::collections::{BTreeMap, HashSet};
 use std::borrow::Borrow;
 
-use crate::sys_path;
+use crate::{sys_path, Scope};
 
 #[derive(Debug)]
 pub struct CodeGenError(pub String, pub Option<TokenStream>);
@@ -34,7 +34,14 @@ pub struct PythonContext {
     pub python_path: Vec<String>,
 
     /// Collects all of the things we need to compile imports[module][asnames]
-    pub imports: BTreeMap<String, HashSet<String>>
+    pub imports: BTreeMap<String, HashSet<String>>,
+
+    pub scope: Scope,
+
+    pub stdpython: String,
+    pub with_std_python: bool,
+
+    pub allow_unsafe: bool,
 }
 
 impl Default for PythonContext {
@@ -44,6 +51,10 @@ impl Default for PythonContext {
             // XXX: Remove unwrap.
             python_path: sys_path().unwrap(),
             imports: BTreeMap::new(),
+            scope: Scope::default(),
+            stdpython: "stdpython".to_string(),
+            with_std_python: true,
+            allow_unsafe: false,
         }
     }
 }
