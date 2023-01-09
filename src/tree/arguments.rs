@@ -1,3 +1,6 @@
+//! The module defines Python-syntax arguments and maps them into Rust-syntax versions.
+
+
 use pyo3::{PyAny, FromPyObject, PyResult};
 
 #[derive(Clone, Debug, Default, FromPyObject)]
@@ -5,6 +8,7 @@ pub struct Arg {
     pub name: String
 }
 
+/// An argument list. Represents all possible arguments to a function.
 #[derive(Clone, Debug, Default)]
 pub struct Arguments {
     pub posonlyargs: Vec<Arg>,
@@ -17,7 +21,7 @@ pub struct Arguments {
 }
 
 impl<'a> FromPyObject<'a> for Arguments {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+    fn extract(_ob: &'a PyAny) -> PyResult<Self> {
         Ok(Self{
             ..Default::default()
         })

@@ -2,13 +2,14 @@ use pyo3::{PyAny, FromPyObject, PyResult};
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::tree::{FunctionDef, Import, ImportFrom};
+use crate::tree::{FunctionDef, Import, ImportFrom, Expr};
 use crate::codegen::{CodeGen, CodeGenError, PythonContext, Result};
 
-// This is just a way of extracting type information from Pyo3.
+// This is just a way of extracting type information from Pyo3. And its a horrible hack.
 #[derive(Clone, Debug, FromPyObject)]
 struct GenericStatement {
     pub __doc__: String,
+    //pub body: Vec<Statement>,
 }
 
 #[derive(Clone, Debug)]
@@ -18,6 +19,7 @@ pub enum Statement {
     Pass,
     Import(Import),
     ImportFrom(ImportFrom),
+    Expr(Expr),
     FunctionDef(FunctionDef),
 
     Unimplemented(String),
@@ -25,8 +27,11 @@ pub enum Statement {
 
 impl<'a> FromPyObject<'a> for Statement {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
+        println!("parsing statement: {:?}", ob);
         let gen_statement = GenericStatement::extract(ob)?;
         let parts: Vec<&str> = gen_statement.__doc__.split("(").collect();
+
+        println!("statement: {:?}", parts);
 
         match parts[0] {
             "Pass" => Ok(Statement::Pass),
@@ -35,7 +40,9 @@ impl<'a> FromPyObject<'a> for Statement {
             "FunctionDef" => Ok(Statement::FunctionDef(FunctionDef::extract(ob)?)),
             "Import" => Ok(Statement::Import(Import::extract(ob)?)),
             "ImportFrom" => Ok(Statement::ImportFrom(ImportFrom::extract(ob)?)),
-            _ => Ok(Statement::Unimplemented(String::from(parts[0]))),
+            "Expr" => Ok(Statement::Expr(Expr::extract(ob)?)),
+            _ => Ok(Statement::Unimplemented(format!("{:?}: {}", parts, ob))),
+            //_ => Ok(Statement::Unimplemented(String::from(parts[0]))),
         }
 
     }
@@ -43,6 +50,7 @@ impl<'a> FromPyObject<'a> for Statement {
 
 impl CodeGen for Statement {
     fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
+        println!("generating statement: {:?}", self);
         match self {
             Statement::Break => Ok(quote!{break;}),
             Statement::Continue => Ok(quote!{continue;}),
@@ -50,6 +58,7 @@ impl CodeGen for Statement {
             Statement::FunctionDef(s) => s.to_rust(ctx),
             Statement::Import(s) => s.to_rust(ctx),
             Statement::ImportFrom(s) => s.to_rust(ctx),
+            Statement::Expr(s) => s.to_rust(ctx),
             _ => Err(CodeGenError(format!("Statement not implemented {:?}", self), None))
         }
     }

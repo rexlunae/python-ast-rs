@@ -1,9 +1,9 @@
-use pyo3::{PyAny, FromPyObject, PyResult};
+use pyo3::{FromPyObject};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::Visibility;
+//use syn::Visibility;
 
-use crate::codegen::{CodeGen, CodeGenError, PythonContext, Result};
+use crate::codegen::{CodeGen, PythonContext, Result};
 use crate::tree::{Arguments, Statement};
 
 #[derive(Clone, Debug, FromPyObject)]
