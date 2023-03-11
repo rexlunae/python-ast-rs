@@ -81,7 +81,7 @@ impl PythonContext {
     pub fn load<S: Into<String> + Clone + Ord + Borrow<S>>(&self, module: S) -> std::io::Result<String> {
         let module_string:String = module.into();
         let module_parts: Vec<&str> = module_string.split('.').collect();
-        let module_path = if (module_parts.len() == 1) {
+        let module_path = if module_parts.len() == 1 {
             self.search_path(format!("{}.py", module_parts[0]))?
         } else {
             let first = self.search_path(module_parts[0]);
