@@ -9,6 +9,6 @@ edition = "2021"
 syn = "1.0"
 quote = "1.0"
 proc-macro2 = "1.0"
-pyo3 = {version = "0.17", features=["auto-initialize",]}
+pyo3 = {version = "0.18", features=["auto-initialize",]}
 num-traits = "0.2"
 num-derive = "0.3"
