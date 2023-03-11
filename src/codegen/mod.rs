@@ -26,8 +26,6 @@ impl Display for CodeGenError {
     }
 }
 
-
-
 /// The global context for Python compilation.
 #[derive(Clone, Debug)]
 pub struct PythonContext {
@@ -82,7 +80,7 @@ impl PythonContext {
         let module_string:String = module.into();
         let module_parts: Vec<&str> = module_string.split('.').collect();
         let module_path = if module_parts.len() == 1 {
-            self.search_path(format!("{}.py", module_parts[0]))?
+            self.search_path(format!("{}.py", module_parts[0])).unwrap()
         } else {
             let first = self.search_path(module_parts[0]);
             format!("{}.py", module_parts[1..].join(format!("{}", MAIN_SEPARATOR).as_str()))
