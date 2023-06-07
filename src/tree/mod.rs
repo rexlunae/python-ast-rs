@@ -25,6 +25,8 @@ use import::{Import};
 
 use crate::codegen::{CodeGen, PythonContext, Result};
 
+use log::info;
+
 #[derive(Clone, Debug)]
 pub enum Type {
     Unimplemented,
@@ -32,7 +34,7 @@ pub enum Type {
 
 impl<'a> FromPyObject<'a> for Type {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        println!("Type: {:?}", ob);
+        info!("Type: {:?}", ob);
         Ok(Type::Unimplemented)
     }
 }
@@ -69,11 +71,11 @@ def foo():
     continue
     pass
 ", "test_case").unwrap();
-        println!("{:?}", result);
-        //println!("{}", result);
+        info!("{:?}", result);
+        //info!("{}", result);
 
         let code = result.to_rust(&mut ctx);
-        println!("module: {:?}", code);
+        info!("module: {:?}", code);
     }*/
 
     #[test]
@@ -83,11 +85,11 @@ def foo():
 def foo():
     print(\"Test print.\")
 ", "test_case").unwrap();
-        println!("Python tree: {:?}", result);
-        //println!("{}", result);
+        info!("Python tree: {:?}", result);
+        //info!("{}", result);
 
         let code = result.to_rust(&mut ctx);
-        println!("module: {:?}", code);
+        info!("module: {:?}", code);
     }
 
     /*
@@ -95,20 +97,20 @@ def foo():
     fn can_we_import() {
         let result = crate::parse("import ast", "ast").unwrap();
         let mut ctx = PythonContext::default();
-        println!("{:?}", result);
+        info!("{:?}", result);
 
         let code = result.to_rust(&mut ctx);
-        println!("module: {:?}", code);
+        info!("module: {:?}", code);
     }*/
 
     /*#[test]
     fn can_we_import2() {
         let result = crate::parse("import ast.test as test", "ast").unwrap();
         let mut ctx = PythonContext::default();
-        println!("{:?}", result);
+        info!("{:?}", result);
 
         let code = result.to_rust(&mut ctx);
-        println!("module: {:?}", code);
+        info!("module: {:?}", code);
     }*/
 
 }

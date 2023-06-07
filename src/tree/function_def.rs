@@ -6,6 +6,8 @@ use quote::{format_ident, quote};
 use crate::codegen::{CodeGen, PythonContext, Result};
 use crate::tree::{Arguments, Statement};
 
+use log::info;
+
 #[derive(Clone, Debug, FromPyObject)]
 pub struct FunctionDef {
     pub name: String,
@@ -36,7 +38,7 @@ impl CodeGen for FunctionDef {
             }
         };
 
-        println!("function: {}", function);
+        info!("function: {}", function);
         Ok(function)
     }
 }

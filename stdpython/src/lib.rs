@@ -2,6 +2,9 @@
 //use std::collections::HashMap;
 use std::fmt::Display;
 
+/**
+ * Python-equivalent print() function.
+ */
 pub fn print<S: Display>(s: S) {
     println!("{}", s);
 }

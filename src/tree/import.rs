@@ -2,6 +2,8 @@ use pyo3::{FromPyObject};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
+use log::info;
+
 use crate::codegen::{CodeGen, PythonContext, Result};
 
 #[derive(Clone, Debug, FromPyObject)]
@@ -43,8 +45,8 @@ impl CodeGen for Import {
             };
             tokens.extend(code);
         }
-        println!("ctx: {:?}", ctx);
-        println!("tokens: {}", tokens);
+        info!("ctx: {:?}", ctx);
+        info!("tokens: {}", tokens);
         Ok(tokens)
     }
 }
@@ -58,7 +60,7 @@ pub struct ImportFrom {
 
 impl CodeGen for ImportFrom {
     fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
-        println!("ctx: {:?}", ctx);
+        info!("ctx: {:?}", ctx);
         Ok(quote!{})
     }
 }

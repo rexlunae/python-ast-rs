@@ -5,6 +5,8 @@ use quote::quote;
 use crate::tree::{FunctionDef, Import, ImportFrom, Expr};
 use crate::codegen::{CodeGen, CodeGenError, PythonContext, Result};
 
+use log::info;
+
 // This is just a way of extracting type information from Pyo3. And its a horrible hack.
 #[derive(Clone, Debug, FromPyObject)]
 struct GenericStatement {
@@ -27,11 +29,11 @@ pub enum Statement {
 
 impl<'a> FromPyObject<'a> for Statement {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        println!("parsing statement: {:?}", ob);
+        info!("parsing statement: {:?}", ob);
         let gen_statement = GenericStatement::extract(ob)?;
         let parts: Vec<&str> = gen_statement.__doc__.split("(").collect();
 
-        println!("statement: {:?}", parts);
+        info!("statement: {:?}", parts);
 
         match parts[0] {
             "Pass" => Ok(Statement::Pass),
@@ -50,7 +52,7 @@ impl<'a> FromPyObject<'a> for Statement {
 
 impl CodeGen for Statement {
     fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
-        println!("generating statement: {:?}", self);
+        info!("generating statement: {:?}", self);
         match self {
             Statement::Break => Ok(quote!{break;}),
             Statement::Continue => Ok(quote!{continue;}),
@@ -74,7 +76,7 @@ mod tests {
         let mut ctx = PythonContext::default();
         let tokens = statement.clone().to_rust(&mut ctx);
 
-        println!("statement: {:?}, tokens: {:?}", statement, tokens);
+        info!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), true);
     }
 
@@ -84,7 +86,7 @@ mod tests {
         let mut ctx = PythonContext::default();
         let tokens = statement.clone().to_rust(&mut ctx);
 
-        println!("statement: {:?}, tokens: {:?}", statement, tokens);
+        info!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);
     }
 
@@ -94,7 +96,7 @@ mod tests {
         let mut ctx = PythonContext::default();
         let tokens = statement.clone().to_rust(&mut ctx);
 
-        println!("statement: {:?}, tokens: {:?}", statement, tokens);
+        info!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);
     }
 
