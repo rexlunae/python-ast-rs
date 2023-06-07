@@ -2,13 +2,29 @@
 
 
 use pyo3::{PyAny, FromPyObject, PyResult};
+use crate::tree::Constant;
+use log::{debug, trace};
 
-#[derive(Clone, Debug, Default, FromPyObject)]
-pub struct Arg {
-    pub name: String
+/// An argument.
+#[derive(Clone, Debug, Default)]
+pub enum Arg {
+    #[default]
+    Unknown,
+    Constant(Constant),
 }
 
-/// An argument list. Represents all possible arguments to a function.
+impl<'a> FromPyObject<'a> for Arg {
+    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+        debug!("parsing arg: {:?}", ob);
+        trace!("{}", ob);
+
+        // FIXME: We will need to figure out how to determine what type of argument this actually is.
+        let args = Self::Constant(ob.extract()?);
+        Ok(args)
+    }
+}
+
+/// A function argument list.
 #[derive(Clone, Debug, Default)]
 pub struct Arguments {
     pub posonlyargs: Vec<Arg>,
@@ -21,11 +37,20 @@ pub struct Arguments {
 }
 
 impl<'a> FromPyObject<'a> for Arguments {
-    fn extract(_ob: &'a PyAny) -> PyResult<Self> {
-        Ok(Self{
+    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+        debug!("parsing arguments: {:?}", ob);
+        trace!("{}", ob);
+
+        let mut args = Self{
             ..Default::default()
-        })
+        };
+
+
+
+        /*
+        match parts[0] {
+            "Constant" => Constant()
+        }*/
+        Ok(args)
     }
 }
-
-

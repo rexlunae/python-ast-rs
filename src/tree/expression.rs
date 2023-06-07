@@ -2,7 +2,7 @@ use pyo3::{PyAny, FromPyObject, PyResult};
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
-use crate::tree::{Arguments};
+use crate::tree::{Arg};
 use crate::codegen::{CodeGen, CodeGenError, PythonContext, Result};
 
 #[derive(Clone, Debug, FromPyObject)]
@@ -14,7 +14,7 @@ pub struct Name {
 #[derive(Clone, Debug, FromPyObject)]
 pub struct Call {
     func: Name,
-    args: Vec<Arguments>,
+    args: Vec<Arg>,
     keywords: Vec<String>,
 }
 
@@ -75,7 +75,6 @@ pub struct Expr {
 impl CodeGen for Expr {
     fn to_rust(self, _ctx: &mut PythonContext) -> Result<TokenStream> {
         match self.value {
-            
             ExprType::Call(call) => {
                 let name = format_ident!("{}", call.func.id);
                 Ok(quote!{#name("##########################################################FIXME!###########################################"
@@ -91,7 +90,7 @@ impl CodeGen for Expr {
 mod tests {
     //use super::*;
 
-    /* 
+    /*
     #[test]
     fn check_pass_expression() {
         let expression = Expr::Pass;
