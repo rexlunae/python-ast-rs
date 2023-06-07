@@ -40,7 +40,7 @@ pub fn parse(input: &str, filename: &str) -> PyResult<tree::Module> {
         let args = (input, filename);
 
         let tree: tree::Module = t.call1(args)?.extract()?;
-        
+
         Ok(tree)
     })
 }
