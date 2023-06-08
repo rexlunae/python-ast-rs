@@ -30,6 +30,7 @@ impl CodeGen for FunctionDef {
 
         for s in self.body.iter() {
             streams.extend(s.clone().to_rust(ctx)?);
+            streams.extend(quote!(;));
         }
 
         let function = quote!{
