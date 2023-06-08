@@ -14,7 +14,7 @@ use function_def::FunctionDef;
 
 pub mod arguments;
 pub use arguments::*;
-use arguments::{ParameterList};
+use arguments::Arg;
 
 pub mod constant;
 pub use constant::*;
@@ -25,7 +25,11 @@ pub use expression::*;
 
 pub mod import;
 pub use import::*;
-use import::{Import};
+use import::Import;
+
+pub mod parameters;
+pub use parameters::*;
+use parameters::ParameterList;
 
 use crate::codegen::{CodeGen, PythonContext, Result};
 
