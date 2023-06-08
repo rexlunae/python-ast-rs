@@ -1,8 +1,12 @@
 //! The module defines Python-syntax arguments and maps them into Rust-syntax versions.
 
 
-use pyo3::{PyAny, FromPyObject, PyResult};
 use crate::tree::Constant;
+use crate::codegen::{CodeGen, CodeGenError, PythonContext, Result};
+
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
+use pyo3::{PyAny, FromPyObject, PyResult};
 use log::{debug, trace};
 
 /// An argument.
@@ -11,6 +15,18 @@ pub enum Arg {
     #[default]
     Unknown,
     Constant(Constant),
+}
+
+impl CodeGen for Arg {
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
+        match self {
+            Self::Constant(c) => {
+                let v = c.value;
+                Ok(quote!(#v))
+            },
+            _ => Err(CodeGenError("Unknown argument type".to_string(), None)),
+        }
+    }
 }
 
 impl<'a> FromPyObject<'a> for Arg {

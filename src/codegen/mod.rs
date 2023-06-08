@@ -6,8 +6,7 @@ use std::default::Default;
 //use std::env::SplitPaths;
 use std::collections::{BTreeMap, HashSet};
 use std::borrow::Borrow;
-use std::path::{Path, MAIN_SEPARATOR, MAIN_SEPARATOR_STR};
-use std::str::Split;
+use std::path::{Path, MAIN_SEPARATOR};
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -110,4 +109,3 @@ impl PythonContext {
 pub trait CodeGen {
     fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream>;
 }
-

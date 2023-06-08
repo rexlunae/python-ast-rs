@@ -1,3 +1,4 @@
+#![feature(extend_one)]
 extern crate proc_macro;
 
 pub mod tree;
@@ -11,6 +12,8 @@ pub use scope::*;
 
 use pyo3::prelude::*;
 use std::include_str;
+
+use log::info;
 
 /*
 /// The direct Rust equivalent of the Python class of the same name,
@@ -85,7 +88,7 @@ def foo():
         assert_eq!(result[10].token_text, "NEWLINE");
         assert_eq!(result[11].token_text, "DEDENT");
         assert_eq!(result[12].token_text, "ENDMARKER");*/
-        println!("{:?}", result);
+        info!("{:?}", result);
     }*/
 
 }

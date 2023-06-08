@@ -5,6 +5,8 @@ use quote::{quote, format_ident};
 use crate::tree::{Arg};
 use crate::codegen::{CodeGen, CodeGenError, PythonContext, Result};
 
+use log::debug;
+
 #[derive(Clone, Debug, FromPyObject)]
 pub struct Name {
     id: String,
@@ -73,12 +75,16 @@ pub struct Expr {
 
 
 impl CodeGen for Expr {
-    fn to_rust(self, _ctx: &mut PythonContext) -> Result<TokenStream> {
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
         match self.value {
             ExprType::Call(call) => {
                 let name = format_ident!("{}", call.func.id);
-                Ok(quote!{#name("##########################################################FIXME!###########################################"
-                )})
+                let mut arg_stream = proc_macro2::TokenStream::new();
+
+                for s in call.args.iter() {
+                    arg_stream.extend(s.clone().to_rust(ctx)?);
+                }
+                Ok(quote!{#name(#arg_stream)})
             },
             //Expr::Break => Ok(quote!{break;}),
             _ => Err(CodeGenError(format!("Expr not implemented {:?}", self), None))
