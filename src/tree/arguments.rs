@@ -42,7 +42,7 @@ impl<'a> FromPyObject<'a> for Arg {
 
 /// A function argument list.
 #[derive(Clone, Debug, Default)]
-pub struct Arguments {
+pub struct ParameterList {
     pub posonlyargs: Vec<Arg>,
     pub args: Vec<Arg>,
     pub vararg: Vec<Arg>,
@@ -52,21 +52,14 @@ pub struct Arguments {
     pub defaults: Vec<String>,
 }
 
-impl<'a> FromPyObject<'a> for Arguments {
+impl<'a> FromPyObject<'a> for ParameterList {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         debug!("parsing arguments: {:?}", ob);
         trace!("{}", ob);
 
-        let mut args = Self{
+        let args = Self{
             ..Default::default()
         };
-
-
-
-        /*
-        match parts[0] {
-            "Constant" => Constant()
-        }*/
         Ok(args)
     }
 }

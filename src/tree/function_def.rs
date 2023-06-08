@@ -4,14 +4,14 @@ use quote::{format_ident, quote};
 //use syn::Visibility;
 
 use crate::codegen::{CodeGen, PythonContext, Result};
-use crate::tree::{Arguments, Statement};
+use crate::tree::{ParameterList, Statement};
 
 use log::debug;
 
 #[derive(Clone, Debug, FromPyObject)]
 pub struct FunctionDef {
     pub name: String,
-    pub args: Arguments,
+    pub args: ParameterList,
     pub body: Vec<Statement>,
 }
 
