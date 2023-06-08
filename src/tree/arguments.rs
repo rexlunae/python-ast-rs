@@ -39,27 +39,3 @@ impl<'a> FromPyObject<'a> for Arg {
         Ok(args)
     }
 }
-
-/// A function argument list.
-#[derive(Clone, Debug, Default)]
-pub struct ParameterList {
-    pub posonlyargs: Vec<Arg>,
-    pub args: Vec<Arg>,
-    pub vararg: Vec<Arg>,
-    pub kwonlyargs: Vec<Arg>,
-    pub kw_defaults: Vec<String>,
-    pub kwarg: Arg,
-    pub defaults: Vec<String>,
-}
-
-impl<'a> FromPyObject<'a> for ParameterList {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        debug!("parsing arguments: {:?}", ob);
-        trace!("{}", ob);
-
-        let args = Self{
-            ..Default::default()
-        };
-        Ok(args)
-    }
-}
