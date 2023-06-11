@@ -25,6 +25,8 @@ impl CodeGen for FunctionDef {
         // it's private. Otherwise, it's public. We formalize that by default.
         let visibility = if self.name.starts_with("_") && !self.name.starts_with("__") {
             format_ident!("")
+        } else if self.name.starts_with("__") && self.name.ends_with("__") {
+            format_ident!("pub(crate)")
         } else {
             format_ident!("pub")
         };
