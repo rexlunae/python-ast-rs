@@ -1,4 +1,4 @@
-use pyo3::{FromPyObject};
+use pyo3::{FromPyObject, PyAny, PyResult};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 //use syn::Visibility;
@@ -13,6 +13,7 @@ pub struct FunctionDef {
     pub name: String,
     pub args: ParameterList,
     pub body: Vec<Statement>,
+    pub decorator_list: Vec<String>,
 }
 
 impl CodeGen for FunctionDef {
