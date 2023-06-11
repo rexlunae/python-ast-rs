@@ -6,26 +6,19 @@ use crate::tree::Arg;
 use pyo3::{PyAny, FromPyObject, PyResult};
 use log::{debug, trace};
 
-/// The parameter list of a function.
-#[derive(Clone, Debug, Default)]
-pub struct ParameterList {
-    pub posonlyargs: Vec<Arg>,
-    pub args: Vec<Arg>,
-    pub vararg: Vec<Arg>,
-    pub kwonlyargs: Vec<Arg>,
-    pub kw_defaults: Vec<String>,
-    pub kwarg: Arg,
-    pub defaults: Vec<String>,
+#[derive(Clone, Debug, Default, FromPyObject)]
+pub struct Parameter {
+    pub arg: String,
 }
 
-impl<'a> FromPyObject<'a> for ParameterList {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        debug!("parsing arguments: {:?}", ob);
-        trace!("{}", ob);
-
-        let args = Self{
-            ..Default::default()
-        };
-        Ok(args)
-    }
+/// The parameter list of a function.
+#[derive(Clone, Debug, Default, FromPyObject)]
+pub struct ParameterList {
+    pub posonlyargs: Vec<Parameter>,
+    pub args: Vec<Parameter>,
+    pub vararg: Option<Parameter>,
+    pub kwonlyargs: Vec<Parameter>,
+    pub kw_defaults: Vec<Arg>,
+    pub kwarg: Option<Arg>,
+    pub defaults: Vec<Arg>,
 }
