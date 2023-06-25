@@ -10,7 +10,7 @@ use pyo3::{PyAny, FromPyObject, PyResult};
 use log::{debug, trace};
 
 /// An argument.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub enum Arg {
     #[default]
     Unknown,
@@ -24,7 +24,10 @@ impl CodeGen for Arg {
                 let v = c.value;
                 Ok(quote!(#v))
             },
-            _ => Err(CodeGenError("Unknown argument type".to_string(), None)),
+            _ => {
+                let error = CodeGenError("Unknown argument type".to_string(), None);
+                Err(Box::new(error))
+            },
         }
     }
 }

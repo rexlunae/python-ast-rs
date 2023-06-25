@@ -16,7 +16,8 @@ use crate::{sys_path, Scope};
 pub struct CodeGenError(pub String, pub Option<TokenStream>);
 impl Error for CodeGenError {}
 
-pub(crate) type Result<T> = std::result::Result<T, CodeGenError>;
+
+pub(crate) type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 
 impl Display for CodeGenError {
@@ -71,11 +72,12 @@ impl PythonContext {
                 return Ok(path_string)
             }
         }
-        Err(CodeGenError(String::from("Not found"), None))
+        let error = CodeGenError(String::from("Not found"), None);
+        Err(Box::new(error))
     }
 
     /// Searches the Python path for the module and returns its contents.
-    pub fn load<S: Into<String> + Clone + Ord + Borrow<S>>(&self, module: S) -> std::io::Result<String> {
+    pub fn load<S: Into<String> + Clone + Ord + Borrow<S>>(&self, module: S) -> Result<String> {
         let module_string:String = module.into();
         let module_parts: Vec<&str> = module_string.split('.').collect();
         let module_path = if module_parts.len() == 1 {

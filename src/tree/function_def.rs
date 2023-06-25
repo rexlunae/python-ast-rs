@@ -31,13 +31,15 @@ impl CodeGen for FunctionDef {
             format_ident!("pub")
         };
 
+        let parameters = self.args.to_rust(ctx)?;
+
         for s in self.body.iter() {
             streams.extend(s.clone().to_rust(ctx)?);
             streams.extend(quote!(;));
         }
 
         let function = quote!{
-            #visibility fn #fn_name() {
+            #visibility fn #fn_name(#parameters) {
                 #streams
             }
         };

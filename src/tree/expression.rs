@@ -87,7 +87,10 @@ impl CodeGen for Expr {
                 Ok(quote!{#name(#arg_stream)})
             },
             //Expr::Break => Ok(quote!{break;}),
-            _ => Err(CodeGenError(format!("Expr not implemented {:?}", self), None))
+            _ => {
+                let error = CodeGenError(format!("Expr not implemented {:?}", self), None);
+                Err(Box::new(error))
+            }
         }
     }
 }
