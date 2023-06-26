@@ -110,4 +110,21 @@ mod tests {
         }
     }
 
+    #[test]
+    fn one_parameter() {
+        let test_function = "def foo(a):\n    pass\n";
+        let module = setup(test_function);
+
+        debug!("module: {:#?}", module);
+        let function_def_statement = module.unwrap().body[0].clone();
+        debug!("statement: {:#?}", function_def_statement);
+
+        if let Statement::FunctionDef(f) = function_def_statement {
+            debug!("function definition: {:#?}", f);
+            assert_eq!(f.args.args.len(), 1)
+        } else {
+            panic!("Expected function definition, found {:#?}", function_def_statement);
+        }
+    }
+
 }
