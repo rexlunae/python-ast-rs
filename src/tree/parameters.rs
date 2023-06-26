@@ -16,7 +16,7 @@ pub struct Parameter {
 }
 
 impl CodeGen for Parameter {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
+    fn to_rust(self, _ctx: &mut PythonContext) -> Result<TokenStream> {
         let ident = format_ident!("{}", self.arg);
         Ok(quote!{
             #ident: PyAny
@@ -81,7 +81,6 @@ use crate::{parse};
 use crate::tree::Module;
 
 fn setup(input: &str) -> PyResult<Module> {
-    //let mut ctx = PythonContext::default();
     let ast = parse(&input, "__test__")?;
     debug!("ast: {:#?}", ast);
     Ok(ast)
