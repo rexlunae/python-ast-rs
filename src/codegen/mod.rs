@@ -1,14 +1,13 @@
 use proc_macro2::TokenStream;
 
+use std::borrow::Borrow;
+use std::collections::{BTreeMap, HashSet};
+use std::default::Default;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::default::Default;
-//use std::env::SplitPaths;
-use std::collections::{BTreeMap, HashSet};
-use std::borrow::Borrow;
-use std::path::{Path, MAIN_SEPARATOR};
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::{Path, MAIN_SEPARATOR};
 
 use crate::{sys_path, Scope};
 
@@ -16,13 +15,11 @@ use crate::{sys_path, Scope};
 pub struct CodeGenError(pub String, pub Option<TokenStream>);
 impl Error for CodeGenError {}
 
-
 pub(crate) type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
-
 
 impl Display for CodeGenError {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "Code generation failed.")
+        write!(f, "Code generation failed. {:#?}", self)
     }
 }
 
@@ -81,9 +78,9 @@ impl PythonContext {
         let module_string:String = module.into();
         let module_parts: Vec<&str> = module_string.split('.').collect();
         let module_path = if module_parts.len() == 1 {
-            self.search_path(format!("{}.py", module_parts[0])).unwrap()
+            self.search_path(format!("{}.py", module_parts[0]))?
         } else {
-            let first = self.search_path(module_parts[0]);
+            let _first = self.search_path(module_parts[0]);
             format!("{}.py", module_parts[1..].join(format!("{}", MAIN_SEPARATOR).as_str()))
         };
 
