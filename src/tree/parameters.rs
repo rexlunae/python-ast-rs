@@ -30,9 +30,14 @@ pub struct ParameterList {
     pub args: Vec<Parameter>,
     pub vararg: Option<Parameter>,
     pub kwonlyargs: Vec<Parameter>,
+
     //pub kw_defaults: Vec<Arg>,
+    //pub kw_defaults: Option<Vec<Arg>>,
+
     pub kwarg: Option<Parameter>,
-    pub defaults: Vec<Arg>,
+
+    //pub defaults: Vec<Arg>,
+    pub defaults: Option<Vec<Arg>>,
 }
 
 /*
@@ -98,7 +103,6 @@ mod tests {
         let test_function = "def foo():\n    pass\n";
         let module = setup(test_function);
 
-        debug!("module: {:#?}", module);
         let function_def_statement = module.unwrap().body[0].clone();
         debug!("statement: {:#?}", function_def_statement);
 
@@ -112,10 +116,9 @@ mod tests {
 
     #[test]
     fn one_parameter() {
-        let test_function = "def foo(a):\n    pass\n";
+        let test_function = "def foo1(a):\n    pass\n";
         let module = setup(test_function);
 
-        debug!("module: {:#?}", module);
         let function_def_statement = module.unwrap().body[0].clone();
         debug!("statement: {:#?}", function_def_statement);
 
@@ -129,10 +132,9 @@ mod tests {
 
     #[test]
     fn multiple_positional_parameter() {
-        let test_function = "def foo(a, b, c):\n    pass\n";
+        let test_function = "def foo2(a, b, c):\n    pass\n";
         let module = setup(test_function);
 
-        debug!("module: {:#?}", module);
         let function_def_statement = module.unwrap().body[0].clone();
         debug!("statement: {:#?}", function_def_statement);
 
@@ -146,10 +148,9 @@ mod tests {
 
     #[test]
     fn vararg_only() {
-        let test_function = "def foo2(*a):\n    pass\n";
+        let test_function = "def foo3(*a):\n    pass\n";
         let module = setup(test_function);
 
-        debug!("module: {:#?}", module);
         let function_def_statement = module.unwrap().body[0].clone();
         debug!("statement: {:#?}", function_def_statement);
 
@@ -164,10 +165,9 @@ mod tests {
 
     #[test]
     fn positional_and_vararg() {
-        let test_function = "def foo2(a, *b):\n    pass\n";
+        let test_function = "def foo4(a, *b):\n    pass\n";
         let module = setup(test_function);
 
-        debug!("module: {:#?}", module);
         let function_def_statement = module.unwrap().body[0].clone();
         debug!("statement: {:#?}", function_def_statement);
 
@@ -182,10 +182,9 @@ mod tests {
 
     #[test]
     fn positional_and_vararg_and_kw() {
-        let test_function = "def foo3(a, *b, c=7):\n    pass\n";
+        let test_function = "def foo5(a, *b, c=7):\n    pass\n";
         let module = setup(test_function);
 
-        debug!("module: {:#?}", module);
         let function_def_statement = module.unwrap().body[0].clone();
         debug!("statement: {:#?}", function_def_statement);
 
@@ -194,6 +193,79 @@ mod tests {
             assert_eq!(f.args.args.len(), 1);
             assert_eq!(f.args.vararg, Some(Parameter{ arg: "b".to_string()}));
             assert_eq!(f.args.kwonlyargs, vec![Parameter{ arg: "c".to_string()}]);
+        } else {
+            panic!("Expected function definition, found {:#?}", function_def_statement);
+        }
+    }
+
+
+    //XXX - This must pass to be Python-compatible.
+    #[test]
+    fn positional_and_kw() {
+        let test_function = "def foo6(a, c=7):\n    pass\n";
+        let module = setup(test_function);
+
+        let function_def_statement = module.unwrap().body[0].clone();
+        debug!("statement: {:#?}", function_def_statement);
+
+        if let Statement::FunctionDef(f) = function_def_statement {
+            debug!("function definition: {:#?}", f);
+            assert_eq!(f.args.args.len(), 1);
+            //assert_eq!(f.args.vararg, None);
+            assert_eq!(f.args.kwonlyargs, vec![Parameter{ arg: "c".to_string()}]);
+        } else {
+            panic!("Expected function definition, found {:#?}", function_def_statement);
+        }
+    }
+
+    #[test]
+    fn default_only() {
+        let test_function = "def foo7(a=7):\n    pass\n";
+        let module = setup(test_function);
+
+        let function_def_statement = module.unwrap().body[0].clone();
+        debug!("statement: {:#?}", function_def_statement);
+
+        if let Statement::FunctionDef(f) = function_def_statement {
+            debug!("function definition: {:#?}", f);
+            assert_eq!(f.args.args.len(), 1);
+            assert_eq!(f.args.vararg, Some(Parameter{ arg: "b".to_string()}));
+            assert_eq!(f.args.kwonlyargs, vec![Parameter{ arg: "c".to_string()}]);
+        } else {
+            panic!("Expected function definition, found {:#?}", function_def_statement);
+        }
+    }
+
+    #[test]
+    fn kwargs_only() {
+        let test_function = "def foo8(**a):\n    pass\n";
+        let module = setup(test_function);
+
+        let function_def_statement = module.unwrap().body[0].clone();
+        debug!("statement: {:#?}", function_def_statement);
+
+        if let Statement::FunctionDef(f) = function_def_statement {
+            debug!("function definition: {:#?}", f);
+            assert_eq!(f.args.args.len(), 0);
+            assert_eq!(f.args.kwarg, Some(Parameter{ arg: "a".to_string()}));
+        } else {
+            panic!("Expected function definition, found {:#?}", function_def_statement);
+        }
+    }
+
+    #[test]
+    fn named_and_positional() {
+        let test_function = "def foo9(a, *, b):\n    pass\n";
+        let module = setup(test_function);
+
+        let function_def_statement = module.unwrap().body[0].clone();
+        debug!("statement: {:#?}", function_def_statement);
+
+        if let Statement::FunctionDef(f) = function_def_statement {
+            debug!("function definition: {:#?}", f);
+            assert_eq!(f.args.args.len(), 1);
+            assert_eq!(f.args.vararg, None);
+            assert_eq!(f.args.kwonlyargs, vec![Parameter{ arg: "b".to_string()}]);
         } else {
             panic!("Expected function definition, found {:#?}", function_def_statement);
         }
