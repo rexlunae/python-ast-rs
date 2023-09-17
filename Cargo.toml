@@ -11,7 +11,7 @@ quote = "1.0"
 proc-macro2 = "1.0"
 pyo3 = {version = "0.19", features=["auto-initialize",]}
 num-traits = "0.2"
-num-derive = "0.3"
+num-derive = "0.4"
 log = "0.4"
 test-log = "0.2"
 env_logger = "0.10.0"
