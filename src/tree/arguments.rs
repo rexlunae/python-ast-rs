@@ -3,6 +3,8 @@
 
 //use crate::tree::Constant;
 use crate::codegen::{CodeGen, CodeGenError, PythonContext};
+use crate::ast_dump;
+use crate::tree::Constant;
 
 use proc_macro2::TokenStream;
 use quote::{quote};
@@ -15,16 +17,15 @@ pub enum Arg {
     #[default]
     Unknown,
     //Constant(Constant),
-    Constant(String),
+    Constant(Constant),
 }
 
 impl CodeGen for Arg {
     fn to_rust(self, _ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             Self::Constant(c) => {
-                //let v = c.value;
-                //Ok(quote!(#v))
-                Ok(quote!(#c))
+                let v = c.value;
+                Ok(quote!(#v))
             },
             _ => {
                 let error = CodeGenError("Unknown argument type".to_string(), None);
@@ -36,11 +37,9 @@ impl CodeGen for Arg {
 
 impl<'a> FromPyObject<'a> for Arg {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        debug!("parsing arg: {:?}", ob);
-        trace!("{}", ob);
-
         // FIXME: We will need to figure out how to determine what type of argument this actually is.
-        let args = Self::Constant(ob.extract()?);
+        let c: Constant = ob.extract()?;
+        let args = Self::Constant(c);
         Ok(args)
     }
 }
