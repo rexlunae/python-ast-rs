@@ -2,7 +2,7 @@
 
 
 use crate::tree::Constant;
-use crate::codegen::{CodeGen, CodeGenError, PythonContext, Result};
+use crate::codegen::{CodeGen, CodeGenError, PythonContext};
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -14,15 +14,17 @@ use log::{debug, trace};
 pub enum Arg {
     #[default]
     Unknown,
-    Constant(Constant),
+    //Constant(Constant),
+    Constant(String),
 }
 
 impl CodeGen for Arg {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             Self::Constant(c) => {
-                let v = c.value;
-                Ok(quote!(#v))
+                //let v = c.value;
+                //Ok(quote!(#v))
+                Ok(quote!(#c))
             },
             _ => {
                 let error = CodeGenError("Unknown argument type".to_string(), None);

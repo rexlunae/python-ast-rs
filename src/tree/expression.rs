@@ -3,9 +3,9 @@ use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
 use crate::tree::{Arg};
-use crate::codegen::{CodeGen, CodeGenError, PythonContext, Result};
+use crate::codegen::{CodeGen, CodeGenError, PythonContext};
 
-use log::debug;
+//use log::debug;
 
 #[derive(Clone, Debug, FromPyObject)]
 pub struct Name {
@@ -75,7 +75,7 @@ pub struct Expr {
 
 
 impl CodeGen for Expr {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self.value {
             ExprType::Call(call) => {
                 let name = format_ident!("{}", call.func.id);
@@ -97,38 +97,21 @@ impl CodeGen for Expr {
 
 #[cfg(test)]
 mod tests {
-    //use super::*;
+    use super::*;
 
-    /*
-    #[test]
-    fn check_pass_expression() {
-        let expression = Expr::Pass;
-        let mut ctx = PythonContext::default();
-        let tokens = expression.clone().to_rust(&mut ctx);
-
-        println!("expression: {:?}, tokens: {:?}", expression, tokens);
-        assert_eq!(tokens.unwrap().is_empty(), true);
-    }
 
     #[test]
-    fn check_break_expression() {
-        let expression = Expr::Break;
+    fn check_call_expression() {
+        let expression = Expr{
+                    value: ExprType::Call(Call{
+                        func: Name{id: "test".to_string()},
+                        args: Vec::new(),
+                        keywords: Vec::new(),
+                    })
+        };
         let mut ctx = PythonContext::default();
-        let tokens = expression.clone().to_rust(&mut ctx);
-
-        println!("expression: {:?}, tokens: {:?}", expression, tokens);
-        assert_eq!(tokens.unwrap().is_empty(), false);
+        let tokens = expression.clone().to_rust(&mut ctx).unwrap();
+        assert_eq!(tokens.to_string(), quote!(test()).to_string());
     }
-
-    #[test]
-    fn check_continue_expression() {
-        let expression = Expr::Continue;
-        let mut ctx = PythonContext::default();
-        let tokens = expression.clone().to_rust(&mut ctx);
-
-        println!("expression: {:?}, tokens: {:?}", expression, tokens);
-        assert_eq!(tokens.unwrap().is_empty(), false);
-    }
-    */
 
 }

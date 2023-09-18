@@ -3,7 +3,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 //use syn::Visibility;
 
-use crate::codegen::{CodeGen, PythonContext, Result};
+use crate::codegen::{CodeGen, PythonContext};
 use crate::tree::{ParameterList, Statement};
 
 use log::debug;
@@ -17,7 +17,7 @@ pub struct FunctionDef {
 }
 
 impl CodeGen for FunctionDef {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
+    fn to_rust(self, ctx: &mut PythonContext) ->Result<TokenStream, Box<dyn std::error::Error>> {
         let mut streams = TokenStream::new();
         let fn_name = format_ident!("{}", self.name);
 

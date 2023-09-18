@@ -4,7 +4,7 @@ use quote::{format_ident, quote};
 
 use log::debug;
 
-use crate::codegen::{CodeGen, PythonContext, Result};
+use crate::codegen::{CodeGen, PythonContext};
 
 #[derive(Clone, Debug, FromPyObject)]
 pub struct Alias {
@@ -22,7 +22,7 @@ pub struct Import {
 /// 2. Causes the referenced module to be compiled into the program (only once).
 
 impl CodeGen for Import {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut tokens = TokenStream::new();
         for alias in self.names.iter() {
             let _mod_path = format_ident!("{}", ctx.python_namespace);
@@ -59,7 +59,7 @@ pub struct ImportFrom {
 }
 
 impl CodeGen for ImportFrom {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         debug!("ctx: {:?}", ctx);
         Ok(quote!{})
     }

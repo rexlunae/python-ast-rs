@@ -15,8 +15,6 @@ use crate::{sys_path, Scope};
 pub struct CodeGenError(pub String, pub Option<TokenStream>);
 impl Error for CodeGenError {}
 
-pub(crate) type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
-
 impl Display for CodeGenError {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "Code generation failed. {:#?}", self)
@@ -62,7 +60,7 @@ impl PythonContext {
 
     /// Scans the Python path for the short name given, and returns the full path. Note that it only searches
     /// for the path itself, not any subpath.
-    pub fn search_path<S: Into<String> + Clone + Ord + Borrow<S>>(&self, file: S) -> Result<String> {
+    pub fn search_path<S: Into<String> + Clone + Ord + Borrow<S>>(&self, file: S) -> Result<String, Box<dyn std::error::Error>> {
         for entry in self.python_path.clone() {
             let path_string = format!("{}{}{}", entry, MAIN_SEPARATOR, file.clone().into());
             if Path::new(path_string.as_str()).exists() {
@@ -74,7 +72,7 @@ impl PythonContext {
     }
 
     /// Searches the Python path for the module and returns its contents.
-    pub fn load<S: Into<String> + Clone + Ord + Borrow<S>>(&self, module: S) -> Result<String> {
+    pub fn load<S: Into<String> + Clone + Ord + Borrow<S>>(&self, module: S) -> Result<String, Box<dyn std::error::Error>> {
         let module_string:String = module.into();
         let module_parts: Vec<&str> = module_string.split('.').collect();
         let module_path = if module_parts.len() == 1 {
@@ -106,5 +104,5 @@ impl PythonContext {
 }
 
 pub trait CodeGen {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream>;
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>>;
 }

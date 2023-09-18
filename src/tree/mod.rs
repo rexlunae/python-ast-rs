@@ -25,13 +25,11 @@ pub use expression::*;
 
 pub mod import;
 pub use import::*;
-use import::Import;
 
 pub mod parameters;
 pub use parameters::*;
-use parameters::ParameterList;
 
-use crate::codegen::{CodeGen, PythonContext, Result};
+use crate::codegen::{CodeGen, PythonContext};
 
 use log::info;
 
@@ -55,7 +53,7 @@ pub struct Module {
 }
 
 impl CodeGen for Module {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
         let stdpython = format_ident!("{}", ctx.stdpython);
         stream.extend(quote!(use #stdpython::*;));
@@ -70,7 +68,7 @@ impl CodeGen for Module {
 mod tests {
     use super::*;
 
-    /*
+
     #[test]
     fn does_module_compile() {
         let mut ctx = PythonContext::default();
@@ -84,7 +82,7 @@ def foo():
 
         let code = result.to_rust(&mut ctx);
         info!("module: {:?}", code);
-    }*/
+    }
 
     #[test]
     fn can_we_print() {
@@ -100,7 +98,7 @@ def foo():
         info!("module: {:?}", code);
     }
 
-    /*
+
     #[test]
     fn can_we_import() {
         let result = crate::parse("import ast", "ast").unwrap();
@@ -109,9 +107,9 @@ def foo():
 
         let code = result.to_rust(&mut ctx);
         info!("module: {:?}", code);
-    }*/
+    }
 
-    /*#[test]
+    #[test]
     fn can_we_import2() {
         let result = crate::parse("import ast.test as test", "ast").unwrap();
         let mut ctx = PythonContext::default();
@@ -119,6 +117,6 @@ def foo():
 
         let code = result.to_rust(&mut ctx);
         info!("module: {:?}", code);
-    }*/
+    }
 
 }

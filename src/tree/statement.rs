@@ -3,7 +3,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 use crate::tree::{FunctionDef, Import, ImportFrom, Expr};
-use crate::codegen::{CodeGen, CodeGenError, PythonContext, Result};
+use crate::codegen::{CodeGen, CodeGenError, PythonContext};
 
 use log::debug;
 
@@ -51,7 +51,7 @@ impl<'a> FromPyObject<'a> for Statement {
 }
 
 impl CodeGen for Statement {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         debug!("generating statement: {:?}", self);
         match self {
             Statement::Break => Ok(quote!{break;}),
@@ -72,7 +72,7 @@ impl CodeGen for Statement {
 #[cfg(test)]
 mod tests {
     use super::*;
-/*
+
     #[test]
     fn check_pass_statement() {
         let statement = Statement::Pass;
@@ -102,5 +102,4 @@ mod tests {
         debug!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);
     }
-*/
 }

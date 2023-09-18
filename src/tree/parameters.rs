@@ -1,5 +1,5 @@
 use crate::tree::Arg;
-use crate::codegen::{CodeGen, CodeGenError, PythonContext, Result};
+use crate::codegen::{CodeGen, CodeGenError, PythonContext};
 use proc_macro2::TokenStream;
 use crate::tree::statement::Statement;
 
@@ -16,7 +16,7 @@ pub struct Parameter {
 }
 
 impl CodeGen for Parameter {
-    fn to_rust(self, _ctx: &mut PythonContext) -> Result<TokenStream> {
+    fn to_rust(self, _ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let ident = format_ident!("{}", self.arg);
         Ok(quote!{
             #ident: PyAny
@@ -55,7 +55,7 @@ impl<'source> FromPyObject<'source> for ParameterList {
 */
 
 impl CodeGen for ParameterList {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream> {
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
         debug!("parameters: {:#?}", self);
 
