@@ -4,6 +4,8 @@ use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 use pyo3::{PyAny, FromPyObject, PyResult};
 
+use log::debug;
+
 pub mod statement;
 pub use statement::*;
 use statement::Statement;
@@ -57,8 +59,12 @@ impl CodeGen for Module {
         let mut stream = TokenStream::new();
         let stdpython = format_ident!("{}", ctx.stdpython);
         stream.extend(quote!(use #stdpython::*;));
-        for s in self.body.iter() {
-            stream.extend(s.clone().to_rust(ctx)?);
+        for s in self.body {
+            let statement = s.clone().to_rust(ctx)?;
+            debug!("{:?}, {}", s, statement);
+            if statement.to_string() != "" {
+                stream.extend(statement);
+            }
         }
         Ok(stream)
     }
