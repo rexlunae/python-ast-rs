@@ -21,6 +21,8 @@ use arguments::Arg;
 pub mod constant;
 pub use constant::*;
 
+pub mod call;
+pub use call::*;
 
 pub mod expression;
 pub use expression::*;
@@ -30,6 +32,9 @@ pub use import::*;
 
 pub mod parameters;
 pub use parameters::*;
+
+pub mod name;
+pub use name::*;
 
 use crate::codegen::{CodeGen, PythonContext};
 

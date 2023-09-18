@@ -2,7 +2,7 @@ use pyo3::{PyAny, FromPyObject, PyResult};
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::tree::{FunctionDef, Import, ImportFrom, Expr};
+use crate::tree::{FunctionDef, Import, ImportFrom, Expr, Call};
 use crate::codegen::{CodeGen, CodeGenError, PythonContext};
 
 use log::debug;
@@ -18,6 +18,7 @@ struct GenericStatement {
 pub enum Statement {
     Break,
     Continue,
+    Call(Call),
     Pass,
     Import(Import),
     ImportFrom(ImportFrom),
@@ -35,16 +36,17 @@ impl<'a> FromPyObject<'a> for Statement {
 
         debug!("statement: {:?}", parts);
 
+        debug!("{}", crate::ast_dump(ob, Some(4))?);
         match parts[0] {
             "Pass" => Ok(Statement::Pass),
+            "Call" => Ok(Statement::Call(Call::extract(ob)?)),
             "Continue" => Ok(Statement::Continue),
             "Break" => Ok(Statement::Break),
             "FunctionDef" => Ok(Statement::FunctionDef(FunctionDef::extract(ob)?)),
             "Import" => Ok(Statement::Import(Import::extract(ob)?)),
             "ImportFrom" => Ok(Statement::ImportFrom(ImportFrom::extract(ob)?)),
             "Expr" => Ok(Statement::Expr(Expr::extract(ob)?)),
-            _ => Ok(Statement::Unimplemented(format!("{:?}: {}", parts, ob))),
-            //_ => Ok(Statement::Unimplemented(String::from(parts[0]))),
+            _ => Ok(Statement::Unimplemented(format!("{:?}: {}", parts, crate::ast_dump(ob, None)?))),
         }
 
     }

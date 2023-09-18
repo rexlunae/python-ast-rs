@@ -2,23 +2,8 @@ use pyo3::{FromPyObject};
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
-use crate::tree::{Arg};
+use crate::tree::{Call};
 use crate::codegen::{CodeGen, CodeGenError, PythonContext};
-
-//use log::debug;
-
-#[derive(Clone, Debug, FromPyObject)]
-pub struct Name {
-    id: String,
-}
-
-
-#[derive(Clone, Debug, FromPyObject)]
-pub struct Call {
-    func: Name,
-    args: Vec<Arg>,
-    keywords: Vec<String>,
-}
 
 // This is just a way of extracting type information from Pyo3. And its a horrible hack.
 #[derive(Clone, Debug, FromPyObject)]
