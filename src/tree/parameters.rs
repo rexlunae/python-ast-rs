@@ -39,44 +39,36 @@ pub struct ParameterList {
 use pyo3::{PyAny, PyResult};
 
 // We have to manually implement the conversion of ParameterList objects
-// because under a number of conditions, the attributes are unset, which
-// causes the derived trait to fail.
-
+// because under a number of conditions, attributes that should be lists
+// are unset, which causes them to be retrieved as None, which causes the
+// derived implementation to error when converting to a Vec type. It would
+// be nice if they generated empty Vecs instead, but since it doesn't, we
+// have to do it manually.
 impl<'source> FromPyObject<'source> for ParameterList {
     fn extract(ob: &'source PyAny) -> PyResult<Self> {
-        println!("1: ob: {:#?}, {}", ob, ast_dump(&ob, Some(4))?);
 
         let posonlyargs = ob.getattr("posonlyargs")?;
         let posonlyargs_list: Vec<Parameter> = posonlyargs.extract()?;
-        println!("2: ob.posonlyargs: {:?}, {:?}", posonlyargs, posonlyargs_list);
 
         let args = ob.getattr("args")?;
         let args_list: Vec<Parameter> = args.extract()?;
-        println!("3: ob.args: {:?}, {:?}", args, args_list);
 
         let vararg = ob.getattr("vararg")?;
         let vararg_option: Option<Parameter> = vararg.extract()?;
-        println!("4: ob.vararg: {:?} {:?} ", vararg, vararg_option);
 
         let kwonlyargs = ob.getattr("kwonlyargs")?;
         let kwonlyargs_list: Vec<Parameter> = kwonlyargs.extract()?;
-        println!("5: ob.kwonlyargs: {:?}, {:?}", kwonlyargs, kwonlyargs_list);
 
         let kw_defaults = ob.getattr("kw_defaults")?;
         let kw_defaults_list: Vec<Arg> = if let Ok(list) = kw_defaults.extract() {
             list
         } else { Vec::new() };
-        println!("6: ob.kw_defaults: {:?} {:?}", kw_defaults, kw_defaults_list);
 
         let kwarg = ob.getattr("kwarg")?;
         let kwarg_option: Option<Parameter> = kwarg.extract()?;
-        println!("7: ob.kwarg: {:?} {:?}", kwarg, kwarg_option);
 
         let defaults = ob.getattr("defaults")?;
-        println!("8.1: ob.defaults: {:?}", defaults);
-        println!("8.2: ob.defaults: {:?}, {}", defaults, ast_dump(defaults, Some(4))?);
         let defaults_list: Vec<Arg> = defaults.extract()?;
-        println!("8.3: ob.defaults: {:?}, {:?}", defaults, defaults_list);
 
         Ok(ParameterList{
             posonlyargs: posonlyargs_list,
