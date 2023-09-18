@@ -1,4 +1,4 @@
-use pyo3::{FromPyObject, PyAny, PyResult};
+use pyo3::{FromPyObject};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 //use syn::Visibility;
