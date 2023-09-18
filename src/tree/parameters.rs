@@ -1,5 +1,5 @@
 use crate::tree::Arg;
-use crate::codegen::{CodeGen, CodeGenError, PythonContext};
+use crate::codegen::{CodeGen, PythonContext};
 use proc_macro2::TokenStream;
 
 use std::default::Default;
