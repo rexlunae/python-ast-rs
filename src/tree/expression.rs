@@ -83,6 +83,7 @@ impl CodeGen for Expr {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tree::Name;
 
 
     #[test]
