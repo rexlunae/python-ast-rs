@@ -272,8 +272,8 @@ mod tests {
         if let Statement::FunctionDef(f) = function_def_statement {
             debug!("function definition: {:#?}", f);
             assert_eq!(f.args.args.len(), 1);
-            //assert_eq!(f.args.vararg, Some(Parameter{ arg: "b".to_string()}));
-            //assert_eq!(f.args.kwonlyargs, vec![Parameter{ arg: "c".to_string()}]);
+            assert_eq!(f.args.defaults.len(), 1);
+            assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant{ value: 7}));
         } else {
             panic!("Expected function definition, found {:#?}", function_def_statement);
         }
