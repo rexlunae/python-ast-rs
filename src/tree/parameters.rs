@@ -1,14 +1,13 @@
 use crate::tree::Arg;
 use crate::codegen::{CodeGen, CodeGenError, PythonContext};
 use proc_macro2::TokenStream;
-use crate::tree::statement::Statement;
 
 use std::default::Default;
 
 
 use quote::{format_ident, quote};
-use pyo3::{PyAny, FromPyObject, PyResult};
-use log::{debug, trace};
+use pyo3::{FromPyObject};
+use log::{debug};
 
 #[derive(Clone, Debug, Default, FromPyObject, PartialEq)]
 pub struct Parameter {
@@ -82,21 +81,25 @@ impl CodeGen for ParameterList {
     }
 }
 
-use crate::{parse};
-use crate::tree::Module;
-
-fn setup(input: &str) -> PyResult<Module> {
-    let ast = parse(&input, "__test__")?;
-    debug!("ast: {:#?}", ast);
-    Ok(ast)
-}
-
 // It's fairly easy to break the automatic parsing of parameter structs, so we need to have fairly sophisticated
 // test coverage for the various types of
 #[cfg(test)]
 mod tests {
     use test_log::test;
     use super::*;
+
+    use crate::{parse};
+    use crate::tree::Module;
+    use crate::tree::statement::Statement;
+    use pyo3::{PyResult};
+
+
+
+    fn setup(input: &str) -> PyResult<Module> {
+        let ast = parse(&input, "__test__")?;
+        debug!("ast: {:#?}", ast);
+        Ok(ast)
+    }
 
     #[test]
     fn no_parameters() {
