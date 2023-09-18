@@ -50,7 +50,6 @@ impl<'source> FromPyObject<'source> for ParameterList {
         let posonlyargs_list: Vec<Parameter> = posonlyargs.extract()?;
         println!("2: ob.posonlyargs: {:?}, {:?}", posonlyargs, posonlyargs_list);
 
-        //            "FunctionDef" => Ok(Statement::FunctionDef(FunctionDef::extract(ob)?)),
         let args = ob.getattr("args")?;
         let args_list: Vec<Parameter> = args.extract()?;
         println!("3: ob.args: {:?}, {:?}", args, args_list);
@@ -242,8 +241,6 @@ mod tests {
         }
     }
 
-
-    //XXX - This must pass to be Python-compatible.
     #[test]
     fn positional_and_kw() {
         let test_function = "def foo6(a, c=7):\n    pass\n";
@@ -255,9 +252,9 @@ mod tests {
 
         if let Statement::FunctionDef(f) = function_def_statement {
             debug!("function definition: {:#?}", f);
-            assert_eq!(f.args.args.len(), 1);
-            //assert_eq!(f.args.vararg, None);
-            assert_eq!(f.args.kwonlyargs, vec![Parameter{ arg: "c".to_string()}]);
+            assert_eq!(f.args.args.len(), 2);
+            assert_eq!(f.args.defaults.len(), 1);
+            assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant{value: 7}));
         } else {
             panic!("Expected function definition, found {:#?}", function_def_statement);
         }
