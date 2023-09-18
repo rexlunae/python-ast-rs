@@ -13,7 +13,7 @@ pub use scope::*;
 use pyo3::prelude::*;
 use std::include_str;
 
-use log::info;
+
 
 /*
 /// The direct Rust equivalent of the Python class of the same name,

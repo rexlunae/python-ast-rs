@@ -1,4 +1,4 @@
-use pyo3::{PyAny, FromPyObject, PyResult};
+use pyo3::{FromPyObject};
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
