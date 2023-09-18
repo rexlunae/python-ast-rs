@@ -64,7 +64,9 @@ impl<'source> FromPyObject<'source> for ParameterList {
         println!("5: ob.kwonlyargs: {:?}, {:?}", kwonlyargs, kwonlyargs_list);
 
         let kw_defaults = ob.getattr("kw_defaults")?;
-        let kw_defaults_list: Vec<Arg> = kw_defaults.extract()?;
+        let kw_defaults_list: Vec<Arg> = if let Ok(list) = kw_defaults.extract() {
+            list
+        } else { Vec::new() };
         println!("6: ob.kw_defaults: {:?} {:?}", kw_defaults, kw_defaults_list);
 
         let kwarg = ob.getattr("kwarg")?;
