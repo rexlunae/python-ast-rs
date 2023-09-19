@@ -246,7 +246,7 @@ mod tests {
             debug!("function definition: {:#?}", f);
             assert_eq!(f.args.args.len(), 2);
             assert_eq!(f.args.defaults.len(), 1);
-            assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant{value: 7}));
+            assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant("7".to_string())));
         } else {
             panic!("Expected function definition, found {:#?}", function_def_statement);
         }
@@ -264,7 +264,7 @@ mod tests {
             debug!("function definition: {:#?}", f);
             assert_eq!(f.args.args.len(), 1);
             assert_eq!(f.args.defaults.len(), 1);
-            assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant{ value: 7}));
+            assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant("7".to_string())));
         } else {
             panic!("Expected function definition, found {:#?}", function_def_statement);
         }

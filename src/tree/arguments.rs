@@ -24,7 +24,8 @@ impl CodeGen for Arg {
     fn to_rust(self, _ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             Self::Constant(c) => {
-                let v = c.value;
+                let v = c.0;
+                println!("{:?}", v);
                 Ok(quote!(#v))
             },
             _ => {
@@ -37,9 +38,9 @@ impl CodeGen for Arg {
 
 impl<'a> FromPyObject<'a> for Arg {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        // FIXME: We will need to figure out how to determine what type of argument this actually is.
-        let c: Constant = ob.extract()?;
-        let args = Self::Constant(c);
+        // FIXME: We will need to figure out how to determine what type of argument this actually is. For now, it only supports Constants
+        let value = ob.getattr("value")?;
+        let args = Self::Constant(Constant(format!("{}", value)));
         Ok(args)
     }
 }
