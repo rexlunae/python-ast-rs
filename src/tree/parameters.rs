@@ -90,25 +90,32 @@ impl CodeGen for ParameterList {
         let mut stream = TokenStream::new();
         debug!("parameters: {:#?}", self);
 
+        // Ordinary args
         for arg in self.args {
             stream.extend(arg.clone().to_rust(ctx)?);
             stream.extend(quote!(,));
         }
 
+        // Variable positional arg
         if let Some(arg) = self.vararg {
             let name = format_ident!("{}", arg.arg);
             stream.extend(quote!(#name: Vec<PyAny>));
             stream.extend(quote!(,));
         }
 
-/*
+        // kwonlyargs
+        for arg in self.kwonlyargs {
+            stream.extend(arg.clone().to_rust(ctx)?);
+            stream.extend(quote!(,));
+        }
+
+        // kwarg
         if let Some(arg) = self.kwarg {
             let name = format_ident!("{}", arg.arg);
-            debug!("parsing: {:#?}", arg.arg);
             stream.extend(quote!(#name: PyDict<PyAny>));
             stream.extend(quote!(,));
         }
-*/
+
         Ok(quote!(#stream))
     }
 }
