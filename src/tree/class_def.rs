@@ -4,7 +4,7 @@ use quote::{format_ident, quote};
 //use syn::Visibility;
 
 use crate::codegen::{CodeGen, PythonContext};
-use crate::tree::{ParameterList, Statement, Name};
+use crate::tree::{Statement, Name};
 
 use log::debug;
 
@@ -13,7 +13,6 @@ pub struct ClassDef {
     pub name: String,
     pub bases: Vec<Name>,
     pub keywords: Vec<String>,
-    // This isn't right, obviously.
     pub body: Vec<Statement>,
 }
 
@@ -49,7 +48,6 @@ impl CodeGen for ClassDef {
 
         for s in self.body.iter() {
             streams.extend(s.clone().to_rust(ctx)?);
-            //streams.extend(quote!(;));
         }
 
         let class = quote!{
