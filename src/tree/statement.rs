@@ -2,7 +2,7 @@ use pyo3::{PyAny, FromPyObject, PyResult};
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::tree::{FunctionDef, Import, ImportFrom, Expr, Call};
+use crate::tree::{FunctionDef, Import, ImportFrom, Expr, Call, ClassDef};
 use crate::codegen::{CodeGen, CodeGenError, PythonContext};
 
 use log::debug;
@@ -18,6 +18,7 @@ struct GenericStatement {
 pub enum Statement {
     Break,
     Continue,
+    ClassDef(ClassDef),
     Call(Call),
     Pass,
     Import(Import),
@@ -40,6 +41,7 @@ impl<'a> FromPyObject<'a> for Statement {
         match parts[0] {
             "Pass" => Ok(Statement::Pass),
             "Call" => Ok(Statement::Call(Call::extract(ob)?)),
+            "ClassDef" => Ok(Statement::ClassDef(ClassDef::extract(ob)?)),
             "Continue" => Ok(Statement::Continue),
             "Break" => Ok(Statement::Break),
             "FunctionDef" => Ok(Statement::FunctionDef(FunctionDef::extract(ob)?)),
@@ -57,6 +59,7 @@ impl CodeGen for Statement {
         debug!("generating statement: {:?}", self);
         match self {
             Statement::Break => Ok(quote!{break;}),
+            Statement::ClassDef(c) => c.to_rust(ctx),
             Statement::Continue => Ok(quote!{continue;}),
             Statement::Pass => Ok(quote!{}),
             Statement::FunctionDef(s) => s.to_rust(ctx),

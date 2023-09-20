@@ -18,11 +18,14 @@ pub mod arguments;
 pub use arguments::*;
 use arguments::Arg;
 
-pub mod constant;
-pub use constant::*;
-
 pub mod call;
 pub use call::*;
+
+pub mod class_def;
+pub use class_def::*;
+
+pub mod constant;
+pub use constant::*;
 
 pub mod expression;
 pub use expression::*;
