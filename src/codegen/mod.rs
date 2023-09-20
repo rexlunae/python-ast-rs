@@ -4,7 +4,7 @@ use std::borrow::Borrow;
 use std::collections::{BTreeMap, HashSet};
 use std::default::Default;
 use std::error::Error;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Debug};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, MAIN_SEPARATOR};
@@ -103,6 +103,15 @@ impl PythonContext {
     }
 }
 
-pub trait CodeGen {
+/// A trait for an object that can be converted to Rust code. Implemented generally be AST elements.
+pub trait CodeGen: Debug {
+    /// A trait method to input Rust code in a general sense. The output should be syntactical Rust,
+    /// but may not be executable depending on
     fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>>;
+
+    /// Only implemented by AST elements that can be compiled inside a trait. Others will generate
+    /// an error.
+    fn to_rust_trait_member(&self, _ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        Err(Box::new(CodeGenError(format!("{:#?}", &self), None)))
+    }
 }
