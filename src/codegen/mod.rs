@@ -1,13 +1,15 @@
 use proc_macro2::TokenStream;
 
-use std::borrow::Borrow;
-use std::collections::{BTreeMap, HashSet};
-use std::default::Default;
-use std::error::Error;
-use std::fmt::{Display, Formatter, Debug};
-use std::fs::File;
-use std::io::prelude::*;
-use std::path::{Path, MAIN_SEPARATOR};
+use std::{
+    borrow::Borrow,
+    collections::{BTreeMap, HashSet},
+    default::Default,
+    error::Error,
+    fmt::{Display, Formatter, Debug},
+    fs::File,
+    io::prelude::*,
+    path::{Path, MAIN_SEPARATOR},
+};
 
 use crate::{sys_path, Scope};
 
