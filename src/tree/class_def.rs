@@ -21,7 +21,6 @@ impl CodeGen for ClassDef {
     fn to_rust(self, ctx: &mut PythonContext) ->Result<TokenStream, Box<dyn std::error::Error>> {
         let mut streams = TokenStream::new();
         let class_name = format_ident!("{}", self.name);
-        debug!("1");
 
         // The Python convention is that functions that begin with a single underscore,
         // it's private. Otherwise, it's public. We formalize that by default.
