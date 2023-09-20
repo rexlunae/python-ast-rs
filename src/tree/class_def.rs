@@ -46,8 +46,8 @@ impl CodeGen for ClassDef {
         }
         debug!("bases: {:?}", bases);
 
-        for s in self.body.iter() {
-            streams.extend(s.clone().to_rust(ctx)?);
+        for s in self.body {
+            streams.extend(s.clone().to_rust_trait_member(ctx)?);
         }
 
         let class = quote!{
