@@ -26,7 +26,7 @@ impl CodeGen for Constant {
 #[cfg(test)]
 mod tests {
     use test_log::test;
-    use super::*;
+    //use super::*;
 
     #[test]
     fn signed_constant() {

@@ -3,13 +3,11 @@
 
 //use crate::tree::Constant;
 use crate::codegen::{CodeGen, CodeGenError, PythonContext};
-use crate::ast_dump;
 use crate::tree::Constant;
 
 use proc_macro2::TokenStream;
 use quote::{quote};
 use pyo3::{PyAny, FromPyObject, PyResult};
-use log::{debug, trace};
 
 /// An argument.
 #[derive(Clone, Debug, Default, PartialEq)]
