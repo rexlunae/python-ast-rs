@@ -19,7 +19,7 @@ impl CodeGen for Parameter {
     fn to_rust(self, _ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let ident = format_ident!("{}", self.arg);
         Ok(quote!{
-            #ident: PyAny
+            #ident: PyObject
         })
     }
 }
