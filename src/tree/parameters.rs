@@ -1,6 +1,5 @@
 use crate::tree::Arg;
 use crate::codegen::{CodeGen, PythonContext};
-use crate::ast_dump;
 
 use proc_macro2::TokenStream;
 
