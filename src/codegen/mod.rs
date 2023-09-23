@@ -116,4 +116,9 @@ pub trait CodeGen: Debug {
     fn to_rust_trait_member(&self, _ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         Err(Box::new(CodeGenError(format!("Unsupported trait member: {:#?}", &self), None)))
     }
+
+    /// A trait method for extracting a docstring from an object.
+    fn get_docstring(&self) -> Option<String> {
+        None
+    }
 }
