@@ -8,7 +8,7 @@ use crate::tree::{Statement, Name};
 
 use log::debug;
 
-#[derive(Clone, Debug, FromPyObject)]
+#[derive(Clone, Debug, Default, FromPyObject)]
 pub struct ClassDef {
     pub name: String,
     pub bases: Vec<Name>,
