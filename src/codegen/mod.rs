@@ -114,6 +114,6 @@ pub trait CodeGen: Debug {
     /// Only implemented by AST elements that can be compiled inside a trait. Others will generate
     /// an error.
     fn to_rust_trait_member(&self, _ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        Err(Box::new(CodeGenError(format!("{:#?}", &self), None)))
+        Err(Box::new(CodeGenError(format!("Unsupported trait member: {:#?}", &self), None)))
     }
 }
