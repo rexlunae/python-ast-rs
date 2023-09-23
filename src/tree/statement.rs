@@ -50,7 +50,6 @@ impl<'a> FromPyObject<'a> for Statement {
             "Expr" => Ok(Statement::Expr(Expr::extract(ob)?)),
             _ => Ok(Statement::Unimplemented(format!("{:?}: {}", parts, crate::ast_dump(ob, None)?))),
         }
-
     }
 }
 
@@ -71,6 +70,22 @@ impl CodeGen for Statement {
                 Err(Box::new(error))
             }
         }
+    }
+
+    /// Override the base trait method.
+    fn to_rust_trait_member(&self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        let shaddow_self = (*self).clone();
+
+        match shaddow_self {
+            Statement::Pass => {
+                return Ok(TokenStream::new())
+            }
+            Statement::FunctionDef(f) => {
+                return f.to_rust_trait_member(ctx)
+            }
+            _ => {}
+        };
+        Err(Box::new(CodeGenError(format!("Unsupported trait member: {:?}", &self), None)))
     }
 }
 
