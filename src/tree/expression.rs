@@ -2,7 +2,7 @@ use pyo3::{FromPyObject};
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
-use crate::tree::{Call};
+use crate::tree::{Call, Constant};
 use crate::codegen::{CodeGen, CodeGenError, PythonContext};
 
 // This is just a way of extracting type information from Pyo3. And its a horrible hack.
@@ -38,9 +38,9 @@ pub enum ExprType {
     Compare(),*/
     Call(Call),
     /*FormattedValue(),
-    JoinedStr(),
-    Constant(),
-    Attribute(),
+    JoinedStr(),*/
+    Constant(Constant),
+    /*Attribute(),
     Subscript(),
     Starred(),
     Name(),
@@ -78,6 +78,12 @@ impl CodeGen for Expr {
             }
         }
     }
+
+    // override the default to allow functions to be compiled as trait members.
+    fn to_rust_trait_member(&self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        (*self).clone().to_rust(ctx)
+    }
+
 }
 
 #[cfg(test)]
