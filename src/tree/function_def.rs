@@ -47,4 +47,9 @@ impl CodeGen for FunctionDef {
         debug!("function: {}", function);
         Ok(function)
     }
+
+    // override the default to allow functions to be compiled as trait members.
+    fn to_rust_trait_member(&self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        (*self).clone().to_rust(ctx)
+    }
 }
