@@ -2,7 +2,7 @@
 use pyo3::{FromPyObject, PyAny, PyResult};
 use crate::{CodeGen, PythonContext};
 use proc_macro2::{TokenStream};
-use quote::{format_ident, quote};
+use quote::{quote};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 //#[pyo3(transparent)]
@@ -18,7 +18,8 @@ impl<'a> FromPyObject<'a> for Constant {
 
 impl CodeGen for Constant {
     fn to_rust(self, _ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let v = format_ident!("{}", self.0);
+        let s = self.0.clone();
+        let v :TokenStream = (&s).parse()?;
         Ok(quote!(#v))
     }
 }
