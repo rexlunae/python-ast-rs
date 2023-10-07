@@ -59,7 +59,7 @@ pub struct Module {
     pub type_ignores: Vec<Type>,
 }
 
-impl CodeGen for Module {
+impl<'a> CodeGen for Module {
     fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
         let stdpython = format_ident!("{}", ctx.stdpython);
