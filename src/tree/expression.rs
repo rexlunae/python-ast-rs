@@ -106,7 +106,7 @@ mod tests {
                         keywords: Vec::new(),
                     })
         };
-        let mut options = PythonOptions::default();
+        let options = PythonOptions::default();
         let tokens = expression.clone().to_rust(CodeGenContext::Module, options).unwrap();
         assert_eq!(tokens.to_string(), quote!(test()).to_string());
     }
