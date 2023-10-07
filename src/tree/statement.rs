@@ -2,17 +2,10 @@ use pyo3::{PyAny, FromPyObject, PyResult};
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::tree::{FunctionDef, Import, ImportFrom, Expr, Call, ClassDef};
+use crate::tree::{FunctionDef, Import, ImportFrom, Expr, ExprType, Call, ClassDef};
 use crate::codegen::{CodeGen, CodeGenError, PythonContext};
 
 use log::debug;
-
-// This is just a way of extracting type information from Pyo3. And its a horrible hack.
-#[derive(Clone, Debug, FromPyObject)]
-struct GenericStatement {
-    pub __doc__: String,
-    //pub body: Vec<Statement>,
-}
 
 #[derive(Clone, Debug)]
 pub enum Statement {
@@ -31,29 +24,31 @@ pub enum Statement {
 
 impl<'a> FromPyObject<'a> for Statement {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        debug!("parsing statement: {:?}", ob);
-        let gen_statement = GenericStatement::extract(ob)?;
-        let parts: Vec<&str> = gen_statement.__doc__.split("(").collect();
-
-        debug!("statement: {:?}", parts);
-
-        debug!("{}", crate::ast_dump(ob, Some(4))?);
-        match parts[0] {
+        let ob_type = ob.get_type().name()?;
+        debug!("statement ob_type: {}...{}", ob_type, crate::ast_dump(ob, Some(4))?);
+        match ob_type {
             "Pass" => Ok(Statement::Pass),
-            "Call" => Ok(Statement::Call(Call::extract(ob)?)),
+            "Call" => {
+                let call = Call::extract(ob.getattr("value")?)?;
+                debug!("call: {:?}", call);
+                Ok(Statement::Call(call))
+        },
             "ClassDef" => Ok(Statement::ClassDef(ClassDef::extract(ob)?)),
             "Continue" => Ok(Statement::Continue),
             "Break" => Ok(Statement::Break),
             "FunctionDef" => Ok(Statement::FunctionDef(FunctionDef::extract(ob)?)),
             "Import" => Ok(Statement::Import(Import::extract(ob)?)),
             "ImportFrom" => Ok(Statement::ImportFrom(ImportFrom::extract(ob)?)),
-            "Expr" => Ok(Statement::Expr(Expr::extract(ob)?)),
-            _ => Ok(Statement::Unimplemented(format!("{:?}: {}", parts, crate::ast_dump(ob, None)?))),
+            "Expr" => {
+                let expr = Expr::extract(ob.extract()?)?;
+                Ok(Statement::Expr(expr))
+            },
+            _ => Err(pyo3::exceptions::PyValueError::new_err(format!("Unimplemented statement type {}, {}", ob_type, crate::ast_dump(ob, None)?)))
         }
     }
 }
 
-impl CodeGen for Statement {
+impl<'a> CodeGen for Statement {
     fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         debug!("generating statement: {:?}", self);
         match self {
@@ -79,6 +74,9 @@ impl CodeGen for Statement {
         match shaddow_self {
             Statement::Pass => {
                 return Ok(TokenStream::new())
+            }
+            Statement::Expr(e) => {
+                return e.to_rust_trait_member(ctx)
             }
             Statement::FunctionDef(f) => {
                 return f.to_rust_trait_member(ctx)
