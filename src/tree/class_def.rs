@@ -4,7 +4,7 @@ use quote::{format_ident, quote};
 //use syn::Visibility;
 
 use crate::codegen::{CodeGen, PythonContext};
-use crate::tree::{Statement, Name};
+use crate::tree::{Statement, Name, ExprType};
 
 use log::debug;
 
@@ -46,11 +46,16 @@ impl CodeGen for ClassDef {
         }
         debug!("bases: {:?}", bases);
 
-        for s in self.body {
+        for s in self.body.clone() {
             streams.extend(s.clone().to_rust_trait_member(ctx)?);
         }
 
+        let docstring = if let Some(d) = self.get_docstring() {
+            format!("/// {}", d)
+        } else { "".to_string() };
+
         let class = quote!{
+            #docstring
             #visibility trait #class_name #bases {
                 #streams
             }
@@ -58,5 +63,18 @@ impl CodeGen for ClassDef {
 
         debug!("class: {}", class);
         Ok(class)
+    }
+
+    fn get_docstring(&self) -> Option<String> {
+        let expr = self.body[0].clone();
+        match expr {
+            Statement::Expr(e) => {
+                match e.value {
+                    ExprType::Constant(c) => Some(c.0.to_string()),
+                    _ => None,
+                }
+            },
+            _ => None,
+        }
     }
 }
