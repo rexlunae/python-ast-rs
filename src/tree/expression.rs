@@ -1,23 +1,11 @@
-use pyo3::{FromPyObject};
+use pyo3::{FromPyObject, PyAny, PyResult};
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
+use log::debug;
 
 use crate::tree::{Call, Constant};
 use crate::codegen::{CodeGen, CodeGenError, PythonContext};
 
-// This is just a way of extracting type information from Pyo3. And its a horrible hack.
-#[derive(Clone, Debug, FromPyObject)]
-struct GenericExpr {
-    pub __doc__: String,
-}
-
-/* Expr(
-    value=Call(
-        func=Name(id='print', ctx=Load()),
-        args=[],
-        keywords=[]
-    )
- ) */
 #[derive(Clone, Debug, FromPyObject)]
 pub enum ExprType {
     /*BoolOp(),
@@ -53,13 +41,30 @@ pub enum ExprType {
 
 /// An Expr only contains a single value key, which leads to the actual expression,
 /// which is one of several types.
-#[derive(Clone, Debug, FromPyObject)]
+#[derive(Clone, Debug)]
 pub struct Expr {
     pub value: ExprType,
 }
 
+impl<'a> FromPyObject<'a> for Expr {
+    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+        let ob_value = ob.getattr("value")?;
+        let expr_type = ob_value.get_type().name()?;
+        debug!("expr ob_type: {}...{}", expr_type, crate::ast_dump(ob_value, Some(4))?);
+        let r = match expr_type {
+            "Call" => {
+                let et = Call::extract(ob_value)?;
+                Ok(Self{value: ExprType::Call(et)})
+            },
+            "Constant" => Ok(Self{value: ExprType::Constant(Constant::extract(ob)?)}),
+            _ => Err(pyo3::exceptions::PyValueError::new_err(format!("Unimplemented expression type {}, {}", expr_type, crate::ast_dump(ob, None)?)))
+        };
+        debug!("ret: {:?}", r);
+        r
+    }
+}
 
-impl CodeGen for Expr {
+impl<'a> CodeGen for Expr {
     fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self.value {
             ExprType::Call(call) => {
@@ -71,7 +76,10 @@ impl CodeGen for Expr {
                 }
                 Ok(quote!{#name(#arg_stream)})
             },
-            //Expr::Break => Ok(quote!{break;}),
+            ExprType::Constant(constant) => {
+                constant.to_rust(ctx)
+            },
+                //Expr::Break => Ok(quote!{break;}),
             _ => {
                 let error = CodeGenError(format!("Expr not implemented {:?}", self), None);
                 Err(Box::new(error))
