@@ -117,7 +117,7 @@ pub trait CodeGen: Debug {
         Err(Box::new(CodeGenError(format!("Unsupported trait member: {:#?}", &self), None)))
     }
 
-    /// A trait method for extracting a docstring from an object.
+    /// A trait method for extracting a docstring from an object that can have a docstring.
     fn get_docstring(&self) -> Option<String> {
         None
     }
