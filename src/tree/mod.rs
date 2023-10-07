@@ -87,7 +87,7 @@ mod tests {
 
     #[test]
     fn does_module_compile() {
-        let mut options = PythonOptions::default();
+        let options = PythonOptions::default();
         let result = crate::parse("#test comment
 def foo():
     continue
