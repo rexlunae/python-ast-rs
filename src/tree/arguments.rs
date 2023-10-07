@@ -10,7 +10,7 @@ use quote::{quote};
 use pyo3::{PyAny, FromPyObject, PyResult};
 
 /// An argument.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default)]
 pub enum Arg {
     #[default]
     Unknown,
@@ -18,11 +18,12 @@ pub enum Arg {
     Constant(Constant),
 }
 
-impl CodeGen for Arg {
-    fn to_rust(self, _ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
+impl<'a> CodeGen for Arg {
+    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             Self::Constant(c) => {
-                let v = c.0;
+                //let v = c.0;
+                let v = c.to_rust(ctx)?;
                 println!("{:?}", v);
                 Ok(quote!(#v))
             },
@@ -36,9 +37,12 @@ impl CodeGen for Arg {
 
 impl<'a> FromPyObject<'a> for Arg {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        // FIXME: We will need to figure out how to determine what type of argument this actually is. For now, it only supports Constants
-        let value = ob.getattr("value")?;
-        let args = Self::Constant(Constant(format!("{}", value)));
-        Ok(args)
+        let ob_type = ob.get_type().name()?;
+        // FIXME: Hangle the rest of argument types.
+        let r = match ob_type {
+            "Constant" => Self::Constant(Constant::extract(ob)?),
+            _ => return Err(pyo3::exceptions::PyValueError::new_err(format!("Argument {} is of unknown type {}", ob, ob_type)))
+        };
+        Ok(r)
     }
 }
