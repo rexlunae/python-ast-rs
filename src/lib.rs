@@ -1,4 +1,5 @@
 #![feature(extend_one)]
+#![feature(associated_type_bounds)]
 extern crate proc_macro;
 
 pub mod tree;
@@ -31,7 +32,7 @@ pub struct TokenInfo {
 */
 
 /// Takes a string of bytes and returns the Python-tokenized version of it.
-pub fn parse(input: &str, filename: &str) -> PyResult<tree::Module> {
+pub fn parse<'a>(input: &'a str, filename: &str) -> PyResult<tree::Module> {
 
     let pymodule_code = include_str!("parser.py");
 
@@ -79,6 +80,15 @@ pub fn sys_path() -> PyResult<Vec<String>> {
         Ok(paths)
     })
 }
+
+/*
+/// Extracts the docstring from the top of any statement block.
+pub fn extract_docstring(body: Vec<Statement>) -> (Option<String>, Vec<Statement>) {
+    match body[0] {
+        Statement::Expr(Expr{value: Constant(c)}) => (Some(c.value), Vec(body[1..])),
+        _ => (None, body)
+    }
+}*/
 
 #[cfg(test)]
 mod tests {

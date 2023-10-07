@@ -2,8 +2,8 @@ use pyo3::{PyAny, FromPyObject, PyResult};
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::tree::{FunctionDef, Import, ImportFrom, Expr, ExprType, Call, ClassDef};
-use crate::codegen::{CodeGen, CodeGenError, PythonContext};
+use crate::tree::{FunctionDef, Import, ImportFrom, Expr, Call, ClassDef};
+use crate::codegen::{CodeGen, CodeGenError, PythonOptions, Node, CodeGenContext};
 
 use log::debug;
 
@@ -25,6 +25,19 @@ pub enum Statement {
 impl<'a> FromPyObject<'a> for Statement {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         let ob_type = ob.get_type().name()?;
+
+        let lineno = ob.lineno();
+        println!("statement line number {:?}", lineno);
+
+        let col_offset = ob.col_offset();
+        println!("statement col offset {:?}", col_offset);
+
+        let end_lineno = ob.end_lineno();
+        println!("statement end line number {:?}", end_lineno);
+
+        let end_col_offset = ob.end_col_offset();
+        println!("statement end col offset {:?}", end_col_offset);
+
         debug!("statement ob_type: {}...{}", ob_type, crate::ast_dump(ob, Some(4))?);
         match ob_type {
             "Pass" => Ok(Statement::Pass),
@@ -49,41 +62,25 @@ impl<'a> FromPyObject<'a> for Statement {
 }
 
 impl<'a> CodeGen for Statement {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    type Context = CodeGenContext;
+    type Options = PythonOptions;
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         debug!("generating statement: {:?}", self);
         match self {
             Statement::Break => Ok(quote!{break;}),
-            Statement::ClassDef(c) => c.to_rust(ctx),
+            Statement::ClassDef(c) => c.to_rust(ctx, options),
             Statement::Continue => Ok(quote!{continue;}),
             Statement::Pass => Ok(quote!{}),
-            Statement::FunctionDef(s) => s.to_rust(ctx),
-            Statement::Import(s) => s.to_rust(ctx),
-            Statement::ImportFrom(s) => s.to_rust(ctx),
-            Statement::Expr(s) => s.to_rust(ctx),
+            Statement::FunctionDef(s) => s.to_rust(ctx, options),
+            Statement::Import(s) => s.to_rust(ctx, options),
+            Statement::ImportFrom(s) => s.to_rust(ctx, options),
+            Statement::Expr(s) => s.to_rust(ctx, options),
             _ => {
                 let error = CodeGenError(format!("Statement not implemented {:?}", self), None);
                 Err(Box::new(error))
             }
         }
-    }
-
-    /// Override the base trait method.
-    fn to_rust_trait_member(&self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let shaddow_self = (*self).clone();
-
-        match shaddow_self {
-            Statement::Pass => {
-                return Ok(TokenStream::new())
-            }
-            Statement::Expr(e) => {
-                return e.to_rust_trait_member(ctx)
-            }
-            Statement::FunctionDef(f) => {
-                return f.to_rust_trait_member(ctx)
-            }
-            _ => {}
-        };
-        Err(Box::new(CodeGenError(format!("Unsupported trait member: {:?}", &self), None)))
     }
 }
 
@@ -94,8 +91,8 @@ mod tests {
     #[test]
     fn check_pass_statement() {
         let statement = Statement::Pass;
-        let mut ctx = PythonContext::default();
-        let tokens = statement.clone().to_rust(&mut ctx);
+        let options = PythonOptions::default();
+        let tokens = statement.clone().to_rust(CodeGenContext::Module, options);
 
         debug!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), true);
@@ -104,8 +101,8 @@ mod tests {
     #[test]
     fn check_break_statement() {
         let statement = Statement::Break;
-        let mut ctx = PythonContext::default();
-        let tokens = statement.clone().to_rust(&mut ctx);
+        let options = PythonOptions::default();
+        let tokens = statement.clone().to_rust(CodeGenContext::Module, options);
 
         debug!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);
@@ -114,8 +111,8 @@ mod tests {
     #[test]
     fn check_continue_statement() {
         let statement = Statement::Continue;
-        let mut ctx = PythonContext::default();
-        let tokens = statement.clone().to_rust(&mut ctx);
+        let options = PythonOptions::default();
+        let tokens = statement.clone().to_rust(CodeGenContext::Module, options);
 
         debug!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);

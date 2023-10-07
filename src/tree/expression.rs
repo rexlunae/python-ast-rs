@@ -4,7 +4,7 @@ use quote::{quote, format_ident};
 use log::debug;
 
 use crate::tree::{Call, Constant};
-use crate::codegen::{CodeGen, CodeGenError, PythonContext};
+use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
 
 #[derive(Clone, Debug, FromPyObject)]
 pub enum ExprType {
@@ -65,19 +65,22 @@ impl<'a> FromPyObject<'a> for Expr {
 }
 
 impl<'a> CodeGen for Expr {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    type Context = CodeGenContext;
+    type Options = PythonOptions;
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self.value {
             ExprType::Call(call) => {
                 let name = format_ident!("{}", call.func.id);
                 let mut arg_stream = proc_macro2::TokenStream::new();
 
-                for s in call.args.iter() {
-                    arg_stream.extend(s.clone().to_rust(ctx)?);
+                for s in call.args {
+                    arg_stream.extend(s.clone().to_rust(ctx, options.clone())?);
                 }
                 Ok(quote!{#name(#arg_stream)})
             },
             ExprType::Constant(constant) => {
-                constant.to_rust(ctx)
+                constant.to_rust(ctx, options)
             },
                 //Expr::Break => Ok(quote!{break;}),
             _ => {
@@ -86,12 +89,6 @@ impl<'a> CodeGen for Expr {
             }
         }
     }
-
-    // override the default to allow functions to be compiled as trait members.
-    fn to_rust_trait_member(&self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        (*self).clone().to_rust(ctx)
-    }
-
 }
 
 #[cfg(test)]
@@ -109,8 +106,8 @@ mod tests {
                         keywords: Vec::new(),
                     })
         };
-        let mut ctx = PythonContext::default();
-        let tokens = expression.clone().to_rust(&mut ctx).unwrap();
+        let mut options = PythonOptions::default();
+        let tokens = expression.clone().to_rust(CodeGenContext::Module, options).unwrap();
         assert_eq!(tokens.to_string(), quote!(test()).to_string());
     }
 

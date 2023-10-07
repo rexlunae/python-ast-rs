@@ -1,5 +1,5 @@
 use pyo3::{FromPyObject, PyAny, PyResult};
-use crate::{CodeGen, PythonContext};
+use crate::{CodeGen, PythonOptions, CodeGenContext};
 use proc_macro2::*;
 use litrs::Literal;
 use quote::{quote};
@@ -27,7 +27,10 @@ impl<'a> FromPyObject<'a> for Constant {
 }
 
 impl CodeGen for Constant {
-    fn to_rust(self, _ctx: &mut PythonContext) -> std::result::Result<TokenStream, Box<dyn std::error::Error>> {
+    type Context = CodeGenContext;
+    type Options = PythonOptions;
+
+    fn to_rust(self, _ctx: Self::Context, _options: Self::Options) -> std::result::Result<TokenStream, Box<dyn std::error::Error>> {
         Ok(quote!(self.0))
     }
 }

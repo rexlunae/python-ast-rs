@@ -3,7 +3,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 //use syn::Visibility;
 
-use crate::codegen::{CodeGen, PythonContext};
+use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
 use crate::tree::{ParameterList, Statement, ExprType};
 
 use log::debug;
@@ -17,7 +17,10 @@ pub struct FunctionDef {
 }
 
 impl<'a> CodeGen for FunctionDef {
-    fn to_rust(self, ctx: &mut PythonContext) ->Result<TokenStream, Box<dyn std::error::Error>> {
+    type Context = CodeGenContext;
+    type Options = PythonOptions;
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut streams = TokenStream::new();
         let fn_name = format_ident!("{}", self.name);
 
@@ -31,10 +34,10 @@ impl<'a> CodeGen for FunctionDef {
             format_ident!("pub")
         };
 
-        let parameters = self.args.clone().to_rust(ctx)?;
+        let parameters = self.args.clone().to_rust(ctx, options.clone())?;
 
         for s in self.body.iter() {
-            streams.extend(s.clone().to_rust(ctx)?);
+            streams.extend(s.clone().to_rust(ctx, options.clone())?);
             streams.extend(quote!(;));
         }
 
@@ -52,11 +55,6 @@ impl<'a> CodeGen for FunctionDef {
 
         debug!("function: {}", function);
         Ok(function)
-    }
-
-    // override the default to allow functions to be compiled as trait members.
-    fn to_rust_trait_member(&self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        (*self).clone().to_rust(ctx)
     }
 
     fn get_docstring(&self) -> Option<String> {

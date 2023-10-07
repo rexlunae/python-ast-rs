@@ -1,5 +1,5 @@
 use crate::tree::Arg;
-use crate::codegen::{CodeGen, PythonContext};
+use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
 
 use proc_macro2::TokenStream;
 
@@ -16,7 +16,10 @@ pub struct Parameter {
 }
 
 impl CodeGen for Parameter {
-    fn to_rust(self, _ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    type Context = CodeGenContext;
+    type Options = PythonOptions;
+
+    fn to_rust(self, _ctx: Self::Context, _options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let ident = format_ident!("{}", self.arg);
         Ok(quote!{
             #ident: PyObject
@@ -85,13 +88,16 @@ impl<'source> FromPyObject<'source> for ParameterList {
 
 
 impl<'a> CodeGen for ParameterList {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    type Context = CodeGenContext;
+    type Options = PythonOptions;
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
         debug!("parameters: {:#?}", self);
 
         // Ordinary args
         for arg in self.args {
-            stream.extend(arg.clone().to_rust(ctx)?);
+            stream.extend(arg.clone().to_rust(ctx, options.clone())?);
             stream.extend(quote!(,));
         }
 
@@ -104,7 +110,7 @@ impl<'a> CodeGen for ParameterList {
 
         // kwonlyargs
         for arg in self.kwonlyargs {
-            stream.extend(arg.clone().to_rust(ctx)?);
+            stream.extend(arg.clone().to_rust(ctx, options.clone())?);
             stream.extend(quote!(,));
         }
 

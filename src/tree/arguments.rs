@@ -2,7 +2,7 @@
 
 
 //use crate::tree::Constant;
-use crate::codegen::{CodeGen, CodeGenError, PythonContext};
+use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
 use crate::tree::Constant;
 
 use proc_macro2::TokenStream;
@@ -19,11 +19,14 @@ pub enum Arg {
 }
 
 impl<'a> CodeGen for Arg {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    type Context = CodeGenContext;
+    type Options = PythonOptions;
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             Self::Constant(c) => {
                 //let v = c.0;
-                let v = c.to_rust(ctx)?;
+                let v = c.to_rust(ctx, options)?;
                 println!("{:?}", v);
                 Ok(quote!(#v))
             },

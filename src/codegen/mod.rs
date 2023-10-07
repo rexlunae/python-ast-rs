@@ -11,6 +11,8 @@ use std::{
     path::{Path, MAIN_SEPARATOR},
 };
 
+use pyo3::{PyAny, PyResult};
+
 use crate::{sys_path, Scope};
 
 #[derive(Debug)]
@@ -25,7 +27,7 @@ impl Display for CodeGenError {
 
 /// The global context for Python compilation.
 #[derive(Clone, Debug)]
-pub struct PythonContext {
+pub struct PythonOptions {
     /// Python imports are mapped into a given namespace that can be changed.
     pub python_namespace: String,
 
@@ -43,7 +45,7 @@ pub struct PythonContext {
     pub allow_unsafe: bool,
 }
 
-impl Default for PythonContext {
+impl Default for PythonOptions {
     fn default() -> Self {
         Self {
             python_namespace: String::from("__python_namespace__"),
@@ -58,7 +60,7 @@ impl Default for PythonContext {
     }
 }
 
-impl PythonContext {
+impl PythonOptions {
 
     /// Scans the Python path for the short name given, and returns the full path. Note that it only searches
     /// for the path itself, not any subpath.
@@ -105,20 +107,110 @@ impl PythonContext {
     }
 }
 
+/*
 /// A trait for an object that can be converted to Rust code. Implemented generally be AST elements.
 pub trait CodeGen: Debug {
     /// A trait method to input Rust code in a general sense. The output should be syntactical Rust,
     /// but may not be executable depending on
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>>;
+    fn to_rust(self, ctx: &mut PythonOptions) -> Result<TokenStream, Box<dyn std::error::Error>>;
 
     /// Only implemented by AST elements that can be compiled inside a trait. Others will generate
     /// an error.
-    fn to_rust_trait_member(&self, _ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust_trait_member(&self, _ctx: &mut PythonOptions) -> Result<TokenStream, Box<dyn std::error::Error>> {
         Err(Box::new(CodeGenError(format!("Unsupported trait member: {:#?}", &self), None)))
     }
 
     /// A trait method for extracting a docstring from an object that can have a docstring.
     fn get_docstring(&self) -> Option<String> {
         None
+    }
+}*/
+
+pub use to_tokenstream::CodeGen;
+#[derive(Clone, Copy, Debug)]
+pub enum CodeGenContext {
+    Module,
+    Class,
+}
+
+/// A trait for AST elements that represent a position in a source file. Implementing this trait allows
+/// an ergonomic means of extracting line and column information from an item.
+pub trait Node {
+    /// A method for getting the starting line number of the node. This may not exist for all node types.
+    fn lineno(&self) -> Option<usize> {
+        None
+    }
+
+    /// A method for getting the starting column of the node. This may not exist for all node types.
+    fn col_offset(&self) -> Option<usize> {
+        None
+    }
+
+    /// A method for getting the ending line number of the node. This may not exist for all node types.
+    fn end_lineno(&self) -> Option<usize> {
+        None
+    }
+
+    /// A method for getting the ending column of the node. This may not exist for all node types.
+    fn end_col_offset(&self) -> Option<usize> {
+        None
+    }
+}
+
+impl Node for PyAny {
+    /// A method for getting the starting line number of the node. This may not exist for all node types.
+    fn lineno(&self) -> Option<usize> {
+        let lineno = self.getattr("lineno");
+        if let Ok(ln_any) = lineno {
+            let ln: PyResult<usize> = ln_any.extract();
+            if let Ok(l) = ln {
+                Some(l)
+            } else {
+                None
+            }
+        }
+        else { None }
+    }
+
+    /// A method for getting the starting column of the node. This may not exist for all node types.
+    fn col_offset(&self) -> Option<usize> {
+        let col_offset = self.getattr("col_offset");
+        if let Ok(offset_any) = col_offset {
+            let ln: PyResult<usize> = offset_any.extract();
+            if let Ok(l) = ln {
+                Some(l)
+            } else {
+                None
+            }
+        }
+        else { None }
+    }
+
+    /// A method for getting the ending line number of the node. This may not exist for all node types.
+    fn end_lineno(&self) -> Option<usize> {
+        let lineno = self.getattr("end_lineno");
+        if let Ok(ln_any) = lineno {
+            let ln: PyResult<usize> = ln_any.extract();
+            if let Ok(l) = ln {
+                Some(l)
+            } else {
+                None
+            }
+        }
+        else { None }
+    }
+
+    /// A method for getting the ending column of the node. This may not exist for all node types.
+    fn end_col_offset(&self) -> Option<usize> {
+        let col_offset = self.getattr("end_col_offset");
+        if let Ok(offset_any) = col_offset {
+            let ln: PyResult<usize> = offset_any.extract();
+            if let Ok(l) = ln {
+                Some(l)
+            } else {
+                None
+            }
+        }
+        else { None }
     }
 }

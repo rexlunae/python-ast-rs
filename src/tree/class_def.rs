@@ -1,9 +1,8 @@
 use pyo3::{FromPyObject};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-//use syn::Visibility;
 
-use crate::codegen::{CodeGen, PythonContext};
+use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
 use crate::tree::{Statement, Name, ExprType};
 
 use log::debug;
@@ -17,7 +16,10 @@ pub struct ClassDef {
 }
 
 impl CodeGen for ClassDef {
-    fn to_rust(self, ctx: &mut PythonContext) ->Result<TokenStream, Box<dyn std::error::Error>> {
+    type Context = CodeGenContext;
+    type Options = PythonOptions;
+
+    fn to_rust(self, _ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut streams = TokenStream::new();
         let class_name = format_ident!("{}", self.name);
 
@@ -47,7 +49,7 @@ impl CodeGen for ClassDef {
         debug!("bases: {:?}", bases);
 
         for s in self.body.clone() {
-            streams.extend(s.clone().to_rust_trait_member(ctx)?);
+            streams.extend(s.clone().to_rust(CodeGenContext::Class, options.clone())?);
         }
 
         let docstring = if let Some(d) = self.get_docstring() {

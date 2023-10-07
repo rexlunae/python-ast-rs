@@ -1,5 +1,7 @@
 use std::default::Default;
 
+use crate::codegen::CodeGenContext;
+
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 use pyo3::{PyAny, FromPyObject, PyResult};
@@ -36,7 +38,7 @@ pub use parameters::*;
 pub mod name;
 pub use name::*;
 
-use crate::codegen::{CodeGen, PythonContext};
+use crate::codegen::{CodeGen, PythonOptions};
 
 use log::info;
 
@@ -60,12 +62,15 @@ pub struct Module {
 }
 
 impl<'a> CodeGen for Module {
-    fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    type Context = CodeGenContext;
+    type Options = PythonOptions;
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
-        let stdpython = format_ident!("{}", ctx.stdpython);
+        let stdpython = format_ident!("{}", options.stdpython);
         stream.extend(quote!(use #stdpython::*;));
         for s in self.body {
-            let statement = s.clone().to_rust(ctx)?;
+            let statement = s.clone().to_rust(ctx, options.clone())?;
             debug!("{:?}, {}", s, statement);
             if statement.to_string() != "" {
                 stream.extend(statement);
@@ -82,22 +87,20 @@ mod tests {
 
     #[test]
     fn does_module_compile() {
-        let mut ctx = PythonContext::default();
+        let mut options = PythonOptions::default();
         let result = crate::parse("#test comment
 def foo():
     continue
     pass
 ", "test_case").unwrap();
         info!("{:?}", result);
-        //info!("{}", result);
-
-        let code = result.to_rust(&mut ctx);
+        let code = result.to_rust(CodeGenContext::Module, options);
         info!("module: {:?}", code);
     }
 
     #[test]
     fn can_we_print() {
-        let mut ctx = PythonContext::default();
+        let options = PythonOptions::default();
         let result = crate::parse("#test comment
 def foo():
     print(\"Test print.\")
@@ -105,7 +108,7 @@ def foo():
         info!("Python tree: {:?}", result);
         //info!("{}", result);
 
-        let code = result.to_rust(&mut ctx);
+        let code = result.to_rust(CodeGenContext::Module, options);
         info!("module: {:?}", code);
     }
 
@@ -113,20 +116,20 @@ def foo():
     #[test]
     fn can_we_import() {
         let result = crate::parse("import ast", "ast").unwrap();
-        let mut ctx = PythonContext::default();
+        let options = PythonOptions::default();
         info!("{:?}", result);
 
-        let code = result.to_rust(&mut ctx);
+        let code = result.to_rust(CodeGenContext::Module, options);
         info!("module: {:?}", code);
     }
 
     #[test]
     fn can_we_import2() {
         let result = crate::parse("import ast.test as test", "ast").unwrap();
-        let mut ctx = PythonContext::default();
+        let options = PythonOptions::default();
         info!("{:?}", result);
 
-        let code = result.to_rust(&mut ctx);
+        let code = result.to_rust(CodeGenContext::Module, options);
         info!("module: {:?}", code);
     }
 
