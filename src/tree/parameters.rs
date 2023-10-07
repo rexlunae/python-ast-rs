@@ -24,7 +24,7 @@ impl CodeGen for Parameter {
     }
 }
 /// The parameter list of a function.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default)]
 pub struct ParameterList {
     pub posonlyargs: Vec<Parameter>,
     pub args: Vec<Parameter>,
@@ -84,7 +84,7 @@ impl<'source> FromPyObject<'source> for ParameterList {
 }
 
 
-impl CodeGen for ParameterList {
+impl<'a> CodeGen for ParameterList {
     fn to_rust(self, ctx: &mut PythonContext) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
         debug!("parameters: {:#?}", self);
@@ -131,7 +131,7 @@ mod tests {
     use crate::tree::statement::Statement;
     use pyo3::{PyResult};
 
-
+    use litrs::Literal;
 
     fn setup(input: &str) -> PyResult<Module> {
         let ast = parse(&input, "__test__")?;
@@ -252,7 +252,7 @@ mod tests {
             debug!("function definition: {:#?}", f);
             assert_eq!(f.args.args.len(), 2);
             assert_eq!(f.args.defaults.len(), 1);
-            assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant("7".to_string())));
+            assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant(Literal::parse(String::from("7")).unwrap())));
         } else {
             panic!("Expected function definition, found {:#?}", function_def_statement);
         }
@@ -270,7 +270,7 @@ mod tests {
             debug!("function definition: {:#?}", f);
             assert_eq!(f.args.args.len(), 1);
             assert_eq!(f.args.defaults.len(), 1);
-            assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant("7".to_string())));
+            assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant(Literal::parse(String::from("7")).unwrap())));
         } else {
             panic!("Expected function definition, found {:#?}", function_def_statement);
         }
