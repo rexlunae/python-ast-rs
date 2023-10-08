@@ -13,9 +13,9 @@ pub struct Constant(pub Literal<String>);
 
 impl<'a> FromPyObject<'a> for Constant {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        debug!("constant type: {}...{}", ob.get_type().name()?, crate::ast_dump(ob, Some(8))?);
-        debug!("constant value: {:?}", ob.getattr("value")?);
-        let v: String = ob.getattr("value")?.extract()?;
+        debug!("constant type: {}...{}", ob.get_type().name().expect("getting contant type name"), crate::ast_dump(ob, Some(8))?);
+        debug!("constant value: {:?}", ob.getattr("value").expect("getting contant value"));
+        let v: String = ob.getattr("value")?.extract().expect("getting value");
         if let Ok(l) = Literal::parse(v) {
             Ok(Self(l))
         }

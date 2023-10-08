@@ -70,7 +70,8 @@ impl<'a> CodeGen for Module {
         let stdpython = format_ident!("{}", options.stdpython);
         stream.extend(quote!(use #stdpython::*;));
         for s in self.body {
-            let statement = s.clone().to_rust(ctx, options.clone())?;
+            let statement = s.clone().to_rust(ctx, options.clone())
+                .expect(format!("parsing statement {:?} in module", s).as_str());
             debug!("{:?}, {}", s, statement);
             if statement.to_string() != "" {
                 stream.extend(statement);

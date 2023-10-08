@@ -24,7 +24,7 @@ pub enum Statement {
 
 impl<'a> FromPyObject<'a> for Statement {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        let ob_type = ob.get_type().name()?;
+        let ob_type = ob.get_type().name().expect(format!("getting type for statement {:?}", ob).as_str());
 
         let lineno = ob.lineno();
         println!("statement line number {:?}", lineno);
@@ -42,18 +42,22 @@ impl<'a> FromPyObject<'a> for Statement {
         match ob_type {
             "Pass" => Ok(Statement::Pass),
             "Call" => {
-                let call = Call::extract(ob.getattr("value")?)?;
+                let call = Call::extract(
+                    ob.getattr("value").expect(format!("getting value from {:?} in call statement", ob).as_str())
+                ).expect(format!("extracting call statement {:?}", ob).as_str());
                 debug!("call: {:?}", call);
                 Ok(Statement::Call(call))
         },
-            "ClassDef" => Ok(Statement::ClassDef(ClassDef::extract(ob)?)),
+            "ClassDef" => Ok(Statement::ClassDef(ClassDef::extract(ob).expect(format!("Class definition {:?}", ob).as_str()))),
             "Continue" => Ok(Statement::Continue),
             "Break" => Ok(Statement::Break),
-            "FunctionDef" => Ok(Statement::FunctionDef(FunctionDef::extract(ob)?)),
-            "Import" => Ok(Statement::Import(Import::extract(ob)?)),
-            "ImportFrom" => Ok(Statement::ImportFrom(ImportFrom::extract(ob)?)),
+            "FunctionDef" => Ok(Statement::FunctionDef(FunctionDef::extract(ob).expect(format!("Function definition {:?}", ob).as_str()))),
+            "Import" => Ok(Statement::Import(Import::extract(ob).expect(format!("Import {:?}", ob).as_str()))),
+            "ImportFrom" => Ok(Statement::ImportFrom(ImportFrom::extract(ob).expect(format!("ImportFrom {:?}", ob).as_str()))),
             "Expr" => {
-                let expr = Expr::extract(ob.extract()?)?;
+                let expr = Expr::extract(
+                    ob.extract().expect(format!("extracting Expr {:?}", ob).as_str())
+                ).expect(format!("Expr {:?}", ob).as_str());
                 Ok(Statement::Expr(expr))
             },
             _ => Err(pyo3::exceptions::PyValueError::new_err(format!("Unimplemented statement type {}, {}", ob_type, crate::ast_dump(ob, None)?)))

@@ -49,7 +49,7 @@ impl CodeGen for ClassDef {
         debug!("bases: {:?}", bases);
 
         for s in self.body.clone() {
-            streams.extend(s.clone().to_rust(CodeGenContext::Class, options.clone())?);
+            streams.extend(s.clone().to_rust(CodeGenContext::Class, options.clone()).expect(format!("Failed to parse statement {:?}", s).as_str()));
         }
 
         let docstring = if let Some(d) = self.get_docstring() {

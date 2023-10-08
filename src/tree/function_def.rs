@@ -34,10 +34,11 @@ impl<'a> CodeGen for FunctionDef {
             format_ident!("pub")
         };
 
-        let parameters = self.args.clone().to_rust(ctx, options.clone())?;
+        let parameters = self.args.clone().to_rust(ctx, options.clone())
+            .expect(format!("parsing arguments {:?}", self.args).as_str());
 
         for s in self.body.iter() {
-            streams.extend(s.clone().to_rust(ctx, options.clone())?);
+            streams.extend(s.clone().to_rust(ctx, options.clone()).expect(format!("parsing statement {:?}", s).as_str()));
             streams.extend(quote!(;));
         }
 

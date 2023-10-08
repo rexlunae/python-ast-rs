@@ -25,8 +25,7 @@ impl<'a> CodeGen for Arg {
     fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             Self::Constant(c) => {
-                //let v = c.0;
-                let v = c.to_rust(ctx, options)?;
+                let v = c.to_rust(ctx, options).expect(format!("Error generating constant argument.").as_str());
                 println!("{:?}", v);
                 Ok(quote!(#v))
             },
@@ -40,10 +39,10 @@ impl<'a> CodeGen for Arg {
 
 impl<'a> FromPyObject<'a> for Arg {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        let ob_type = ob.get_type().name()?;
+        let ob_type = ob.get_type().name().expect(format!("Could not extract argument type for {:?}", ob).as_str());
         // FIXME: Hangle the rest of argument types.
         let r = match ob_type {
-            "Constant" => Self::Constant(Constant::extract(ob)?),
+            "Constant" => Self::Constant(Constant::extract(ob).expect(format!("parsing argument {:?} as a constant", ob).as_str())),
             _ => return Err(pyo3::exceptions::PyValueError::new_err(format!("Argument {} is of unknown type {}", ob, ob_type)))
         };
         Ok(r)

@@ -1,7 +1,7 @@
 use pyo3::{FromPyObject, PyAny, PyResult};
 
 use crate::{tree::Arg, Name};
-use log::debug;
+//use log::debug;
 
 #[derive(Clone, Debug, Default, FromPyObject)]
 pub struct Call {
