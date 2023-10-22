@@ -72,7 +72,8 @@ impl<'a> CodeGen for Module {
         for s in self.body {
             let statement = s.clone().to_rust(ctx, options.clone())
                 .expect(format!("parsing statement {:?} in module", s).as_str());
-            debug!("{:?}, {}", s, statement);
+            debug!("parsing statement {:#?}", s);
+            debug!("statement to rust ::{}::", statement);
             if statement.to_string() != "" {
                 stream.extend(statement);
             }
