@@ -72,7 +72,7 @@ pub fn sys_path() -> PyResult<Vec<String>> {
 
     Python::with_gil(|py| -> PyResult<Vec<String>> {
         let pymodule = PyModule::from_code(py, pymodule_code, "path.py", "path")?;
-        let t = pymodule.getattr("path")?;
+        let t = pymodule.getattr("path").expect("Reading path variable from interpretter");
         assert!(t.is_callable());
         let args = ();
         let paths: Vec<String> = t.call1(args)?.extract()?;
