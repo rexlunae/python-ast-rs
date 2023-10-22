@@ -43,12 +43,12 @@ impl<'a> CodeGen for FunctionDef {
         }
 
         let docstring = if let Some(d) = self.get_docstring() {
-            format!("/// {}", d)
-        } else { "".to_string() };
+            format!("{}", d)
+        } else { "No docstring\n".to_string() };
 
 
+        // XXX: Figure out how to add docstrict.
         let function = quote!{
-            #docstring
             #visibility fn #fn_name(#parameters) {
                 #streams
             }
