@@ -57,7 +57,6 @@ impl CodeGen for ClassDef {
         } else { "".to_string() };
 
         let class = quote!{
-            #docstring
             #visibility trait #class_name #bases {
                 #streams
             }
