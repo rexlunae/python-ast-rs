@@ -14,23 +14,6 @@ pub use scope::*;
 use pyo3::prelude::*;
 use std::include_str;
 
-
-
-/*
-/// The direct Rust equivalent of the Python class of the same name,
-/// albeit augmented with the token type text as a string.
-#[derive(Clone, Debug, FromPyObject)]
-pub struct TokenInfo {
-    #[pyo3(attribute("type"))]
-    pub token_type: usize,  /// type
-    pub string: String, /// The token itself
-    pub start: (usize,usize),  /// Start (line,col)
-    pub end: (usize,usize),  /// End (line,col)
-    pub line: String,
-    pub token_text: String,
-}
-*/
-
 /// Takes a string of bytes and returns the Python-tokenized version of it.
 pub fn parse<'a>(input: &'a str, filename: &str) -> PyResult<tree::Module> {
 
@@ -80,15 +63,6 @@ pub fn sys_path() -> PyResult<Vec<String>> {
         Ok(paths)
     })
 }
-
-/*
-/// Extracts the docstring from the top of any statement block.
-pub fn extract_docstring(body: Vec<Statement>) -> (Option<String>, Vec<Statement>) {
-    match body[0] {
-        Statement::Expr(Expr{value: Constant(c)}) => (Some(c.value), Vec(body[1..])),
-        _ => (None, body)
-    }
-}*/
 
 #[cfg(test)]
 mod tests {
