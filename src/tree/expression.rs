@@ -1,4 +1,5 @@
 use pyo3::{FromPyObject, PyAny, PyResult};
+use crate::codegen::Node;
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 use log::debug;
@@ -48,25 +49,39 @@ pub struct Expr {
 
 impl<'a> FromPyObject<'a> for Expr {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        let ob_value = ob.getattr("value").expect(format!("extracting object value {:?} in expression", ob).as_str());
-        let expr_type = ob_value.get_type().name().expect(format!("extracting type name {:?} in expression", ob_value).as_str());
-        debug!("[0] expr ob_type: {}...{}", expr_type, crate::ast_dump(ob_value, Some(4))?);
+        let err_msg = format!("extracting object value {:?} in expression", ob);
+
+        let ob_value = ob.getattr("value").expect(
+            ob.error_message("<unknown>", err_msg.as_str()).as_str()
+        );
+        let expr_type = ob_value.get_type().name().expect(
+            ob.error_message("<unknown>", format!("extracting type name {:?} in expression", ob_value).as_str()).as_str()
+        );
         let r = match expr_type {
             "Call" => {
-                let et = Call::extract(ob_value).expect(format!("parsing Call expression {:?}", ob_value).as_str());
+                let et = Call::extract(ob_value).expect(
+                    ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
+                );
                 Ok(Self{value: ExprType::Call(et)})
             },
             "Constant" => {
-                debug!("[1] expression ob: {}", crate::ast_dump(ob_value, Some(4))?);
                 let c = Constant::extract(ob_value)
-                    .expect(format!("extracting Constant in expression {:?}", crate::ast_dump(ob_value, Some(4))?).as_str());
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting Constant in expression {:?}", crate::ast_dump(ob_value, None)?
+                        ).as_str()).as_str()
+                    );
                 Ok(Self {
                     value: ExprType::Constant(c)
                 })
             },
-            _ => Err(pyo3::exceptions::PyValueError::new_err(format!("Unimplemented expression type {}, {}", expr_type, crate::ast_dump(ob, None)?)))
+            _ => {
+                let err_msg = format!("Unimplemented expression type {}, {}", expr_type, crate::ast_dump(ob, None)?);
+                Err(pyo3::exceptions::PyValueError::new_err(
+                    ob.error_message("<unknown>", err_msg.as_str())
+                ))
+            }
         };
-        debug!("ret: {:?}", r);
         r
     }
 }

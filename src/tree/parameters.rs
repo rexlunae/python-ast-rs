@@ -1,5 +1,5 @@
 use crate::tree::Arg;
-use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
+use crate::codegen::{CodeGen, PythonOptions, CodeGenContext, Node};
 
 use proc_macro2::TokenStream;
 
@@ -49,28 +49,35 @@ use pyo3::{PyAny, PyResult};
 impl<'source> FromPyObject<'source> for ParameterList {
     fn extract(ob: &'source PyAny) -> PyResult<Self> {
 
-        let posonlyargs = ob.getattr("posonlyargs").expect("failed extracting posonlyargs");
+        let err_msg = ob.error_message("<unknown>", "failed extracting posonlyargs");
+        let posonlyargs = ob.getattr("posonlyargs").expect(err_msg.as_str());
         let posonlyargs_list: Vec<Parameter> = posonlyargs.extract().expect("failed extracting posonlyargs");
 
-        let args = ob.getattr("args").expect("failed extracting args");
-        let args_list: Vec<Parameter> = args.extract().expect("failed extracting args");
+        let err_msg = ob.error_message("<unknown>", "failed extracting args");
+        let args = ob.getattr("args").expect(err_msg.as_str());
+        let args_list: Vec<Parameter> = args.extract().expect(err_msg.as_str());
 
-        let vararg = ob.getattr("vararg").expect("failed extracting varargs");
-        let vararg_option: Option<Parameter> = vararg.extract().expect("failed extracting varargs");
+        let err_msg = ob.error_message("<unknown>", "failed extracting varargs");
+        let vararg = ob.getattr("vararg").expect(err_msg.as_str());
+        let vararg_option: Option<Parameter> = vararg.extract().expect(err_msg.as_str());
 
-        let kwonlyargs = ob.getattr("kwonlyargs").expect("failed extracting kwonlyargs");
-        let kwonlyargs_list: Vec<Parameter> = kwonlyargs.extract().expect("failed extracting kwonlyargs");
+        let err_msg = ob.error_message("<unknown>", "failed extracting kwonlyargs");
+        let kwonlyargs = ob.getattr("kwonlyargs").expect(err_msg.as_str());
+        let kwonlyargs_list: Vec<Parameter> = kwonlyargs.extract().expect(err_msg.as_str());
 
-        let kw_defaults = ob.getattr("kw_defaults").expect("failed extracting kw_defaults");
+        let err_msg = ob.error_message("<unknown>", "failed extracting kw_default");
+        let kw_defaults = ob.getattr("kw_defaults").expect(err_msg.as_str());
         let kw_defaults_list: Vec<Arg> = if let Ok(list) = kw_defaults.extract() {
             list
         } else { Vec::new() };
 
-        let kwarg = ob.getattr("kwarg").expect("failed extracting kwargs");
-        let kwarg_option: Option<Parameter> = kwarg.extract().expect("failed extracting kwargs");
+        let err_msg = ob.error_message("<unknown>", "failed extracting kwargs");
+        let kwarg = ob.getattr("kwarg").expect(err_msg.as_str());
+        let kwarg_option: Option<Parameter> = kwarg.extract().expect(err_msg.as_str());
 
-        let defaults = ob.getattr("defaults").expect("failed extracting defaults");
-        let defaults_list: Vec<Arg> = defaults.extract().expect("failed extracting defaults");
+        let err_msg = ob.error_message("<unknown>", "failed extracting defaults");
+        let defaults = ob.getattr("defaults").expect(err_msg.as_str());
+        let defaults_list: Vec<Arg> = defaults.extract().expect(err_msg.as_str());
 
         Ok(ParameterList{
             posonlyargs: posonlyargs_list,
@@ -93,7 +100,6 @@ impl<'a> CodeGen for ParameterList {
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
-        debug!("parameters: {:#?}", self);
 
         // Ordinary args
         for arg in self.args {
@@ -136,8 +142,6 @@ mod tests {
     use crate::tree::Module;
     use crate::tree::statement::Statement;
     use pyo3::{PyResult};
-
-    //use litrs::Literal;
 
     fn setup(input: &str) -> PyResult<Module> {
         let ast = parse(&input, "__test__")?;

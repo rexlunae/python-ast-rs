@@ -24,7 +24,10 @@ pub enum Statement {
 
 impl<'a> FromPyObject<'a> for Statement {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        let ob_type = ob.get_type().name().expect(format!("getting type for statement {:?}", ob).as_str());
+        let err_msg = format!("getting type for statement {:?}", ob);
+        let ob_type = ob.get_type().name().expect(
+            ob.error_message("<unknown>", err_msg.as_str()).as_str()
+        );
 
         let lineno = ob.lineno();
         println!("statement line number {:?}", lineno);
