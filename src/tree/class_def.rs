@@ -28,7 +28,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
-use crate::tree::{Statement, Name, ExprType};
+use crate::tree::{Statement, StatementType, Name, ExprType};
 
 use log::debug;
 
@@ -105,8 +105,8 @@ impl CodeGen for ClassDef {
 
     fn get_docstring(&self) -> Option<String> {
         let expr = self.body[0].clone();
-        match expr {
-            Statement::Expr(e) => {
+        match expr.statement {
+            StatementType::Expr(e) => {
                 match e.value {
                     ExprType::Constant(c) => Some(c.0.to_string()),
                     _ => None,

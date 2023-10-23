@@ -4,7 +4,7 @@ use quote::{format_ident, quote};
 //use syn::Visibility;
 
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
-use crate::tree::{ParameterList, Statement, ExprType};
+use crate::tree::{ParameterList, Statement, StatementType, ExprType};
 
 use log::debug;
 
@@ -60,8 +60,8 @@ impl<'a> CodeGen for FunctionDef {
 
     fn get_docstring(&self) -> Option<String> {
         let expr = self.body[0].clone();
-        match expr {
-            Statement::Expr(e) => {
+        match expr.statement {
+            StatementType::Expr(e) => {
                 match e.value {
                     ExprType::Constant(c) => Some(c.0.to_string()),
                     _ => None,

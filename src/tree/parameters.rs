@@ -8,7 +8,6 @@ use std::default::Default;
 
 use quote::{format_ident, quote};
 use pyo3::{FromPyObject};
-use log::{debug};
 
 #[derive(Clone, Debug, Default, FromPyObject, PartialEq)]
 pub struct Parameter {
@@ -140,12 +139,11 @@ mod tests {
 
     use crate::{parse};
     use crate::tree::Module;
-    use crate::tree::statement::Statement;
+    use crate::tree::statement::{Statement, StatementType};
     use pyo3::{PyResult};
 
     fn setup(input: &str) -> PyResult<Module> {
         let ast = parse(&input, "__test__")?;
-        debug!("ast: {:#?}", ast);
         Ok(ast)
     }
 
@@ -155,10 +153,8 @@ mod tests {
         let module = setup(test_function);
 
         let function_def_statement = module.unwrap().body[0].clone();
-        debug!("statement: {:#?}", function_def_statement);
 
-        if let Statement::FunctionDef(f) = function_def_statement {
-            debug!("function definition: {:#?}", f);
+        if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 0)
         } else {
             panic!("Expected function definition, found {:#?}", function_def_statement);
@@ -171,10 +167,8 @@ mod tests {
         let module = setup(test_function);
 
         let function_def_statement = module.unwrap().body[0].clone();
-        debug!("statement: {:#?}", function_def_statement);
 
-        if let Statement::FunctionDef(f) = function_def_statement {
-            debug!("function definition: {:#?}", f);
+        if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 1)
         } else {
             panic!("Expected function definition, found {:#?}", function_def_statement);
@@ -187,10 +181,8 @@ mod tests {
         let module = setup(test_function);
 
         let function_def_statement = module.unwrap().body[0].clone();
-        debug!("statement: {:#?}", function_def_statement);
 
-        if let Statement::FunctionDef(f) = function_def_statement {
-            debug!("function definition: {:#?}", f);
+        if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 3)
         } else {
             panic!("Expected function definition, found {:#?}", function_def_statement);
@@ -203,10 +195,8 @@ mod tests {
         let module = setup(test_function);
 
         let function_def_statement = module.unwrap().body[0].clone();
-        debug!("statement: {:#?}", function_def_statement);
 
-        if let Statement::FunctionDef(f) = function_def_statement {
-            debug!("function definition: {:#?}", f);
+        if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 0);
             assert_eq!(f.args.vararg, Some(Parameter{ arg: "a".to_string()}));
         } else {
@@ -220,10 +210,8 @@ mod tests {
         let module = setup(test_function);
 
         let function_def_statement = module.unwrap().body[0].clone();
-        debug!("statement: {:#?}", function_def_statement);
 
-        if let Statement::FunctionDef(f) = function_def_statement {
-            debug!("function definition: {:#?}", f);
+        if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 1);
             assert_eq!(f.args.vararg, Some(Parameter{ arg: "b".to_string()}));
         } else {
@@ -237,10 +225,8 @@ mod tests {
         let module = setup(test_function);
 
         let function_def_statement = module.unwrap().body[0].clone();
-        debug!("statement: {:#?}", function_def_statement);
 
-        if let Statement::FunctionDef(f) = function_def_statement {
-            debug!("function definition: {:#?}", f);
+        if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 1);
             assert_eq!(f.args.vararg, Some(Parameter{ arg: "b".to_string()}));
             assert_eq!(f.args.kwonlyargs, vec![Parameter{ arg: "c".to_string()}]);
@@ -256,10 +242,8 @@ mod tests {
 
         println!("module: {:#?}", module);
         let function_def_statement = module.unwrap().body[0].clone();
-        debug!("statement: {:#?}", function_def_statement);
 
-        if let Statement::FunctionDef(f) = function_def_statement {
-            debug!("function definition: {:#?}", f);
+        if let StatementType::FunctionDef(f) = function_def_statement.statement {
             println!("{:?}", f);
             assert_eq!(f.args.args.len(), 2);
             assert_eq!(f.args.defaults.len(), 1);
@@ -275,10 +259,8 @@ mod tests {
         let module = setup(test_function);
 
         let function_def_statement = module.unwrap().body[0].clone();
-        debug!("statement: {:#?}", function_def_statement);
 
-        if let Statement::FunctionDef(f) = function_def_statement {
-            debug!("function definition: {:#?}", f);
+        if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 1);
             assert_eq!(f.args.defaults.len(), 1);
             //assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant(Literal::parse(String::from("7")).unwrap())));
@@ -293,10 +275,8 @@ mod tests {
         let module = setup(test_function);
 
         let function_def_statement = module.unwrap().body[0].clone();
-        debug!("statement: {:#?}", function_def_statement);
 
-        if let Statement::FunctionDef(f) = function_def_statement {
-            debug!("function definition: {:#?}", f);
+        if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 0);
             assert_eq!(f.args.kwarg, Some(Parameter{ arg: "a".to_string()}));
         } else {
@@ -310,10 +290,8 @@ mod tests {
         let module = setup(test_function);
 
         let function_def_statement = module.unwrap().body[0].clone();
-        debug!("statement: {:#?}", function_def_statement);
 
-        if let Statement::FunctionDef(f) = function_def_statement {
-            debug!("function definition: {:#?}", f);
+        if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 1);
             assert_eq!(f.args.vararg, None);
             assert_eq!(f.args.kwonlyargs, vec![Parameter{ arg: "b".to_string()}]);
