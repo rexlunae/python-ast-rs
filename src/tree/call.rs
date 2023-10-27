@@ -33,8 +33,9 @@ impl<'a> CodeGen for Call {
     type Options = PythonOptions;
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let name = format_ident!("{}", self.name);
+        let name = format_ident!("{}", self.func.id);
         // XXX - How are we going to figure out the parameter list?
-        let args = self.args[0];
+        let args = self.args[0].clone().to_rust(ctx, options).expect(format!("parsing arguments {:?}", self.args[0]).as_str());
+        Ok(quote!(#name(#args)))
     }
 }
