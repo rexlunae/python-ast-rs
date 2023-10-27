@@ -1,4 +1,8 @@
 use pyo3::{FromPyObject, PyAny, PyResult};
+use crate::codegen::{CodeGen, CodeGenError, PythonOptions, Node, CodeGenContext};
+use proc_macro2::TokenStream;
+
+use quote::{quote, format_ident};
 
 use crate::{tree::Arg, Name};
 //use log::debug;
@@ -23,3 +27,14 @@ impl<'a> FromPyObject<'a> for Call {
     }
 }
 */
+
+impl<'a> CodeGen for Call {
+    type Context = CodeGenContext;
+    type Options = PythonOptions;
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        let name = format_ident!("{}", self.name);
+        // XXX - How are we going to figure out the parameter list?
+        let args = self.args[0];
+    }
+}

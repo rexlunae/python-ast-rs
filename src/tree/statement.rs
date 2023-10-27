@@ -110,6 +110,7 @@ impl<'a> CodeGen for StatementType {
     fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             StatementType::Break => Ok(quote!{break;}),
+            StatementType::Call(c) => c.to_rust(ctx, options),
             StatementType::ClassDef(c) => c.to_rust(ctx, options),
             StatementType::Continue => Ok(quote!{continue;}),
             StatementType::Pass => Ok(quote!{}),
