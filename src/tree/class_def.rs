@@ -76,7 +76,7 @@ impl CodeGen for ClassDef {
             streams.extend(s.clone().to_rust(CodeGenContext::Class, options.clone()).expect(format!("Failed to parse statement {:?}", s).as_str()));
         }
 
-        let docstring = if let Some(d) = self.get_docstring() {
+        let _docstring = if let Some(d) = self.get_docstring() {
             format!("/// {}", d)
         } else { "".to_string() };
 

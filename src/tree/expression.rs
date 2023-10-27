@@ -2,7 +2,7 @@ use pyo3::{FromPyObject, PyAny, PyResult};
 use crate::codegen::Node;
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
-use log::debug;
+
 
 use crate::tree::{Call, Constant};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};

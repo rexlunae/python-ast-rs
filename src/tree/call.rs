@@ -1,5 +1,5 @@
-use pyo3::{FromPyObject, PyAny, PyResult};
-use crate::codegen::{CodeGen, CodeGenError, PythonOptions, Node, CodeGenContext};
+use pyo3::{FromPyObject};
+use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
 use proc_macro2::TokenStream;
 
 use quote::{quote, format_ident};

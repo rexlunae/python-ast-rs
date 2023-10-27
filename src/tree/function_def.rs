@@ -42,7 +42,7 @@ impl<'a> CodeGen for FunctionDef {
             streams.extend(quote!(;));
         }
 
-        let docstring = if let Some(d) = self.get_docstring() {
+        let _docstring = if let Some(d) = self.get_docstring() {
             format!("{}", d)
         } else { "No docstring\n".to_string() };
 
