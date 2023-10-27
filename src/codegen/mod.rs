@@ -107,26 +107,10 @@ impl PythonOptions {
     }
 }
 
-/*
-/// A trait for an object that can be converted to Rust code. Implemented generally be AST elements.
-pub trait CodeGen: Debug {
-    /// A trait method to input Rust code in a general sense. The output should be syntactical Rust,
-    /// but may not be executable depending on
-    fn to_rust(self, ctx: &mut PythonOptions) -> Result<TokenStream, Box<dyn std::error::Error>>;
 
-    /// Only implemented by AST elements that can be compiled inside a trait. Others will generate
-    /// an error.
-    fn to_rust_trait_member(&self, _ctx: &mut PythonOptions) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        Err(Box::new(CodeGenError(format!("Unsupported trait member: {:#?}", &self), None)))
-    }
-
-    /// A trait method for extracting a docstring from an object that can have a docstring.
-    fn get_docstring(&self) -> Option<String> {
-        None
-    }
-}*/
-
+/// Reexport the CodeGen from to_tokenstream
 pub use to_tokenstream::CodeGen;
+
 #[derive(Clone, Copy, Debug)]
 pub enum CodeGenContext {
     Module,
