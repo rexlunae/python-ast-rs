@@ -66,7 +66,9 @@ impl<'a> CodeGen for Module {
     fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
         let stdpython = format_ident!("{}", options.stdpython);
-        stream.extend(quote!(use #stdpython::*;));
+        if options.with_std_python {
+            stream.extend(quote!(use #stdpython::*;));
+        }
         for s in self.body {
             let statement = s.clone().to_rust(ctx, options.clone())
                 .expect(format!("parsing statement {:?} in module", s).as_str());
