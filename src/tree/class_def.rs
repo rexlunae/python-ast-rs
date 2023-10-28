@@ -108,7 +108,7 @@ impl CodeGen for ClassDef {
         match expr.statement {
             StatementType::Expr(e) => {
                 match e.value {
-                    ExprType::Constant(c) => Some(c.0.to_string()),
+                    ExprType::Constant(c) => Some(c.to_string()),
                     _ => None,
                 }
             },

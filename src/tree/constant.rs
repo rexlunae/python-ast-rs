@@ -11,41 +11,65 @@ use encoding::all::ISO_8859_6;
 
 #[derive(Clone, Debug)]
 //#[pyo3(transparent)]
-pub struct Constant(pub Literal<String>);
+pub struct Constant(pub Option<Literal<String>>);
 
-pub fn try_string(value: &PyAny) -> PyResult<Literal<String>> {
+impl std::string::ToString for Constant {
+    fn to_string(&self) -> String {
+        match self.0.clone() {
+            Some(c) => c.to_string(),
+            None => "None".to_string(),
+        }
+    }
+}
+
+pub fn try_string(value: &PyAny) -> PyResult<Option<Literal<String>>> {
     let v: String = value.extract()?;
     let l = Literal::parse(format!("\"{}\"", v)).expect("[4] Parsing the literal");
 
-    Ok(l)
+    Ok(Some(l))
 }
 
-pub fn try_bytes(value: &PyAny) -> PyResult<Literal<String>> {
+pub fn try_bytes(value: &PyAny) -> PyResult<Option<Literal<String>>> {
     let v: &[u8] = value.extract()?;
     let l = Literal::parse(format!("b\"{}\"", ISO_8859_6.decode(v, DecoderTrap::Replace).expect("decoding byte string"))).expect("[4] Parsing the literal");
 
-    Ok(l)
+    Ok(Some(l))
 }
 
-pub fn try_int(value: &PyAny) -> PyResult<Literal<String>> {
+pub fn try_int(value: &PyAny) -> PyResult<Option<Literal<String>>> {
     let v: isize = value.extract()?;
     let l = Literal::parse(format!("{}", v)).expect("[4] Parsing the literal");
 
-    Ok(l)
+    Ok(Some(l))
 }
 
-pub fn try_float(value: &PyAny) -> PyResult<Literal<String>> {
+pub fn try_float(value: &PyAny) -> PyResult<Option<Literal<String>>> {
     let v: f64 = value.extract()?;
     let l = Literal::parse(format!("{}", v)).expect("[4] Parsing the literal");
 
-    Ok(l)
+    Ok(Some(l))
 }
 
-pub fn try_bool(value: &PyAny) -> PyResult<Literal<String>> {
+pub fn try_bool(value: &PyAny) -> PyResult<Option<Literal<String>>> {
     let v: bool = value.extract()?;
     let l = Literal::parse(format!("{}", v)).expect("[4] Parsing the literal");
 
-    Ok(l)
+    Ok(Some(l))
+}
+
+// This will mostly be invoked when the input is None.
+pub fn try_option(value: &PyAny) -> PyResult<Option<Literal<String>>> {
+    let v: Option<&PyAny> = value.extract()?;
+    debug!("extracted value {:?}", v);
+    // If we got None as a constant, return None
+    match v {
+        None => Ok(None),
+        // See if we can parse whatever we got that wasn't None.
+        Some(c) => {
+            let l = Literal::parse(format!("{:?}", v)).expect("[5] Parsing the literal");
+            Ok(Some(l))
+        }
+    }
 }
 
 // This is the fun bit of code that is responsible from converting from Python constants to Rust ones.
@@ -68,6 +92,8 @@ impl<'a> FromPyObject<'a> for Constant {
             l
         } else if let Ok(l) = try_int(value) {
             l
+        } else if let Ok(l) = try_option(value) {
+            l
         } else {
             panic!("Failed to parse literal values {}", value);
         };
@@ -81,9 +107,14 @@ impl CodeGen for Constant {
     type Options = PythonOptions;
 
     fn to_rust(self, _ctx: Self::Context, _options: Self::Options) -> std::result::Result<TokenStream, Box<dyn std::error::Error>> {
-        let v: TokenStream = self.0.to_string().parse()
-            .expect(format!("parsing Constant {}", self.0).as_str());
-        Ok(quote!(#v))
+        match self.0 {
+            Some(c) => {
+                let v: TokenStream = c.to_string().parse()
+                    .expect(format!("parsing Constant {}", c).as_str());
+                Ok(quote!(#v))
+            }
+            None => Ok(quote!(None))
+        }
     }
 }
 
@@ -151,5 +182,15 @@ mod tests {
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; true", ast.to_string());
+    }
+
+    #[test]
+    fn parse_none() {
+        let s = crate::parse("None", "test").unwrap();
+        println!("parsed value: {:?}", s);
+        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default()).unwrap();
+        println!("ast: {:?}", ast);
+
+        assert_eq!("use stdpython :: * ; None", ast.to_string());
     }
 }
