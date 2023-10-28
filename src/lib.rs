@@ -14,6 +14,8 @@ pub use scope::*;
 use pyo3::prelude::*;
 use std::include_str;
 
+pub use pyo3::PyResult;
+
 /// Takes a string of bytes and returns the Python-tokenized version of it.
 pub fn parse<'a>(input: &'a str, filename: &str) -> PyResult<tree::Module> {
 
