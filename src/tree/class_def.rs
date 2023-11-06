@@ -89,6 +89,7 @@ impl CodeGen for ClassDef {
 
         let class = quote!{
             #visibility mod #class_name {
+                use super::*;
                 #visibility trait Cls #bases {
                     #streams
                 }
