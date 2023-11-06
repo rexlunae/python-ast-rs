@@ -61,6 +61,7 @@ pub enum StatementType {
     ClassDef(ClassDef),
     Call(Call),
     Pass,
+    Return(Expr),
     Import(Import),
     ImportFrom(ImportFrom),
     Expr(Expr),
@@ -85,7 +86,7 @@ impl<'a> FromPyObject<'a> for StatementType {
                 ).expect(format!("extracting call statement {:?}", ob).as_str());
                 debug!("call: {:?}", call);
                 Ok(StatementType::Call(call))
-        },
+            },
             "ClassDef" => Ok(StatementType::ClassDef(ClassDef::extract(ob).expect(format!("Class definition {:?}", ob).as_str()))),
             "Continue" => Ok(StatementType::Continue),
             "Break" => Ok(StatementType::Break),
@@ -97,6 +98,12 @@ impl<'a> FromPyObject<'a> for StatementType {
                     ob.extract().expect(format!("extracting Expr {:?}", ob).as_str())
                 ).expect(format!("Expr {:?}", ob).as_str());
                 Ok(StatementType::Expr(expr))
+            },
+            "Return" => {
+                let expr = Expr::extract(
+                    ob.extract().expect(format!("extracting return Expr {:?}", ob).as_str())
+                ).expect(format!("Expr {:?}", ob).as_str());
+                Ok(StatementType::Return(expr))
             },
             _ => Err(pyo3::exceptions::PyValueError::new_err(format!("Unimplemented statement type {}, {}", ob_type, crate::ast_dump(ob, None)?)))
         }
@@ -118,6 +125,12 @@ impl<'a> CodeGen for StatementType {
             StatementType::Import(s) => s.to_rust(ctx, options),
             StatementType::ImportFrom(s) => s.to_rust(ctx, options),
             StatementType::Expr(s) => s.to_rust(ctx, options),
+            StatementType::Return(e) => {
+                let exp = e.to_rust(ctx, options)
+                    .expect("parsing expression");
+
+                Ok(quote!(return #exp))
+            },
             _ => {
                 let error = CodeGenError(format!("StatementType not implemented {:?}", self), None);
                 Err(Box::new(error))
