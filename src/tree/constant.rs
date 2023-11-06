@@ -65,7 +65,7 @@ pub fn try_option(value: &PyAny) -> PyResult<Option<Literal<String>>> {
     match v {
         None => Ok(None),
         // See if we can parse whatever we got that wasn't None.
-        Some(c) => {
+        Some(_c) => {
             let l = Literal::parse(format!("{:?}", v)).expect("[5] Parsing the literal");
             Ok(Some(l))
         }
@@ -161,7 +161,7 @@ mod tests {
         let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default()).unwrap();
         println!("ast: {:?}", ast);
 
-        assert_eq!("use stdpython :: * ; -871234234", ast.to_string());
+        assert_eq!("use stdpython :: * ; - 871234234", ast.to_string());
     }
 
     #[test]
