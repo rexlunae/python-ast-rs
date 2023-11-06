@@ -36,6 +36,9 @@ pub use parameters::*;
 pub mod name;
 pub use name::*;
 
+pub mod unary_op;
+pub use unary_op::*;
+
 use crate::codegen::{CodeGen, PythonOptions};
 
 use log::info;

@@ -4,16 +4,16 @@ use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
 
-use crate::tree::{Call, Constant};
+use crate::tree::{Call, Constant, UnaryOp};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
 
 #[derive(Clone, Debug, FromPyObject)]
 pub enum ExprType {
     /*BoolOp(),
     NamedExpr(),
-    BinOp(),
-    UnaryOp(),
-    Lambda(),
+    BinOp(),*/
+    UnaryOp(UnaryOp),
+    /*Lambda(),
     IfExp(),
     Dict(),
     Set(),
@@ -75,6 +75,18 @@ impl<'a> FromPyObject<'a> for Expr {
                     value: ExprType::Constant(c)
                 })
             },
+            "UnaryOp" => {
+                let c = UnaryOp::extract(ob_value)
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting UnaryOp in expression {:?}", crate::ast_dump(ob_value, None)?
+                        ).as_str()).as_str()
+                    );
+                Ok(Self {
+                    value: ExprType::UnaryOp(c)
+                })
+
+            },
             _ => {
                 let err_msg = format!("Unimplemented expression type {}, {}", expr_type, crate::ast_dump(ob, None)?);
                 Err(pyo3::exceptions::PyValueError::new_err(
@@ -104,6 +116,9 @@ impl<'a> CodeGen for Expr {
             ExprType::Constant(constant) => {
                 constant.to_rust(ctx, options)
             },
+            ExprType::UnaryOp(operand) => {
+                operand.to_rust(ctx, options)
+            },
                 //Expr::Break => Ok(quote!{break;}),
             _ => {
                 let error = CodeGenError(format!("Expr not implemented {:?}", self), None);
@@ -122,11 +137,11 @@ mod tests {
     #[test]
     fn check_call_expression() {
         let expression = Expr{
-                    value: ExprType::Call(Call{
-                        func: Name{id: "test".to_string()},
-                        args: Vec::new(),
-                        keywords: Vec::new(),
-                    })
+            value: ExprType::Call(Call{
+                func: Name{id: "test".to_string()},
+                args: Vec::new(),
+                keywords: Vec::new(),
+            })
         };
         let options = PythonOptions::default();
         let tokens = expression.clone().to_rust(CodeGenContext::Module, options).unwrap();
