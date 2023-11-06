@@ -36,6 +36,7 @@ pub enum ExprType {
     List(),
     Tuple(),
     Slice(),*/
+    NoneType(Constant),
 
     Unimplemented(String),
 }
@@ -87,6 +88,8 @@ impl<'a> FromPyObject<'a> for Expr {
                 })
 
             },
+            // In sitations where an expression is optional, we may see a NoneType expressions.
+            "NoneType" => Ok(Expr{value: ExprType::NoneType(Constant(None))}),
             _ => {
                 let err_msg = format!("Unimplemented expression type {}, {}", expr_type, crate::ast_dump(ob, None)?);
                 Err(pyo3::exceptions::PyValueError::new_err(
@@ -119,7 +122,8 @@ impl<'a> CodeGen for Expr {
             ExprType::UnaryOp(operand) => {
                 operand.to_rust(ctx, options)
             },
-                //Expr::Break => Ok(quote!{break;}),
+            // NoneType expressions generate no code.
+            ExprType::NoneType(_c) => Ok(quote!()),
             _ => {
                 let error = CodeGenError(format!("Expr not implemented {:?}", self), None);
                 Err(Box::new(error))
