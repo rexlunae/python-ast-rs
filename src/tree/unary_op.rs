@@ -3,7 +3,7 @@ use crate::codegen::Node;
 use proc_macro2::TokenStream;
 use quote::{quote};
 
-use crate::tree::{Constant, Expr};
+use crate::tree::{Constant};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
 
 #[derive(Clone, Debug)]
