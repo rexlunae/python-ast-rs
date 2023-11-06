@@ -1,6 +1,6 @@
 [package]
 name = "python-ast"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 description = "A library for compiling Python to Rust"
 license = "Apache-2.0"
@@ -22,3 +22,4 @@ env_logger = "0.10.0"
 litrs = "0.4.0"
 encoding = "0.2.33"
 to_tokenstream = "0.1.0"
+proc-macro-error = "1.0.4"
