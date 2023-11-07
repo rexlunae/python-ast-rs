@@ -2,7 +2,7 @@ use pyo3::{PyAny, FromPyObject, PyResult};
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::tree::{FunctionDef, Import, ImportFrom, Expr, Call, ClassDef};
+use crate::tree::{Assign, FunctionDef, Import, ImportFrom, Expr, Call, ClassDef};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, Node, CodeGenContext};
 
 use log::debug;
@@ -56,6 +56,7 @@ impl<'a> CodeGen for Statement {
 
 #[derive(Clone, Debug)]
 pub enum StatementType {
+    Assign(Assign),
     Break,
     Continue,
     ClassDef(ClassDef),
@@ -79,6 +80,9 @@ impl<'a> FromPyObject<'a> for StatementType {
 
         debug!("statement ob_type: {}...{}", ob_type, crate::ast_dump(ob, Some(4))?);
         match ob_type {
+            "Assign" => {
+                Ok(StatementType::Assign(Assign::extract(ob).expect("reading assignment")))
+            },
             "Pass" => Ok(StatementType::Pass),
             "Call" => {
                 let call = Call::extract(

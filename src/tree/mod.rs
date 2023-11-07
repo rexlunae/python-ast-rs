@@ -15,6 +15,9 @@ pub use function_def::*;
 pub mod arguments;
 pub use arguments::*;
 
+pub mod assign;
+pub use assign::*;
+
 pub mod call;
 pub use call::*;
 
