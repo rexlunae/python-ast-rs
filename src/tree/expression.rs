@@ -4,7 +4,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
 
-use crate::tree::{Call, Constant, UnaryOp};
+use crate::tree::{Call, Constant, UnaryOp, Name};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
 
 #[derive(Clone, Debug, FromPyObject)]
@@ -31,9 +31,9 @@ pub enum ExprType {
     Constant(Constant),
     /*Attribute(),
     Subscript(),
-    Starred(),
-    Name(),
-    List(),
+    Starred(),*/
+    Name(Name),
+    /*List(),
     Tuple(),
     Slice(),*/
     NoneType(Constant),
@@ -59,6 +59,12 @@ impl<'a> FromPyObject<'a> for Expr {
             ob.error_message("<unknown>", format!("extracting type name {:?} in expression", ob_value).as_str()).as_str()
         );
         let r = match expr_type {
+            "Name" => {
+                let name = Name::extract(ob_value).expect(
+                    ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
+                );
+                Ok(Self{value: ExprType::Name(name)})
+            }
             "Call" => {
                 let et = Call::extract(ob_value).expect(
                     ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
