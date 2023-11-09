@@ -49,7 +49,7 @@ impl<'a> CodeGen for Statement {
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         Ok(self.statement.clone().to_rust(ctx, options).expect(
-            self.error_message("<unknown>", "failed to compile statement").as_str()
+            self.error_message("<unknown>", format!("failed to compile statement {:#?}", self).as_str()).as_str()
         ))
     }
 }
@@ -121,6 +121,7 @@ impl<'a> CodeGen for StatementType {
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
+            StatementType::Assign(a) => a.to_rust(ctx, options),
             StatementType::Break => Ok(quote!{break;}),
             StatementType::Call(c) => c.to_rust(ctx, options),
             StatementType::ClassDef(c) => c.to_rust(ctx, options),
@@ -132,8 +133,8 @@ impl<'a> CodeGen for StatementType {
             StatementType::Expr(s) => s.to_rust(ctx, options),
             StatementType::Return(None) => Ok(quote!(return)),
             StatementType::Return(Some(e)) => {
-                let exp = e.to_rust(ctx, options)
-                    .expect("parsing expression");
+                let exp = e.clone().to_rust(ctx, options)
+                    .expect(format!("parsing expression {:#?}", e).as_str());
 
                 Ok(quote!(return #exp))
             },
