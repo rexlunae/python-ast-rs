@@ -46,6 +46,7 @@ pub enum ExprType {
 #[derive(Clone, Debug)]
 pub struct Expr {
     pub value: ExprType,
+    pub ctx: Option<String>,
 }
 
 impl<'a> FromPyObject<'a> for Expr {
@@ -55,21 +56,29 @@ impl<'a> FromPyObject<'a> for Expr {
         let ob_value = ob.getattr("value").expect(
             ob.error_message("<unknown>", err_msg.as_str()).as_str()
         );
+        log::debug!("ob_value: {}", crate::ast_dump(ob_value, None)?);
+
+        // The context is Load, Store, etc. For some types of expressions such as Constants, it does not exist.
+        let ctx: Option<String> = if let Ok(pyany) = ob_value.getattr("ctx") {
+            pyany.get_type().extract().unwrap_or_default()
+        } else { None };
+
         let expr_type = ob_value.get_type().name().expect(
             ob.error_message("<unknown>", format!("extracting type name {:?} in expression", ob_value).as_str()).as_str()
         );
+        log::debug!("expression type: {}, value: {}", expr_type, crate::ast_dump(ob_value, None)?);
         let r = match expr_type {
             "Name" => {
                 let name = Name::extract(ob_value).expect(
                     ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
                 );
-                Ok(Self{value: ExprType::Name(name)})
+                Ok(Self{ctx: ctx, value: ExprType::Name(name)})
             }
             "Call" => {
                 let et = Call::extract(ob_value).expect(
                     ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
                 );
-                Ok(Self{value: ExprType::Call(et)})
+                Ok(Self{ctx: ctx, value: ExprType::Call(et)})
             },
             "Constant" => {
                 let c = Constant::extract(ob_value)
@@ -79,6 +88,7 @@ impl<'a> FromPyObject<'a> for Expr {
                         ).as_str()).as_str()
                     );
                 Ok(Self {
+                    ctx: ctx,
                     value: ExprType::Constant(c)
                 })
             },
@@ -90,12 +100,13 @@ impl<'a> FromPyObject<'a> for Expr {
                         ).as_str()).as_str()
                     );
                 Ok(Self {
+                    ctx: ctx,
                     value: ExprType::UnaryOp(c)
                 })
 
             },
             // In sitations where an expression is optional, we may see a NoneType expressions.
-            "NoneType" => Ok(Expr{value: ExprType::NoneType(Constant(None))}),
+            "NoneType" => Ok(Expr{ctx: ctx, value: ExprType::NoneType(Constant(None))}),
             _ => {
                 let err_msg = format!("Unimplemented expression type {}, {}", expr_type, crate::ast_dump(ob, None)?);
                 Err(pyo3::exceptions::PyValueError::new_err(
@@ -122,16 +133,13 @@ impl<'a> CodeGen for Expr {
                 }
                 Ok(quote!{#name(#arg_stream)})
             },
-            ExprType::Constant(constant) => {
-                constant.to_rust(ctx, options)
-            },
-            ExprType::UnaryOp(operand) => {
-                operand.to_rust(ctx, options)
-            },
+            ExprType::Constant(constant) => constant.to_rust(ctx, options),
+            ExprType::UnaryOp(operand) => operand.to_rust(ctx, options),
+            ExprType::Name(name) => name.to_rust(ctx, options),
             // NoneType expressions generate no code.
             ExprType::NoneType(_c) => Ok(quote!()),
             _ => {
-                let error = CodeGenError(format!("Expr not implemented {:?}", self), None);
+                let error = CodeGenError(format!("Expr not implemented converting to Rust {:?}", self), None);
                 Err(Box::new(error))
             }
         }
@@ -151,7 +159,8 @@ mod tests {
                 func: Name{id: "test".to_string()},
                 args: Vec::new(),
                 keywords: Vec::new(),
-            })
+            }),
+            ctx: None,
         };
         let options = PythonOptions::default();
         let tokens = expression.clone().to_rust(CodeGenContext::Module, options).unwrap();
