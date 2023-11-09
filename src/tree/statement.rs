@@ -107,7 +107,7 @@ impl<'a> FromPyObject<'a> for StatementType {
                 log::debug!("return expression: {}", crate::ast_dump(ob, None)?);
                 let expr = Expr::extract(
                     ob.extract().expect(format!("extracting return Expr {:?}", ob).as_str())
-                ).expect(format!("return Expr {:?}", ob).as_str());
+                ).expect(format!("return Expr {}", crate::ast_dump(ob, None)?).as_str());
                 Ok(StatementType::Return(Some(expr)))
             },
             _ => Err(pyo3::exceptions::PyValueError::new_err(format!("Unimplemented statement type {}, {}", ob_type, crate::ast_dump(ob, None)?)))
