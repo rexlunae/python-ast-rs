@@ -139,7 +139,7 @@ mod tests {
 
     use crate::{parse};
     use crate::tree::Module;
-    use crate::tree::statement::{Statement, StatementType};
+    use crate::tree::statement::{StatementType};
     use pyo3::{PyResult};
 
     fn setup(input: &str) -> PyResult<Module> {
