@@ -3,13 +3,13 @@ use crate::codegen::Node;
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
-use crate::tree::{Expr, Name};
+use crate::tree::{ExprType, Name};
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
 
 #[derive(Clone, Debug)]
 pub struct Assign {
     pub targets: Vec<Name>,
-    pub value: Expr,
+    pub value: ExprType,
     pub type_comment: Option<String>,
 }
 
