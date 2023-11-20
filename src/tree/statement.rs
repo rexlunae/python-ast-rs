@@ -94,7 +94,7 @@ impl<'a> FromPyObject<'a> for StatementType {
             "ClassDef" => Ok(StatementType::ClassDef(ClassDef::extract(ob).expect(format!("Class definition {:?}", ob).as_str()))),
             "Continue" => Ok(StatementType::Continue),
             "Break" => Ok(StatementType::Break),
-            "FunctionDef" => Ok(StatementType::FunctionDef(FunctionDef::extract(ob).expect(format!("Function definition {:?}", ob).as_str()))),
+            "FunctionDef" => Ok(StatementType::FunctionDef(FunctionDef::extract(ob).expect(format!("Failed to extract function: {}", crate::ast_dump(ob, Some(4))?).as_str()))),
             "Import" => Ok(StatementType::Import(Import::extract(ob).expect(format!("Import {:?}", ob).as_str()))),
             "ImportFrom" => Ok(StatementType::ImportFrom(ImportFrom::extract(ob).expect(format!("ImportFrom {:?}", ob).as_str()))),
             "Expr" => {
