@@ -29,6 +29,7 @@ pub struct UnaryOp {
 
 impl<'a> FromPyObject<'a> for UnaryOp {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
+        log::debug!("ob: {}", crate::ast_dump(ob, None)?);
         let op = ob.getattr("op").expect(
             ob.error_message("<unknown>", "error getting unary operator").as_str()
         );
