@@ -1,11 +1,31 @@
 use pyo3::{FromPyObject, PyAny, PyResult};
-use crate::codegen::Node;
+use crate::codegen::{Node};
+use crate::pytypes::{ListLike};
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
 
 use crate::tree::{Call, Constant, UnaryOp, Name};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
+
+/// Mostly this shouldn't be used, but it exists so that we don't have to manually implement FromPyObject on all of ExprType
+#[derive(Clone, Debug)]
+#[repr(transparent)]
+pub struct Container<T>(pub T);
+
+impl<'a> FromPyObject<'a> for Container<crate::pytypes::List<ExprType>> {
+    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+        let mut list = crate::pytypes::List::<ExprType>::new();
+
+        log::debug!("pylist: {}", crate::ast_dump(ob, Some(4))?);
+        let converted_list: Vec<&PyAny> = ob.extract()?;
+        for item in ob.iter().expect("extracting list") {
+            log::debug!("item: {:?}", item);
+        }
+
+        Ok(Self(list))
+    }
+}
 
 #[derive(Clone, Debug, FromPyObject)]
 pub enum ExprType {
@@ -33,12 +53,36 @@ pub enum ExprType {
     Subscript(),
     Starred(),*/
     Name(Name),
-    /*List(),
+    List(Container<crate::pytypes::List<ExprType>>),/*
     Tuple(),
     Slice(),*/
     NoneType(Constant),
 
     Unimplemented(String),
+}
+
+impl<'a> CodeGen for ExprType {
+    type Context = CodeGenContext;
+    type Options = PythonOptions;
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        match self {
+            ExprType::List(l) => {
+                let mut ts = TokenStream::new();
+                for li in l.0 {
+                    let code = li.clone().to_rust(ctx, options.clone()).expect(format!("Extracting list item {:?}", li).as_str());
+                    ts.extend(code);
+                    ts.extend(quote!(,));
+                }
+                Ok(ts)
+            },
+            ExprType::NoneType(c) => c.to_rust(ctx, options),
+            _ => {
+                let error = CodeGenError(format!("Expr not implemented converting to Rust {:?}", self), None);
+                Err(Box::new(error))
+            }
+        }
+    }
 }
 
 /// An Expr only contains a single value key, which leads to the actual expression,
@@ -92,6 +136,14 @@ impl<'a> FromPyObject<'a> for Expr {
                     value: ExprType::Constant(c)
                 })
             },
+            "List" => {
+                //let list = crate::pytypes::List::<ExprType>::new();
+                let list = Container::extract(ob_value).expect("extracting List");
+                Ok(Self {
+                    value: ExprType::List(list),
+                    ctx: None,
+                })
+            }
             "UnaryOp" => {
                 let c = UnaryOp::extract(ob_value)
                     .expect(
