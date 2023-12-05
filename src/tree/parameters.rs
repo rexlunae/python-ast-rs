@@ -9,7 +9,9 @@ use std::default::Default;
 use quote::{format_ident, quote};
 use pyo3::{FromPyObject};
 
-#[derive(Clone, Debug, Default, FromPyObject, PartialEq)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Debug, Default, FromPyObject, PartialEq, Serialize, Deserialize)]
 pub struct Parameter {
     pub arg: String,
 }
@@ -26,7 +28,7 @@ impl CodeGen for Parameter {
     }
 }
 /// The parameter list of a function.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct ParameterList {
     pub posonlyargs: Vec<Parameter>,
     pub args: Vec<Parameter>,

@@ -6,7 +6,9 @@ use quote::{quote, format_ident};
 use crate::tree::{ExprType, Name};
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
 
-#[derive(Clone, Debug)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Assign {
     pub targets: Vec<Name>,
     pub value: ExprType,

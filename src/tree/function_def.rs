@@ -8,7 +8,9 @@ use crate::tree::{ParameterList, Statement, StatementType, ExprType};
 
 use log::debug;
 
-#[derive(Clone, Debug, FromPyObject)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize)]
 pub struct FunctionDef {
     pub name: String,
     pub args: ParameterList,

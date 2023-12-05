@@ -32,7 +32,9 @@ use crate::tree::{Statement, StatementType, Name, ExprType};
 
 use log::debug;
 
-#[derive(Clone, Debug, Default, FromPyObject)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Debug, Default, FromPyObject, Serialize, Deserialize)]
 pub struct ClassDef {
     pub name: String,
     pub bases: Vec<Name>,

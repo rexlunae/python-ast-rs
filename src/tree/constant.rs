@@ -9,9 +9,27 @@ use log::debug;
 use encoding::{Encoding, DecoderTrap};
 use encoding::all::ISO_8859_6;
 
+use serde::{Serialize, Deserialize, Serializer, Deserializer};
+
 #[derive(Clone, Debug)]
 //#[pyo3(transparent)]
 pub struct Constant(pub Option<Literal<String>>);
+
+impl Serialize for Constant {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where S: Serializer {
+        serializer.serialize_str(self.to_string().as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for Constant {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where D: Deserializer<'de> {
+        let s = String::deserialize(deserializer)?;
+        let l = Literal::parse(s).expect("[3] Parsing the literal");
+        Ok(Self(Some(l)))
+    }
+}
 
 impl std::string::ToString for Constant {
     fn to_string(&self) -> String {

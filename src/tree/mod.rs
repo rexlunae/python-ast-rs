@@ -49,7 +49,9 @@ use crate::codegen::{CodeGen, PythonOptions};
 
 use log::info;
 
-#[derive(Clone, Debug)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Type {
     Unimplemented,
 }
@@ -62,7 +64,7 @@ impl<'a> FromPyObject<'a> for Type {
 }
 
 /// Represents a module as imported from an ast.
-#[derive(Clone, Debug, Default, FromPyObject)]
+#[derive(Clone, Debug, Default, FromPyObject, Serialize, Deserialize)]
 pub struct Module {
     pub body: Vec<Statement>,
     pub type_ignores: Vec<Type>,

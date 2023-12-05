@@ -4,7 +4,9 @@ use proc_macro2::TokenStream;
 
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
 
-#[derive(Clone, Debug, Default, FromPyObject, PartialEq)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Debug, Default, FromPyObject, PartialEq, Serialize, Deserialize)]
 //#[pyo3(transparent)]
 pub struct Name {
     pub id: String,

@@ -6,7 +6,9 @@ use quote::{quote};
 use crate::tree::{Constant};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
 
-#[derive(Clone, Debug)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Ops {
     USub,
     Unknown,
@@ -21,7 +23,7 @@ impl<'a> FromPyObject<'a> for Ops {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UnaryOp {
     op: Ops,
     operand: Box<Constant>,

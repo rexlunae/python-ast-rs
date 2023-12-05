@@ -7,7 +7,9 @@ use crate::codegen::{CodeGen, CodeGenError, PythonOptions, Node, CodeGenContext}
 
 use log::debug;
 
-#[derive(Clone, Debug)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Statement {
     pub lineno: Option<usize>,
     pub col_offset: Option<usize>,
@@ -54,7 +56,7 @@ impl<'a> CodeGen for Statement {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum StatementType {
     Assign(Assign),
     Break,

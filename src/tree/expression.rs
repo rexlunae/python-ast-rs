@@ -4,12 +4,13 @@ use crate::pytypes::{ListLike};
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
+use serde::{Serialize, Deserialize};
 
 use crate::tree::{Call, Constant, UnaryOp, Name};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
 
 /// Mostly this shouldn't be used, but it exists so that we don't have to manually implement FromPyObject on all of ExprType
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[repr(transparent)]
 pub struct Container<T>(pub T);
 
@@ -27,19 +28,19 @@ impl<'a> FromPyObject<'a> for Container<crate::pytypes::List<ExprType>> {
     }
 }
 
-#[derive(Clone, Debug, FromPyObject)]
+#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize)]
 pub enum ExprType {
-    /*BoolOp(),
-    NamedExpr(),
+    /*BoolOp(BoolOp),
+    NamedExpr(NamedExpr),
     BinOp(),*/
     UnaryOp(UnaryOp),
-    /*Lambda(),
-    IfExp(),
-    Dict(),
-    Set(),
-    ListComp(),
-    SetComp(),
-    DictComp(),
+    /*Lambda(Lamda),
+    IfExp(IfExp),
+    Dict(Dict),
+    Set(Set),
+    ListComp(ListComp),
+    SetComp(SetComp),
+    DictComp(DictComp),
     GeneratorExp(),
     Await(),
     Yield(),
@@ -53,8 +54,8 @@ pub enum ExprType {
     Subscript(),
     Starred(),*/
     Name(Name),
-    List(Container<crate::pytypes::List<ExprType>>),/*
-    Tuple(),
+    List(Container<crate::pytypes::List<ExprType>>),
+    /*Tuple(),
     Slice(),*/
     NoneType(Constant),
 
@@ -87,7 +88,7 @@ impl<'a> CodeGen for ExprType {
 
 /// An Expr only contains a single value key, which leads to the actual expression,
 /// which is one of several types.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Expr {
     pub value: ExprType,
     pub ctx: Option<String>,

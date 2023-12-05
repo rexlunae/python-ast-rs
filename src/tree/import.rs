@@ -6,13 +6,15 @@ use log::debug;
 
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
 
-#[derive(Clone, Debug, FromPyObject)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize)]
 pub struct Alias {
     pub name: String,
     pub asname: Option<String>,
 }
 
-#[derive(Clone, Debug, FromPyObject)]
+#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize)]
 pub struct Import {
     pub names: Vec<Alias>,
 }
@@ -55,7 +57,7 @@ impl CodeGen for Import {
     }
 }
 
-#[derive(Clone, Debug, FromPyObject)]
+#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize)]
 pub struct ImportFrom {
     pub module: String,
     pub names: Vec<Alias>,
