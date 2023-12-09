@@ -95,20 +95,6 @@ impl<'a> CodeGen for Module {
 mod tests {
     use super::*;
 
-
-    #[test]
-    fn does_module_compile() {
-        let options = PythonOptions::default();
-        let result = crate::parse("#test comment
-def foo():
-    continue
-    pass
-", "test_case").unwrap();
-        info!("{:?}", result);
-        let code = result.to_rust(CodeGenContext::Module, options);
-        info!("module: {:?}", code);
-    }
-
     #[test]
     fn can_we_print() {
         let options = PythonOptions::default();
@@ -122,7 +108,6 @@ def foo():
         let code = result.to_rust(CodeGenContext::Module, options);
         info!("module: {:?}", code);
     }
-
 
     #[test]
     fn can_we_import() {

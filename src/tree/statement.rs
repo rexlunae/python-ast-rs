@@ -181,4 +181,18 @@ mod tests {
         debug!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);
     }
+
+    #[test]
+    fn does_module_compile() {
+        let options = PythonOptions::default();
+        let result = crate::parse("#test comment
+def foo():
+    continue
+    pass
+", "test_case").unwrap();
+        log::info!("{:?}", result);
+        let code = result.to_rust(CodeGenContext::Module, options);
+        log::info!("module: {:?}", code);
+    }
+
 }
