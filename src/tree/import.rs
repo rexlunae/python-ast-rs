@@ -30,22 +30,17 @@ impl CodeGen for Import {
     fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut tokens = TokenStream::new();
         for alias in self.names.iter() {
-            let _mod_path = format_ident!("{}", options.python_namespace);
-            let names = alias.name.split(".");
-            let full_mod_name_list: Vec<&str> = names.clone().collect();
-            let full_mod_name = full_mod_name_list.join("::");
+            let names = format_ident!("{}", alias.name.replace(".", "::"));
             let code = match &alias.asname {
                 None => {
-                    options.clone().import(&full_mod_name, &full_mod_name);
-                    let name = format_ident!("{}", alias.name);
-                    quote!{use #(#names)::*:: ::#name}
+                    //options.clone().import(names, name);
+                    quote!{use #names;}
                 },
                 Some(n) => {
-                    options.clone().import(&full_mod_name, &String::from(n));
+                    //options.clone().import(&full_mod_name, &String::from(n));
 
-                    let name = format_ident!("{}", alias.name);
-                    let alias = format_ident!("{}", n);
-                    quote!{use #(#names)::*:: ::#name as #alias}
+                    let name = format_ident!("{}", n);
+                    quote!{use #names as #name;}
                 },
             };
             tokens.extend(code);
