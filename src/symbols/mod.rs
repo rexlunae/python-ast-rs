@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::collections::VecDeque;
 
-use crate::tree::{ClassDef, FunctionDef};
+use crate::tree::{ClassDef, FunctionDef, Import, ImportFrom};
 
 
 //use log::{debug, info};
@@ -55,6 +55,9 @@ pub enum SymbolTableNode {
     Assign{position: usize, value: ExprType},
     ClassDef(ClassDef),
     FunctionDef(FunctionDef),
+    Import(Import),
+    ImportFrom(ImportFrom),
+    Alias(String),
 }
 
 #[derive(Clone, Debug)]
