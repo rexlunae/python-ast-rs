@@ -5,6 +5,8 @@ use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
 use crate::{tree::Arg, Name};
+use crate::symbols::SymbolTableScopes;
+
 //use log::debug;
 
 use serde::{Serialize, Deserialize};
@@ -33,11 +35,12 @@ impl<'a> FromPyObject<'a> for Call {
 impl<'a> CodeGen for Call {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let name = format_ident!("{}", self.func.id);
         // XXX - How are we going to figure out the parameter list?
-        let args = self.args[0].clone().to_rust(ctx, options).expect(format!("parsing arguments {:?}", self.args[0]).as_str());
+        let args = self.args[0].clone().to_rust(ctx, options, symbols).expect(format!("parsing arguments {:?}", self.args[0]).as_str());
         Ok(quote!(#name(#args)))
     }
 }

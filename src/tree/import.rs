@@ -5,6 +5,7 @@ use quote::{format_ident, quote};
 use log::debug;
 
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
+use crate::symbols::SymbolTableScopes;
 
 use serde::{Serialize, Deserialize};
 
@@ -26,8 +27,9 @@ pub struct Import {
 impl CodeGen for Import {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(self, ctx: Self::Context, options: Self::Options, _symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut tokens = TokenStream::new();
         for alias in self.names.iter() {
             let names = format_ident!("{}", alias.name.replace(".", "::"));
@@ -62,8 +64,9 @@ pub struct ImportFrom {
 impl CodeGen for ImportFrom {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, _options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(self, ctx: Self::Context, _options: Self::Options, _symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         debug!("ctx: {:?}", ctx);
         Ok(quote!{})
     }

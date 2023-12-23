@@ -29,6 +29,7 @@ use quote::{format_ident, quote};
 
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
 use crate::tree::{Statement, StatementType, Name, ExprType};
+use crate::symbols::{SymbolTableScopes, SymbolTableNode};
 
 use log::debug;
 
@@ -45,8 +46,15 @@ pub struct ClassDef {
 impl CodeGen for ClassDef {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, _ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn find_symbols(self, symbols: Self::SymbolTable) -> Self::SymbolTable {
+        let mut symbols = symbols;
+        symbols.insert(self.name.clone(), SymbolTableNode::ClassDef(self.clone()));
+        symbols
+    }
+
+    fn to_rust(self, _ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut streams = TokenStream::new();
         let class_name = format_ident!("{}", self.name);
 
@@ -75,7 +83,7 @@ impl CodeGen for ClassDef {
         }
 
         for s in self.body.clone() {
-            streams.extend(s.clone().to_rust(CodeGenContext::Class, options.clone()).expect(format!("Failed to parse statement {:?}", s).as_str()));
+            streams.extend(s.clone().to_rust(CodeGenContext::Class, options.clone(), symbols.clone()).expect(format!("Failed to parse statement {:?}", s).as_str()));
         }
 
         let _docstring = if let Some(d) = self.get_docstring() {

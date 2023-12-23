@@ -5,6 +5,8 @@ use litrs::Literal;
 use quote::{quote};
 use std::fmt::*;
 
+use crate::symbols::SymbolTableScopes;
+
 use log::debug;
 use encoding::{Encoding, DecoderTrap};
 use encoding::all::ISO_8859_6;
@@ -123,8 +125,9 @@ impl<'a> FromPyObject<'a> for Constant {
 impl CodeGen for Constant {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, _ctx: Self::Context, _options: Self::Options) -> std::result::Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(self, _ctx: Self::Context, _options: Self::Options, _symbols: Self::SymbolTable) -> std::result::Result<TokenStream, Box<dyn std::error::Error>> {
         match self.0 {
             Some(c) => {
                 let v: TokenStream = c.to_string().parse()
@@ -140,13 +143,13 @@ impl CodeGen for Constant {
 mod tests {
     use test_log::test;
     //use super::*;
-    use crate::CodeGen;
+    use crate::{CodeGen, symbols::SymbolTableScopes};
     use log::debug;
 
     #[test]
     fn parse_string() {
         let s = crate::parse("'I ate a bug'", "test").unwrap();
-        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default()).unwrap();
+        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         debug!("ast: {}", ast.to_string());
 
         assert_eq!("use stdpython :: * ; \"I ate a bug\"", ast.to_string());
@@ -156,7 +159,7 @@ mod tests {
     fn parse_bytes() {
         let s = crate::parse("b'I ate a bug'", "test").unwrap();
         println!("parsed value: {:?}", s);
-        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default()).unwrap();
+        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; b\"I ate a bug\"", ast.to_string());
@@ -166,7 +169,7 @@ mod tests {
     fn parse_number_int() {
         let s = crate::parse("871234234", "test").unwrap();
         println!("parsed value: {:?}", s);
-        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default()).unwrap();
+        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; 871234234", ast.to_string());
@@ -176,7 +179,7 @@ mod tests {
     fn parse_number_neg_int() {
         let s = crate::parse("-871234234", "test").unwrap();
         println!("parsed value: {:?}", s);
-        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default()).unwrap();
+        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; - 871234234", ast.to_string());
@@ -186,7 +189,7 @@ mod tests {
     fn parse_number_float() {
         let s = crate::parse("87123.4234", "test").unwrap();
         println!("parsed value: {:?}", s);
-        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default()).unwrap();
+        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; 87123.4234", ast.to_string());
@@ -196,7 +199,7 @@ mod tests {
     fn parse_bool() {
         let s = crate::parse("True", "test").unwrap();
         println!("parsed value: {:?}", s);
-        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default()).unwrap();
+        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; true", ast.to_string());
@@ -206,7 +209,7 @@ mod tests {
     fn parse_none() {
         let s = crate::parse("None", "test").unwrap();
         println!("parsed value: {:?}", s);
-        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default()).unwrap();
+        let ast = s.to_rust(crate::CodeGenContext::Module, crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; None", ast.to_string());

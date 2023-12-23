@@ -46,6 +46,7 @@ pub mod unary_op;
 pub use unary_op::*;
 
 use crate::codegen::{CodeGen, PythonOptions};
+use crate::symbols::SymbolTableScopes;
 
 use log::info;
 
@@ -73,15 +74,25 @@ pub struct Module {
 impl<'a> CodeGen for Module {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn find_symbols(self, symbols: Self::SymbolTable) -> Self::SymbolTable {
+        let mut symbols = symbols;
+        symbols.new_scope();
+        for s in self.body {
+            symbols = s.clone().find_symbols(symbols);
+        }
+        symbols
+    }
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
         let stdpython = format_ident!("{}", options.stdpython);
         if options.with_std_python {
             stream.extend(quote!(use #stdpython::*;));
         }
         for s in self.body {
-            let statement = s.clone().to_rust(ctx, options.clone())
+            let statement = s.clone().to_rust(ctx, options.clone(), symbols.clone())
                 .expect(format!("parsing statement {:?} in module", s).as_str());
             if statement.to_string() != "" {
                 stream.extend(statement);
@@ -96,6 +107,16 @@ mod tests {
     use super::*;
 
     #[test]
+    fn empty_module() {
+        let result = crate::parse_with_serde("", "test_case").unwrap();
+        info!("Python tree: {:?}", result);
+
+        let code = result.to_rust(CodeGenContext::Module, PythonOptions::default(), SymbolTableScopes::new());
+        info!("module: {:?}", code);
+    }
+
+
+    #[test]
     fn can_we_print() {
         let options = PythonOptions::default();
         let result = crate::parse("#test comment
@@ -105,7 +126,7 @@ def foo():
         info!("Python tree: {:?}", result);
         //info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module, options);
+        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
         info!("module: {:?}", code);
     }
 
@@ -115,7 +136,7 @@ def foo():
         let options = PythonOptions::default();
         info!("{:?}", result);
 
-        let code = result.to_rust(CodeGenContext::Module, options);
+        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
         info!("module: {:?}", code);
     }
 
@@ -125,7 +146,7 @@ def foo():
         let options = PythonOptions::default();
         info!("{:?}", result);
 
-        let code = result.to_rust(CodeGenContext::Module, options);
+        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
         info!("module: {:?}", code);
     }
 

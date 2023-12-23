@@ -5,6 +5,7 @@ use quote::{format_ident, quote};
 
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
 use crate::tree::{ParameterList, Statement, StatementType, ExprType};
+use crate::symbols::{SymbolTableScopes, SymbolTableNode};
 
 use log::debug;
 
@@ -21,8 +22,15 @@ pub struct FunctionDef {
 impl<'a> CodeGen for FunctionDef {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn find_symbols(self, symbols: Self::SymbolTable) -> Self::SymbolTable {
+        let mut symbols = symbols;
+        symbols.insert(self.name.clone(), SymbolTableNode::FunctionDef(self.clone()));
+        symbols
+    }
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: SymbolTableScopes) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut streams = TokenStream::new();
         let fn_name = format_ident!("{}", self.name);
 
@@ -36,11 +44,11 @@ impl<'a> CodeGen for FunctionDef {
             format_ident!("pub")
         };
 
-        let parameters = self.args.clone().to_rust(ctx, options.clone())
+        let parameters = self.args.clone().to_rust(ctx, options.clone(), symbols.clone())
             .expect(format!("parsing arguments {:?}", self.args).as_str());
 
         for s in self.body.iter() {
-            streams.extend(s.clone().to_rust(ctx, options.clone()).expect(format!("parsing statement {:?}", s).as_str()));
+            streams.extend(s.clone().to_rust(ctx, options.clone(), symbols.clone()).expect(format!("parsing statement {:?}", s).as_str()));
             streams.extend(quote!(;));
         }
 

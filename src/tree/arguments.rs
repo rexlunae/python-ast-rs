@@ -3,6 +3,7 @@
 //use crate::tree::Constant;
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext, Node};
 use crate::tree::Constant;
+use crate::symbols::SymbolTableScopes;
 
 use proc_macro2::TokenStream;
 use quote::{quote};
@@ -22,11 +23,12 @@ pub enum Arg {
 impl<'a> CodeGen for Arg {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             Self::Constant(c) => {
-                let v = c.to_rust(ctx, options).expect(format!("Error generating constant argument.").as_str());
+                let v = c.to_rust(ctx, options, symbols).expect(format!("Error generating constant argument.").as_str());
                 println!("{:?}", v);
                 Ok(quote!(#v))
             },

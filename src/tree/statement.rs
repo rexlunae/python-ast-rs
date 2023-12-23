@@ -4,6 +4,7 @@ use quote::quote;
 
 use crate::tree::{Assign, FunctionDef, Import, ImportFrom, Expr, Call, ClassDef};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, Node, CodeGenContext};
+use crate::symbols::SymbolTableScopes;
 
 use log::debug;
 
@@ -48,9 +49,14 @@ impl<'a> Node<'a> for Statement {
 impl<'a> CodeGen for Statement {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        Ok(self.statement.clone().to_rust(ctx, options).expect(
+    fn find_symbols(self, symbols: Self::SymbolTable) -> Self::SymbolTable {
+        self.statement.clone().find_symbols(symbols)
+    }
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        Ok(self.statement.clone().to_rust(ctx, options, symbols).expect(
             self.error_message("<unknown>", format!("failed to compile statement {:#?}", self).as_str()).as_str()
         ))
     }
@@ -120,22 +126,35 @@ impl<'a> FromPyObject<'a> for StatementType {
 impl<'a> CodeGen for StatementType {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn find_symbols(self, symbols: Self::SymbolTable) -> Self::SymbolTable {
         match self {
-            StatementType::Assign(a) => a.to_rust(ctx, options),
+            StatementType::Assign(a) => a.find_symbols(symbols),
+            StatementType::ClassDef(c) => c.find_symbols(symbols),
+            StatementType::FunctionDef(f) => f.find_symbols(symbols),
+            StatementType::Import(i) => i.find_symbols(symbols),
+            StatementType::ImportFrom(i) => i.find_symbols(symbols),
+            StatementType::Expr(e) => e.find_symbols(symbols),
+            _ => symbols
+        }
+    }
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        match self {
+            StatementType::Assign(a) => a.to_rust(ctx, options, symbols),
             StatementType::Break => Ok(quote!{break;}),
-            StatementType::Call(c) => c.to_rust(ctx, options),
-            StatementType::ClassDef(c) => c.to_rust(ctx, options),
+            StatementType::Call(c) => c.to_rust(ctx, options, symbols),
+            StatementType::ClassDef(c) => c.to_rust(ctx, options, symbols),
             StatementType::Continue => Ok(quote!{continue;}),
             StatementType::Pass => Ok(quote!{}),
-            StatementType::FunctionDef(s) => s.to_rust(ctx, options),
-            StatementType::Import(s) => s.to_rust(ctx, options),
-            StatementType::ImportFrom(s) => s.to_rust(ctx, options),
-            StatementType::Expr(s) => s.to_rust(ctx, options),
+            StatementType::FunctionDef(s) => s.to_rust(ctx, options, symbols),
+            StatementType::Import(s) => s.to_rust(ctx, options, symbols),
+            StatementType::ImportFrom(s) => s.to_rust(ctx, options, symbols),
+            StatementType::Expr(s) => s.to_rust(ctx, options, symbols),
             StatementType::Return(None) => Ok(quote!(return)),
             StatementType::Return(Some(e)) => {
-                let exp = e.clone().to_rust(ctx, options)
+                let exp = e.clone().to_rust(ctx, options, symbols)
                     .expect(format!("parsing expression {:#?}", e).as_str());
 
                 Ok(quote!(return #exp))
@@ -156,7 +175,7 @@ mod tests {
     fn check_pass_statement() {
         let statement = StatementType::Pass;
         let options = PythonOptions::default();
-        let tokens = statement.clone().to_rust(CodeGenContext::Module, options);
+        let tokens = statement.clone().to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
 
         debug!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), true);
@@ -166,7 +185,7 @@ mod tests {
     fn check_break_statement() {
         let statement = StatementType::Break;
         let options = PythonOptions::default();
-        let tokens = statement.clone().to_rust(CodeGenContext::Module, options);
+        let tokens = statement.clone().to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
 
         debug!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);
@@ -176,7 +195,7 @@ mod tests {
     fn check_continue_statement() {
         let statement = StatementType::Continue;
         let options = PythonOptions::default();
-        let tokens = statement.clone().to_rust(CodeGenContext::Module, options);
+        let tokens = statement.clone().to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
 
         debug!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);
@@ -191,7 +210,7 @@ def foo():
     pass
 ", "test_case").unwrap();
         log::info!("{:?}", result);
-        let code = result.to_rust(CodeGenContext::Module, options);
+        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
         log::info!("module: {:?}", code);
     }
 

@@ -4,6 +4,7 @@ use proc_macro2::TokenStream;
 
 //use crate::tree::{Expr};
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
+use crate::symbols::SymbolTableScopes;
 
 // There are two concepts of List in the same place here. There's the "List" type that represents a node from the Python AST,
 // as received by the Rust AST converter, and there's the List representation of the Python List type. For the sake of
@@ -20,8 +21,9 @@ pub struct List<'a> {
 impl<'a> CodeGen for List<'a> {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, _ctx: Self::Context, _options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(self, _ctx: Self::Context, _options: Self::Options, _symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let ts = TokenStream::new();
         log::debug!("================self:{:#?}", self);
         for elt in self.elts {

@@ -5,6 +5,7 @@ use quote::{quote, format_ident};
 
 use crate::tree::{ExprType, Name};
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
+use crate::symbols::{SymbolTableScopes, SymbolTableNode};
 
 use serde::{Serialize, Deserialize};
 
@@ -35,14 +36,25 @@ impl<'a> FromPyObject<'a> for Assign {
 impl<'a> CodeGen for Assign {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn find_symbols(self, symbols: Self::SymbolTable) -> Self::SymbolTable {
+        let mut symbols = symbols;
+        let mut position = 0;
+        for target in self.targets {
+            symbols.insert(target.id, SymbolTableNode::Assign{position: position, value: self.value.clone()});
+            position += 1;
+        }
+        symbols
+    }
+
+    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
         for target in self.targets.into_iter().map(|n| n.id) {
             let ident = format_ident!("{}", target);
             stream.extend(quote!(#ident));
         };
-        let value = self.value.to_rust(ctx, options)?;
+        let value = self.value.to_rust(ctx, options, symbols)?;
         Ok(quote!(#stream = #value))
     }
 }

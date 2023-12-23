@@ -1,5 +1,6 @@
 use crate::tree::Arg;
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext, Node};
+use crate::symbols::SymbolTableScopes;
 
 use proc_macro2::TokenStream;
 
@@ -19,8 +20,9 @@ pub struct Parameter {
 impl CodeGen for Parameter {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, _ctx: Self::Context, _options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(self, _ctx: Self::Context, _options: Self::Options, _symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let ident = format_ident!("{}", self.arg);
         Ok(quote!{
             #ident: PyObject
@@ -98,13 +100,14 @@ impl<'source> FromPyObject<'source> for ParameterList {
 impl<'a> CodeGen for ParameterList {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
 
         // Ordinary args
         for arg in self.args {
-            stream.extend(arg.clone().to_rust(ctx, options.clone()).expect(format!("generating arg {:?}", arg).as_str()));
+            stream.extend(arg.clone().to_rust(ctx, options.clone(), symbols.clone()).expect(format!("generating arg {:?}", arg).as_str()));
             stream.extend(quote!(,));
         }
 
@@ -117,7 +120,7 @@ impl<'a> CodeGen for ParameterList {
 
         // kwonlyargs
         for arg in self.kwonlyargs {
-            stream.extend(arg.clone().to_rust(ctx, options.clone()).expect(format!("generating kwonlyarg {:?}", arg).as_str()));
+            stream.extend(arg.clone().to_rust(ctx, options.clone(), symbols.clone()).expect(format!("generating kwonlyarg {:?}", arg).as_str()));
             stream.extend(quote!(,));
         }
 

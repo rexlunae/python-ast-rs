@@ -1,6 +1,6 @@
 use pyo3::{FromPyObject, PyAny, PyResult};
 use crate::codegen::{Node};
-use crate::pytypes::{ListLike};
+//use crate::pytypes::{ListLike};
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
@@ -8,6 +8,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::tree::{Call, Constant, UnaryOp, Name};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
+use crate::symbols::SymbolTableScopes;
 
 /// Mostly this shouldn't be used, but it exists so that we don't have to manually implement FromPyObject on all of ExprType
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -16,10 +17,10 @@ pub struct Container<T>(pub T);
 
 impl<'a> FromPyObject<'a> for Container<crate::pytypes::List<ExprType>> {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        let mut list = crate::pytypes::List::<ExprType>::new();
+        let list = crate::pytypes::List::<ExprType>::new();
 
         log::debug!("pylist: {}", crate::ast_dump(ob, Some(4))?);
-        let converted_list: Vec<&PyAny> = ob.extract()?;
+        let _converted_list: Vec<&PyAny> = ob.extract()?;
         for item in ob.iter().expect("extracting list") {
             log::debug!("item: {:?}", item);
         }
@@ -65,19 +66,20 @@ pub enum ExprType {
 impl<'a> CodeGen for ExprType {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             ExprType::List(l) => {
                 let mut ts = TokenStream::new();
                 for li in l.0 {
-                    let code = li.clone().to_rust(ctx, options.clone()).expect(format!("Extracting list item {:?}", li).as_str());
+                    let code = li.clone().to_rust(ctx, options.clone(), symbols.clone()).expect(format!("Extracting list item {:?}", li).as_str());
                     ts.extend(code);
                     ts.extend(quote!(,));
                 }
                 Ok(ts)
             },
-            ExprType::NoneType(c) => c.to_rust(ctx, options),
+            ExprType::NoneType(c) => c.to_rust(ctx, options, symbols),
             _ => {
                 let error = CodeGenError(format!("Expr not implemented converting to Rust {:?}", self), None);
                 Err(Box::new(error))
@@ -174,21 +176,22 @@ impl<'a> FromPyObject<'a> for Expr {
 impl<'a> CodeGen for Expr {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self.value {
             ExprType::Call(call) => {
                 let name = format_ident!("{}", call.func.id);
                 let mut arg_stream = proc_macro2::TokenStream::new();
 
                 for s in call.args {
-                    arg_stream.extend(s.clone().to_rust(ctx, options.clone()).expect(format!("parsing argument {:?}", s).as_str()));
+                    arg_stream.extend(s.clone().to_rust(ctx, options.clone(), symbols.clone()).expect(format!("parsing argument {:?}", s).as_str()));
                 }
                 Ok(quote!{#name(#arg_stream)})
             },
-            ExprType::Constant(constant) => constant.to_rust(ctx, options),
-            ExprType::UnaryOp(operand) => operand.to_rust(ctx, options),
-            ExprType::Name(name) => name.to_rust(ctx, options),
+            ExprType::Constant(constant) => constant.to_rust(ctx, options, symbols),
+            ExprType::UnaryOp(operand) => operand.to_rust(ctx, options, symbols),
+            ExprType::Name(name) => name.to_rust(ctx, options, symbols),
             // NoneType expressions generate no code.
             ExprType::NoneType(_c) => Ok(quote!()),
             _ => {
@@ -216,7 +219,8 @@ mod tests {
             ctx: None,
         };
         let options = PythonOptions::default();
-        let tokens = expression.clone().to_rust(CodeGenContext::Module, options).unwrap();
+        let symbols = SymbolTableScopes::new();
+        let tokens = expression.clone().to_rust(CodeGenContext::Module, options, symbols).unwrap();
         assert_eq!(tokens.to_string(), quote!(test()).to_string());
     }
 

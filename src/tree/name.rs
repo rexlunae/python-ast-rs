@@ -3,6 +3,7 @@ use quote::{quote, format_ident};
 use proc_macro2::TokenStream;
 
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
+use crate::symbols::SymbolTableScopes;
 
 use serde::{Serialize, Deserialize};
 
@@ -15,8 +16,9 @@ pub struct Name {
 impl<'a> CodeGen for Name {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, _ctx: Self::Context, _options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(self, _ctx: Self::Context, _options: Self::Options, _symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let name = format_ident!("{}", self.id);
         Ok(quote!(#name))
     }

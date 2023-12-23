@@ -5,6 +5,7 @@ use quote::{quote};
 
 use crate::tree::{Constant};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
+use crate::symbols::SymbolTableScopes;
 
 use serde::{Serialize, Deserialize};
 
@@ -66,11 +67,12 @@ impl<'a> FromPyObject<'a> for UnaryOp {
 impl<'a> CodeGen for UnaryOp {
     type Context = CodeGenContext;
     type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self.op {
             Ops::USub => {
-                let e = self.operand.clone().to_rust(ctx, options)?;
+                let e = self.operand.clone().to_rust(ctx, options, symbols)?;
                 Ok(quote!(-#e))
             },
             _ => {
