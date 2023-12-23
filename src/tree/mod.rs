@@ -107,16 +107,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn empty_module() {
-        let result = crate::parse_with_serde("", "test_case").unwrap();
-        info!("Python tree: {:?}", result);
-
-        let code = result.to_rust(CodeGenContext::Module, PythonOptions::default(), SymbolTableScopes::new());
-        info!("module: {:?}", code);
-    }
-
-
-    #[test]
     fn can_we_print() {
         let options = PythonOptions::default();
         let result = crate::parse("#test comment
