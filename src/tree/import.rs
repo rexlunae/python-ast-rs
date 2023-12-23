@@ -5,7 +5,7 @@ use quote::{format_ident, quote};
 use log::debug;
 
 use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
-use crate::symbols::SymbolTableScopes;
+use crate::symbols::{SymbolTableScopes, SymbolTableNode};
 
 use serde::{Serialize, Deserialize};
 
@@ -28,6 +28,17 @@ impl CodeGen for Import {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
+
+    fn find_symbols(self, symbols: Self::SymbolTable) -> Self::SymbolTable {
+        let mut symbols = symbols;
+        for alias in self.names.iter() {
+            symbols.insert(alias.name.clone(), SymbolTableNode::Import(self.clone()));
+            if let Some(a) = alias.asname.clone() {
+                symbols.insert(a, SymbolTableNode::Alias(alias.name.clone()))
+            }
+        }
+        symbols
+    }
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, _symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut tokens = TokenStream::new();
@@ -65,6 +76,14 @@ impl CodeGen for ImportFrom {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
+
+    fn find_symbols(self, symbols: Self::SymbolTable) -> Self::SymbolTable {
+        let mut symbols = symbols;
+        for alias in self.names.iter() {
+            symbols.insert(alias.name.clone(), SymbolTableNode::ImportFrom(self.clone()));
+        }
+        symbols
+    }
 
     fn to_rust(self, ctx: Self::Context, _options: Self::Options, _symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         debug!("ctx: {:?}", ctx);
