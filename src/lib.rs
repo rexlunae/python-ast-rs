@@ -17,8 +17,6 @@ pub use symbols::*;
 use pyo3::prelude::*;
 use std::include_str;
 
-pub mod pytypes;
-
 pub use pyo3::PyResult;
 
 /// Takes a string of bytes and returns the Python-tokenized version of it.
