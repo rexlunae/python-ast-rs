@@ -33,36 +33,14 @@ pub fn parse<'a>(input: &'a str, filename: &str) -> PyResult<tree::Module> {
         assert!(t.is_callable());
         let args = (input, filename);
 
-        let tree: tree::Module = t.call1(args)?.extract()?;
-        //let tree: tree::Module = pythonize::depythonize(t.call1(args.clone())?).unwrap();
-        //println!("test_tree: {:?}", tree);
+        let py_tree = t.call1(args)?;
+        log::debug!("py_tree: {}", ast_dump(py_tree, Some(4))?);
+
+        let tree: tree::Module = py_tree.extract()?;
 
         Ok(tree)
     })
 }
-
-/// Takes a string of bytes and returns the Python-tokenized version of it.
-pub fn parse_with_serde<'a>(input: &'a str, filename: &str) -> PyResult<tree::Module> {
-
-    let pymodule_code = include_str!("parser.py");
-
-    Python::with_gil(|py| -> PyResult<Module> {
-        // We want to call tokenize.tokenize from Python.
-        let pymodule = PyModule::from_code(py, pymodule_code, "parser.py", "parser")?;
-        let t = pymodule.getattr("parse")?;
-        assert!(t.is_callable());
-        let args = (input, filename);
-
-        let pytree = t.call1(args)?;
-        println!("::::::::::::::::::::::{}", ast_dump(&pytree, None)?);
-
-        let tree: tree::Module = pythonize::depythonize(pytree)?;
-        println!("::::::::::::::::::::tree: {:?}", tree);
-
-        Ok(tree)
-    })
-}
-
 
 /// Accepts any Python object and dumps it using the Python ast module.
 pub fn ast_dump(o: &PyAny, indent: Option<u8>) -> PyResult<String> {
