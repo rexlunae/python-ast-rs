@@ -86,10 +86,11 @@ impl<'a> FromPyObject<'a> for StatementType {
             ob.error_message("<unknown>", err_msg.as_str()).as_str()
         );
 
-        debug!("statement ob_type: {}...{}", ob_type, crate::ast_dump(ob, Some(4))?);
+        debug!("statement...ob_type: {}...{}", ob_type, crate::ast_dump(ob, Some(4))?);
         match ob_type {
             "Assign" => {
-                Ok(StatementType::Assign(Assign::extract(ob).expect("reading assignment")))
+                let assignment = Assign::extract(ob).expect("reading assignment");
+                Ok(StatementType::Assign(assignment))
             },
             "Pass" => Ok(StatementType::Pass),
             "Call" => {

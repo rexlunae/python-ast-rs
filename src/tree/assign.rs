@@ -22,14 +22,19 @@ impl<'a> FromPyObject<'a> for Assign {
             ob.error_message("<unknown>", "error getting unary operator").as_str()
         ).extract().expect("1");
 
-        let value = ob.extract().expect("3");
+        let python_value = ob.getattr("value").expect(
+            ob.error_message("<unknown>", "assignment statement value not found").as_str()
+        );
 
-        return Ok(Assign{
+        let value = ExprType::extract(python_value).expect(
+            ob.error_message("<unknown>", "error getting value of assignment statement").as_str()
+        );
+
+        Ok(Assign{
             targets: targets,
             value: value,
             type_comment: None,
-        });
-
+        })
     }
 }
 
