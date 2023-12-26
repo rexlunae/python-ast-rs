@@ -29,7 +29,7 @@ impl<'a> FromPyObject<'a> for Container<crate::pytypes::List<ExprType>> {
     }
 }
 
-#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum ExprType {
     /*BoolOp(BoolOp),
     NamedExpr(NamedExpr),
@@ -61,6 +61,63 @@ pub enum ExprType {
     NoneType(Constant),
 
     Unimplemented(String),
+}
+
+impl<'a> FromPyObject<'a> for ExprType {
+    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+        log::debug!("exprtype ob: {}", crate::ast_dump(ob, Some(4))?);
+
+        let expr_type = ob.get_type().name().expect(
+            ob.error_message("<unknown>", format!("extracting type name {:?} in expression", ob).as_str()).as_str()
+        );
+        log::debug!("expression type: {}, value: {}", expr_type, crate::ast_dump(ob, None)?);
+
+        let r = match expr_type {
+            "Name" => {
+                let name = Name::extract(ob).expect(
+                    ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob).as_str()).as_str()
+                );
+                Ok(Self::Name(name))
+            }
+            "Call" => {
+                let et = Call::extract(ob).expect(
+                    ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob).as_str()).as_str()
+                );
+                Ok(Self::Call(et))
+            },
+            "Constant" => {
+                log::debug!("constant: {}", crate::ast_dump(ob, None)?);
+                let c = Constant::extract(ob)
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting Constant in expression {:?}", crate::ast_dump(ob, None)?
+                        ).as_str()).as_str()
+                    );
+                Ok(Self::Constant(c))
+            },
+            "List" => {
+                //let list = crate::pytypes::List::<ExprType>::new();
+                let list = Container::extract(ob).expect("extracting List");
+                Ok(Self::List(list))
+            }
+            "UnaryOp" => {
+                let c = UnaryOp::extract(ob)
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting UnaryOp in expression {:?}", crate::ast_dump(ob, None)?
+                        ).as_str()).as_str()
+                    );
+                Ok(Self::UnaryOp(c))
+            },
+            _ => {
+                let err_msg = format!("Unimplemented expression type {}, {}", expr_type, crate::ast_dump(ob, None)?);
+                Err(pyo3::exceptions::PyValueError::new_err(
+                    ob.error_message("<unknown>", err_msg.as_str())
+                ))
+            }
+        };
+        r
+    }
 }
 
 impl<'a> CodeGen for ExprType {
