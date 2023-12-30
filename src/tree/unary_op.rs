@@ -3,7 +3,7 @@ use crate::codegen::Node;
 use proc_macro2::TokenStream;
 use quote::{quote};
 
-use crate::tree::{Constant};
+use crate::tree::{ExprType};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
 use crate::symbols::SymbolTableScopes;
 
@@ -27,7 +27,7 @@ impl<'a> FromPyObject<'a> for Ops {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct UnaryOp {
     op: Ops,
-    operand: Box<Constant>,
+    operand: Box<ExprType>,
 }
 
 impl<'a> FromPyObject<'a> for UnaryOp {
@@ -54,7 +54,7 @@ impl<'a> FromPyObject<'a> for UnaryOp {
         };
 
         log::debug!("operand: {}", crate::ast_dump(operand, None)?);
-        let operand = Constant::extract(operand).expect("getting unary operator operand");
+        let operand = ExprType::extract(operand).expect("getting unary operator operand");
 
         return Ok(UnaryOp{
             op: op,
@@ -70,10 +70,10 @@ impl<'a> CodeGen for UnaryOp {
     type SymbolTable = SymbolTableScopes;
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        let operand = self.operand.clone().to_rust(ctx, options, symbols)?;
         match self.op {
             Ops::USub => {
-                let e = self.operand.clone().to_rust(ctx, options, symbols)?;
-                Ok(quote!(-#e))
+                Ok(quote!(-#operand))
             },
             _ => {
                 let error = CodeGenError(format!("UnaryOp not implemented {:?}", self), None);
