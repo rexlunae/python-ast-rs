@@ -10,7 +10,7 @@ use log::debug;
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Statement {
     pub lineno: Option<usize>,
     pub col_offset: Option<usize>,
@@ -62,7 +62,7 @@ impl<'a> CodeGen for Statement {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum StatementType {
     Assign(Assign),
     Break,
@@ -171,6 +171,7 @@ impl<'a> CodeGen for StatementType {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use litrs::*;
 
     #[test]
     fn check_pass_statement() {
@@ -200,6 +201,27 @@ mod tests {
 
         debug!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);
+    }
+
+    #[test]
+    fn return_with_nothing() {
+        let tree = crate::parse("return", "<none>").unwrap();
+        assert_eq!(tree.body.len(), 1);
+        assert_eq!(tree.body[0].statement, StatementType::Return(Some(Expr{value: crate::tree::ExprType::NoneType(crate::tree::Constant(None)), ctx: None})));
+    }
+
+    #[test]
+    fn return_with_expr() {
+        let lit = litrs::Literal::Integer(litrs::IntegerLit::parse(String::from("8")).unwrap());
+        let tree = crate::parse("return 8", "<none>").unwrap();
+        assert_eq!(tree.body.len(), 1);
+        assert_eq!(tree.body[0].statement, StatementType::Return(Some(Expr{value: crate::tree::ExprType::Constant(
+            crate::tree::Constant(Some(
+                lit
+            )))
+                , ctx: None
+            }))
+        );
     }
 
     #[test]
