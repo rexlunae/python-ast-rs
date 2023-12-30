@@ -11,7 +11,6 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Ops {
-    USub,
     Unknown,
 }
 
@@ -25,12 +24,12 @@ impl<'a> FromPyObject<'a> for Ops {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct UnaryOp {
+pub struct BinOp {
     op: Ops,
     operand: Box<Constant>,
 }
 
-impl<'a> FromPyObject<'a> for UnaryOp {
+impl<'a> FromPyObject<'a> for BinOp {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         log::debug!("ob: {}", crate::ast_dump(ob, None)?);
         let op = ob.getattr("op").expect(
@@ -46,7 +45,7 @@ impl<'a> FromPyObject<'a> for UnaryOp {
         );
 
         let op = match op_type {
-            "USub" => Ops::USub,
+            /*"USub" => Ops::USub,*/
             _ => {
                 log::debug!("{:?}", op);
                 Ops::Unknown
@@ -56,7 +55,7 @@ impl<'a> FromPyObject<'a> for UnaryOp {
         log::debug!("operand: {}", crate::ast_dump(operand, None)?);
         let operand = Constant::extract(operand).expect("getting unary operator operand");
 
-        return Ok(UnaryOp{
+        return Ok(BinOp{
             op: op,
             operand: Box::new(operand),
         });
@@ -64,17 +63,17 @@ impl<'a> FromPyObject<'a> for UnaryOp {
     }
 }
 
-impl<'a> CodeGen for UnaryOp {
+impl<'a> CodeGen for BinOp {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self.op {
-            Ops::USub => {
+            /*Ops::USub => {
                 let e = self.operand.clone().to_rust(ctx, options, symbols)?;
                 Ok(quote!(-#e))
-            },
+            },*/
             _ => {
                 let error = CodeGenError(format!("UnaryOp not implemented {:?}", self), None);
                 Err(Box::new(error))

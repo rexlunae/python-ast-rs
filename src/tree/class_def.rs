@@ -35,7 +35,7 @@ use log::debug;
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Debug, Default, FromPyObject, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, FromPyObject, Serialize, Deserialize, PartialEq)]
 pub struct ClassDef {
     pub name: String,
     pub bases: Vec<Name>,

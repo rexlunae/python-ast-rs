@@ -13,7 +13,7 @@ use encoding::all::ISO_8859_6;
 
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 //#[pyo3(transparent)]
 pub struct Constant(pub Option<Literal<String>>);
 

@@ -11,7 +11,7 @@ use log::debug;
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize)]
+#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize, PartialEq)]
 pub struct FunctionDef {
     pub name: String,
     pub args: ParameterList,

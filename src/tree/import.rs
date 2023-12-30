@@ -9,13 +9,13 @@ use crate::symbols::{SymbolTableScopes, SymbolTableNode};
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize)]
+#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize, PartialEq)]
 pub struct Alias {
     pub name: String,
     pub asname: Option<String>,
 }
 
-#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize)]
+#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize, PartialEq)]
 pub struct Import {
     pub names: Vec<Alias>,
 }
@@ -65,7 +65,7 @@ impl CodeGen for Import {
     }
 }
 
-#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize)]
+#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize, PartialEq)]
 pub struct ImportFrom {
     pub module: String,
     pub names: Vec<Alias>,

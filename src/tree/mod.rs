@@ -18,6 +18,9 @@ pub use arguments::*;
 pub mod assign;
 pub use assign::*;
 
+pub mod bin_ops;
+pub use bin_ops::*;
+
 pub mod call;
 pub use call::*;
 

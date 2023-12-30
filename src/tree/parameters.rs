@@ -30,7 +30,7 @@ impl CodeGen for Parameter {
     }
 }
 /// The parameter list of a function.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct ParameterList {
     pub posonlyargs: Vec<Parameter>,
     pub args: Vec<Parameter>,

@@ -12,7 +12,7 @@ use pyo3::{PyAny, FromPyObject, PyResult};
 use serde::{Serialize, Deserialize};
 
 /// An argument.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub enum Arg {
     #[default]
     Unknown,

@@ -6,12 +6,12 @@ use quote::{quote, format_ident};
 
 use serde::{Serialize, Deserialize};
 
-use crate::tree::{Call, Constant, UnaryOp, Name};
+use crate::tree::{BinOp, Call, Constant, UnaryOp, Name};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
 use crate::symbols::SymbolTableScopes;
 
 /// Mostly this shouldn't be used, but it exists so that we don't have to manually implement FromPyObject on all of ExprType
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[repr(transparent)]
 pub struct Container<T>(pub T);
 
@@ -29,11 +29,11 @@ impl<'a> FromPyObject<'a> for Container<crate::pytypes::List<ExprType>> {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum ExprType {
     /*BoolOp(BoolOp),
-    NamedExpr(NamedExpr),
-    BinOp(),*/
+    NamedExpr(NamedExpr),*/
+    BinOp(BinOp),
     UnaryOp(UnaryOp),
     /*Lambda(Lamda),
     IfExp(IfExp),
@@ -109,6 +109,15 @@ impl<'a> FromPyObject<'a> for ExprType {
                     );
                 Ok(Self::UnaryOp(c))
             },
+            "BinOp" => {
+                let c = BinOp::extract(ob)
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting BinOp in expression {:?}", crate::ast_dump(ob, None)?
+                        ).as_str()).as_str()
+                    );
+                Ok(Self::BinOp(c))
+            },
             _ => {
                 let err_msg = format!("Unimplemented expression type {}, {}", expr_type, crate::ast_dump(ob, None)?);
                 Err(pyo3::exceptions::PyValueError::new_err(
@@ -147,7 +156,7 @@ impl<'a> CodeGen for ExprType {
 
 /// An Expr only contains a single value key, which leads to the actual expression,
 /// which is one of several types.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Expr {
     pub value: ExprType,
     pub ctx: Option<String>,

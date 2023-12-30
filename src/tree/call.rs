@@ -11,7 +11,7 @@ use crate::symbols::SymbolTableScopes;
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Debug, Default, FromPyObject, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, FromPyObject, Serialize, Deserialize, PartialEq)]
 pub struct Call {
     pub func: Name,
     pub args: Vec<Arg>,
