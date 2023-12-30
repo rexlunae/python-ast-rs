@@ -6,7 +6,7 @@ use quote::{quote, format_ident};
 
 use serde::{Serialize, Deserialize};
 
-use crate::tree::{BinOp, BoolOp, Call, Constant, UnaryOp, Name};
+use crate::tree::{BinOp, BoolOp, Call, Constant, UnaryOp, Name, Compare};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
 use crate::symbols::SymbolTableScopes;
 
@@ -45,8 +45,8 @@ pub enum ExprType {
     GeneratorExp(),
     Await(),
     Yield(),
-    YieldFrom(),
-    Compare(),*/
+    YieldFrom(),*/
+    Compare(Compare),
     Call(Call),
     /*FormattedValue(),
     JoinedStr(),*/
@@ -84,6 +84,15 @@ impl<'a> FromPyObject<'a> for ExprType {
                     ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob).as_str()).as_str()
                 );
                 Ok(Self::Call(et))
+            },
+            "Compare" => {
+                let c = Compare::extract(ob)
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting Compare in expression {:?}", crate::ast_dump(ob, None)?
+                        ).as_str()).as_str()
+                    );
+                Ok(Self::Compare(c))
             },
             "Constant" => {
                 log::debug!("constant: {}", crate::ast_dump(ob, None)?);
@@ -146,6 +155,7 @@ impl<'a> CodeGen for ExprType {
                 }
                 Ok(quote!{#name(#arg_stream)})
             },
+            ExprType::Compare(c) => c.to_rust(ctx, options, symbols),
             ExprType::Constant(c) => c.to_rust(ctx, options, symbols),
             ExprType::List(l) => {
                 let mut ts = TokenStream::new();
@@ -245,6 +255,18 @@ impl<'a> FromPyObject<'a> for Expr {
                     value: ExprType::Constant(c)
                 })
             },
+            "Compare" => {
+                let c = Compare::extract(ob_value)
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting Compare in expression {:?}", crate::ast_dump(ob_value, None)?
+                        ).as_str()).as_str()
+                    );
+                Ok(Self {
+                    ctx: ctx,
+                    value: ExprType::Compare(c)
+                })
+            },
             "List" => {
                 //let list = crate::pytypes::List::<ExprType>::new();
                 let list: Vec<ExprType> = ob.extract().expect("extracting List");
@@ -298,6 +320,7 @@ impl<'a> CodeGen for Expr {
                 Ok(quote!{#name(#arg_stream)})
             },
             ExprType::Constant(constant) => constant.to_rust(ctx, options, symbols),
+            ExprType::Compare(compare) => compare.to_rust(ctx, options, symbols),
             ExprType::UnaryOp(operand) => operand.to_rust(ctx, options, symbols),
             ExprType::Name(name) => name.to_rust(ctx, options, symbols),
             // NoneType expressions generate no code.

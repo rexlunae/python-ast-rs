@@ -30,6 +30,9 @@ pub use call::*;
 pub mod class_def;
 pub use class_def::*;
 
+pub mod compare;
+pub use compare::*;
+
 pub mod constant;
 pub use constant::*;
 
