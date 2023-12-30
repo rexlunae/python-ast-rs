@@ -3,7 +3,7 @@ use crate::codegen::Node;
 use proc_macro2::TokenStream;
 use quote::{quote};
 
-use crate::tree::{Constant};
+use crate::tree::{ExprType};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
 use crate::symbols::SymbolTableScopes;
 
@@ -11,6 +11,7 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Ops {
+    Add,
     Unknown,
 }
 
@@ -26,7 +27,8 @@ impl<'a> FromPyObject<'a> for Ops {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct BinOp {
     op: Ops,
-    operand: Box<Constant>,
+    left: Box<ExprType>,
+    right: Box<ExprType>,
 }
 
 impl<'a> FromPyObject<'a> for BinOp {
@@ -37,27 +39,36 @@ impl<'a> FromPyObject<'a> for BinOp {
         );
 
         let op_type = op.get_type().name().expect(
-            ob.error_message("<unknown>", format!("extracting type name {:?} for unary operator", op).as_str()).as_str()
+            ob.error_message("<unknown>", format!("extracting type name {:?} for binary operator", op).as_str()).as_str()
         );
 
-        let operand = ob.getattr("operand").expect(
-            ob.error_message("<unknown>", "error getting unary operand").as_str()
+        let left = ob.getattr("left").expect(
+            ob.error_message("<unknown>", "error getting binary operand").as_str()
         );
+
+        let right = ob.getattr("right").expect(
+            ob.error_message("<unknown>", "error getting binary operand").as_str()
+        );
+        log::debug!("left: {}, right: {}", crate::ast_dump(left, None)?, crate::ast_dump(right, None)?);
 
         let op = match op_type {
-            /*"USub" => Ops::USub,*/
+            "Add" => Ops::Add,
             _ => {
                 log::debug!("{:?}", op);
                 Ops::Unknown
             }
         };
 
-        log::debug!("operand: {}", crate::ast_dump(operand, None)?);
-        let operand = Constant::extract(operand).expect("getting unary operator operand");
+        log::debug!("left: {}, right: {}, op: {:?}/{:?}", crate::ast_dump(left, None)?, crate::ast_dump(right, None)?, op_type, op);
+
+        let right = ExprType::extract(right).expect("getting binary operator operand");
+        let left = ExprType::extract(left).expect("getting binary operator operand");
+
 
         return Ok(BinOp{
             op: op,
-            operand: Box::new(operand),
+            left: Box::new(left),
+            right: Box::new(right),
         });
 
     }
@@ -69,13 +80,14 @@ impl<'a> CodeGen for BinOp {
     type SymbolTable = SymbolTableScopes;
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        let left = self.left.clone().to_rust(ctx, options.clone(), symbols.clone())?;
+        let right = self.right.clone().to_rust(ctx, options.clone(), symbols.clone())?;
         match self.op {
-            /*Ops::USub => {
-                let e = self.operand.clone().to_rust(ctx, options, symbols)?;
-                Ok(quote!(-#e))
-            },*/
+            Ops::Add => {
+                Ok(quote!((#left) + (#right)))
+            },
             _ => {
-                let error = CodeGenError(format!("UnaryOp not implemented {:?}", self), None);
+                let error = CodeGenError(format!("BinOp not implemented {:?}", self), None);
                 Err(Box::new(error))
             }
         }

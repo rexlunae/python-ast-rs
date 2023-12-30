@@ -55,7 +55,7 @@ pub enum ExprType {
     Subscript(),
     Starred(),*/
     Name(Name),
-    List(Container<crate::pytypes::List<ExprType>>),
+    List(Vec<ExprType>),
     /*Tuple(),
     Slice(),*/
     NoneType(Constant),
@@ -97,7 +97,7 @@ impl<'a> FromPyObject<'a> for ExprType {
             },
             "List" => {
                 //let list = crate::pytypes::List::<ExprType>::new();
-                let list = Container::extract(ob).expect("extracting List");
+                let list: Vec<ExprType> = ob.extract().expect("extracting List");
                 Ok(Self::List(list))
             }
             "UnaryOp" => {
@@ -136,16 +136,30 @@ impl<'a> CodeGen for ExprType {
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
+            ExprType::BinOp(binop) => binop.to_rust(ctx, options, symbols),
+            ExprType::Call(call) => {
+                let name = format_ident!("{}", call.func.id);
+                let mut arg_stream = proc_macro2::TokenStream::new();
+
+                for s in call.args {
+                    arg_stream.extend(s.clone().to_rust(ctx, options.clone(), symbols.clone()).expect(format!("parsing argument {:?}", s).as_str()));
+                }
+                Ok(quote!{#name(#arg_stream)})
+            },
+            ExprType::Constant(c) => c.to_rust(ctx, options, symbols),
             ExprType::List(l) => {
                 let mut ts = TokenStream::new();
-                for li in l.0 {
+                for li in l {
                     let code = li.clone().to_rust(ctx, options.clone(), symbols.clone()).expect(format!("Extracting list item {:?}", li).as_str());
                     ts.extend(code);
                     ts.extend(quote!(,));
                 }
                 Ok(ts)
             },
+            ExprType::Name(name) => name.to_rust(ctx, options, symbols),
             ExprType::NoneType(c) => c.to_rust(ctx, options, symbols),
+            ExprType::UnaryOp(operand) => operand.to_rust(ctx, options, symbols),
+
             _ => {
                 let error = CodeGenError(format!("Expr not implemented converting to Rust {:?}", self), None);
                 Err(Box::new(error))
@@ -220,7 +234,7 @@ impl<'a> FromPyObject<'a> for Expr {
             },
             "List" => {
                 //let list = crate::pytypes::List::<ExprType>::new();
-                let list = Container::extract(ob_value).expect("extracting List");
+                let list: Vec<ExprType> = ob.extract().expect("extracting List");
                 Ok(Self {
                     value: ExprType::List(list),
                     ctx: None,
@@ -259,6 +273,7 @@ impl<'a> CodeGen for Expr {
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self.value {
+            ExprType::BinOp(binop) => binop.to_rust(ctx, options, symbols),
             ExprType::Call(call) => {
                 let name = format_ident!("{}", call.func.id);
                 let mut arg_stream = proc_macro2::TokenStream::new();

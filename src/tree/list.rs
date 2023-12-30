@@ -51,13 +51,9 @@ mod tests {
         match statement {
             StatementType::Expr(e) => {
                 match e.value {
-                    ExprType::List(c) => {
-                        log::debug!("{:#?}", c);
-                        let list = c.0;
+                    ExprType::List(list) => {
+                        log::debug!("{:#?}", list);
                         assert_eq!(list.len(), 3);
-                        //assert_eq!(list[0].into_inner(), 1);
-                        //assert_eq!(list[1].into_inner(), 2);
-                        //assert_eq!(list[2].into_inner(), 3);
                     },
                     _ => panic!("Could not find inner expression")
                 }
