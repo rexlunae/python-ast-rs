@@ -171,7 +171,6 @@ impl<'a> CodeGen for StatementType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use litrs::*;
 
     #[test]
     fn check_pass_statement() {
