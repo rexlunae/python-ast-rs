@@ -114,7 +114,7 @@ mod tests {
     #[test]
     fn test_or() {
         let options = PythonOptions::default();
-        let result = crate::parse("1 || 2", "test_case").unwrap();
+        let result = crate::parse("1 or 2", "test_case").unwrap();
         log::info!("Python tree: {:?}", result);
         //log::info!("{}", result);
 
