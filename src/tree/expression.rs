@@ -6,7 +6,7 @@ use quote::{quote, format_ident};
 
 use serde::{Serialize, Deserialize};
 
-use crate::tree::{BinOp, Call, Constant, UnaryOp, Name};
+use crate::tree::{BinOp, BoolOp, Call, Constant, UnaryOp, Name};
 use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
 use crate::symbols::SymbolTableScopes;
 
@@ -31,7 +31,7 @@ impl<'a> FromPyObject<'a> for Container<crate::pytypes::List<ExprType>> {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum ExprType {
-    /*BoolOp(BoolOp),
+    BoolOp(BoolOp),/*
     NamedExpr(NamedExpr),*/
     BinOp(BinOp),
     UnaryOp(UnaryOp),
@@ -214,6 +214,19 @@ impl<'a> FromPyObject<'a> for Expr {
                 })
 
             },
+            "BoolOp" => {
+                let c = BoolOp::extract(ob_value)
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting BinOp in expression {:?}", crate::ast_dump(ob_value, None)?
+                        ).as_str()).as_str()
+                    );
+                Ok(Self {
+                    ctx: ctx,
+                    value: ExprType::BoolOp(c)
+                })
+
+            },
             "Call" => {
                 let et = Call::extract(ob_value).expect(
                     ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
@@ -274,6 +287,7 @@ impl<'a> CodeGen for Expr {
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self.value {
             ExprType::BinOp(binop) => binop.to_rust(ctx, options, symbols),
+            ExprType::BoolOp(boolop) => boolop.to_rust(ctx, options, symbols),
             ExprType::Call(call) => {
                 let name = format_ident!("{}", call.func.id);
                 let mut arg_stream = proc_macro2::TokenStream::new();
