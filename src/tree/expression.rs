@@ -187,6 +187,19 @@ impl<'a> FromPyObject<'a> for Expr {
                 );
                 Ok(Self{ctx: ctx, value: ExprType::Name(name)})
             }
+            "BinOp" => {
+                let c = BinOp::extract(ob_value)
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting BinOp in expression {:?}", crate::ast_dump(ob_value, None)?
+                        ).as_str()).as_str()
+                    );
+                Ok(Self {
+                    ctx: ctx,
+                    value: ExprType::BinOp(c)
+                })
+
+            },
             "Call" => {
                 let et = Call::extract(ob_value).expect(
                     ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
