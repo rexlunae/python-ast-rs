@@ -10,12 +10,26 @@ use crate::symbols::SymbolTableScopes;
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub enum Ops {
+pub enum BinOps {
     Add,
+    Sub,
+    Mult,
+    Div,
+    FloorDiv,
+    Mod,
+    Pow,
+    LShift,
+    RShift,
+    BitOr,
+    BitXor,
+    BitAnd,
+    MatMult,
+
     Unknown,
 }
 
-impl<'a> FromPyObject<'a> for Ops {
+
+impl<'a> FromPyObject<'a> for BinOps {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         let err_msg = format!("Unimplemented unary op {}", crate::ast_dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
@@ -26,7 +40,7 @@ impl<'a> FromPyObject<'a> for Ops {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct BinOp {
-    op: Ops,
+    op: BinOps,
     left: Box<ExprType>,
     right: Box<ExprType>,
 }
@@ -52,10 +66,23 @@ impl<'a> FromPyObject<'a> for BinOp {
         log::debug!("left: {}, right: {}", crate::ast_dump(left, None)?, crate::ast_dump(right, None)?);
 
         let op = match op_type {
-            "Add" => Ops::Add,
+            "Add" => BinOps::Add,
+            "Sub" => BinOps::Sub,
+            "Mult" => BinOps::Mult,
+            "Div" => BinOps::Div,
+            "FloorDiv" => BinOps::FloorDiv,
+            "Mod" => BinOps::Mod,
+            "Pow" => BinOps::Pow,
+            "LShift" => BinOps::LShift,
+            "RShift" => BinOps::RShift,
+            "BitOr" => BinOps::BitOr,
+            "BitXor" => BinOps::BitXor,
+            "BitAnd" => BinOps::BitAnd,
+            "MatMult" => BinOps::MatMult,
+
             _ => {
-                log::debug!("{:?}", op);
-                Ops::Unknown
+                log::debug!("Found unknown BinOp {:?}", op);
+                BinOps::Unknown
             }
         };
 
@@ -83,13 +110,52 @@ impl<'a> CodeGen for BinOp {
         let left = self.left.clone().to_rust(ctx, options.clone(), symbols.clone())?;
         let right = self.right.clone().to_rust(ctx, options.clone(), symbols.clone())?;
         match self.op {
-            Ops::Add => {
-                Ok(quote!((#left) + (#right)))
-            },
+            BinOps::Add => Ok(quote!((#left) + (#right))),
+            BinOps::Sub => Ok(quote!((#left) - (#right))),
+            BinOps::Mult => Ok(quote!((#left) * (#right))),
+            BinOps::Div => Ok(quote!((#left) / (#right))),
+            //FloorDiv, XXX implement this
+            BinOps::Mod => Ok(quote!((#left) % (#right))),
+            BinOps::Pow => Ok(quote!((#left) ** (#right))),
+            BinOps::LShift => Ok(quote!((#left) << (#right))),
+            BinOps::RShift => Ok(quote!((#left) >> (#right))),
+            BinOps::BitOr => Ok(quote!((#left) | (#right))),
+            BinOps::BitXor => Ok(quote!((#left) ^ (#right))),
+            BinOps::BitAnd => Ok(quote!((#left) & (#right))),
+            //MatMult, XXX implement this
+
             _ => {
                 let error = CodeGenError(format!("BinOp not implemented {:?}", self), None);
                 Err(Box::new(error))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+    #[test]
+    fn test_add() {
+        let options = PythonOptions::default();
+        let result = crate::parse("1 + 2", "test_case").unwrap();
+        log::info!("Python tree: {:?}", result);
+        //info!("{}", result);
+
+        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        log::info!("module: {:?}", code);
+    }
+
+    #[test]
+    fn test_subtract() {
+        let options = PythonOptions::default();
+        let result = crate::parse("1 - 2", "test_case").unwrap();
+        log::info!("Python tree: {:?}", result);
+        //info!("{}", result);
+
+        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        log::info!("module: {:?}", code);
     }
 }
