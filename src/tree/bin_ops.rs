@@ -116,7 +116,7 @@ impl<'a> CodeGen for BinOp {
             BinOps::Div => Ok(quote!((#left) as f64 / (#right) as f64)),
             BinOps::FloorDiv => Ok(quote!((#left) / (#right))),
             BinOps::Mod => Ok(quote!((#left) % (#right))),
-            BinOps::Pow => Ok(quote!((#left) ** (#right))),
+            BinOps::Pow => Ok(quote!((#left).pow(#right))),
             BinOps::LShift => Ok(quote!((#left) << (#right))),
             BinOps::RShift => Ok(quote!((#left) >> (#right))),
             BinOps::BitOr => Ok(quote!((#left) | (#right))),
