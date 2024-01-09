@@ -14,13 +14,13 @@ use crate::{sys_path, Scope};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum CodeGenError {
+pub enum CodeGenError<S: Into<String> + Clone + Ord + Borrow<S>> {
     #[error("{0}")]
-    PathNotFound(String),
+    PathNotFound(S),
     #[error("{0}")]
-    NotYetImplemented(String),
+    NotYetImplemented(S),
     #[error("{0}")]
-    UnknownType(String),
+    UnknownType(S),
 }
 
 /// The global context for Python compilation.
