@@ -1,5 +1,3 @@
-use proc_macro2::TokenStream;
-
 use std::{
     borrow::Borrow,
     collections::{BTreeMap, HashSet},
@@ -17,8 +15,6 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum CodeGenError {
-    #[error("{0}")]
-    CodeGenError(String, Option<TokenStream>),
     #[error("{0}")]
     PathNotFound(String),
     #[error("{0}")]
@@ -73,7 +69,7 @@ impl PythonOptions {
                 return Ok(path_string)
             }
         }
-        let error = CodeGenError::PathNotFound(format!("Not found {}", file.into()));
+        let error = CodeGenError::PathNotFound(file.into());
         Err(error.into())
     }
 
