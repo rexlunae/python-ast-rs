@@ -113,6 +113,7 @@ pub use to_tokenstream::CodeGen;
 pub enum CodeGenContext {
     Module,
     Class,
+    Function,
 }
 
 /// A trait for AST elements that represent a position in a source file. Implementing this trait allows
