@@ -33,8 +33,8 @@ impl<'a> CodeGen for Arg {
                 Ok(quote!(#v))
             },
             _ => {
-                let error = CodeGenError("Unknown argument type".to_string(), None);
-                Err(Box::new(error))
+                let error = CodeGenError::UnknownType("Unknown argument type".to_string());
+                Err(error.into())
             },
         }
     }

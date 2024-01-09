@@ -1,6 +1,6 @@
 [package]
 name = "python-ast"
-version = "0.1.11"
+version = "0.1.12"
 edition = "2021"
 description = "A library for compiling Python to Rust"
 license = "Apache-2.0"
@@ -27,3 +27,4 @@ proc-macro-error = "1.0.4"
 serde = { version = "1.0.195", features = ["serde_derive", "derive", "rc"] }
 pythonize = "0.20.0"
 serde-pickle = "1.1.1"
+thiserror = "1.0.56"

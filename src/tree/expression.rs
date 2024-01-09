@@ -171,8 +171,8 @@ impl<'a> CodeGen for ExprType {
             ExprType::UnaryOp(operand) => operand.to_rust(ctx, options, symbols),
 
             _ => {
-                let error = CodeGenError(format!("Expr not implemented converting to Rust {:?}", self), None);
-                Err(Box::new(error))
+                let error = CodeGenError::NotYetImplemented(format!("Expr not implemented converting to Rust {:?}", self));
+                Err(error.into())
             }
         }
     }
@@ -326,8 +326,8 @@ impl<'a> CodeGen for Expr {
             // NoneType expressions generate no code.
             ExprType::NoneType(_c) => Ok(quote!()),
             _ => {
-                let error = CodeGenError(format!("Expr not implemented converting to Rust {:?}", self), None);
-                Err(Box::new(error))
+                let error = CodeGenError::NotYetImplemented(format!("Expr not implemented converting to Rust {:?}", self));
+                Err(error.into())
             }
         }
     }

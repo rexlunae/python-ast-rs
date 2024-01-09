@@ -88,8 +88,8 @@ impl<'a> CodeGen for BoolOp {
             BoolOps::And => Ok(quote!((#left) && (#right))),
 
             _ => {
-                let error = CodeGenError(format!("BoolOp not implemented {:?}", self), None);
-                Err(Box::new(error))
+                let error = CodeGenError::NotYetImplemented(format!("BoolOp not implemented {:?}", self));
+                Err(error.into())
             }
         }
     }

@@ -89,8 +89,8 @@ impl<'a> CodeGen for UnaryOp {
                 Ok(quote!(-#operand))
             },
             _ => {
-                let error = CodeGenError(format!("UnaryOp not implemented {:?}", self), None);
-                Err(Box::new(error))
+                let error = CodeGenError::NotYetImplemented(format!("UnaryOp not implemented {:?}", self));
+                Err(error.into())
             }
         }
     }

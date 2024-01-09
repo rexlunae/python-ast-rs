@@ -125,8 +125,8 @@ impl<'a> CodeGen for BinOp {
             //MatMult, XXX implement this
 
             _ => {
-                let error = CodeGenError(format!("BinOp not implemented {:?}", self), None);
-                Err(Box::new(error))
+                let error = CodeGenError::NotYetImplemented(format!("BinOp not implemented {:?}", self));
+                Err(error.into())
             }
         }
     }

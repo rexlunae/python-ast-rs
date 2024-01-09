@@ -161,7 +161,7 @@ impl<'a> CodeGen for StatementType {
                 Ok(quote!(return #exp))
             },
             _ => {
-                let error = CodeGenError(format!("StatementType not implemented {:?}", self), None);
+                let error = CodeGenError::NotYetImplemented(format!("StatementType not implemented {:?}", self));
                 Err(Box::new(error))
             }
         }

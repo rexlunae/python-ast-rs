@@ -129,8 +129,8 @@ impl<'a> CodeGen for Compare {
                 Compares::NotIn => quote!(((#comparator).get(#left) == None)),
 
                 _ => {
-                    let error = CodeGenError(format!("Compare not implemented {:?}", self), None);
-                    return Err(Box::new(error))
+                    let error = CodeGenError::NotYetImplemented(format!("Compare not implemented {:?}", self));
+                    return Err(error.into())
                 }
             };
 

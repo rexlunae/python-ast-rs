@@ -4,8 +4,7 @@ use std::{
     borrow::Borrow,
     collections::{BTreeMap, HashSet},
     default::Default,
-    error::Error,
-    fmt::{Display, Formatter, Debug},
+    fmt::{Debug},
     fs::File,
     io::prelude::*,
     path::{Path, MAIN_SEPARATOR},
@@ -14,15 +13,18 @@ use std::{
 use pyo3::{PyAny, PyResult};
 
 use crate::{sys_path, Scope};
+use thiserror::Error;
 
-#[derive(Debug)]
-pub struct CodeGenError(pub String, pub Option<TokenStream>);
-impl Error for CodeGenError {}
-
-impl Display for CodeGenError {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "Code generation failed. {:#?}", self)
-    }
+#[derive(Error, Debug)]
+pub enum CodeGenError {
+    #[error("{0}")]
+    CodeGenError(String, Option<TokenStream>),
+    #[error("{0}")]
+    PathNotFound(String),
+    #[error("{0}")]
+    NotYetImplemented(String),
+    #[error("{0}")]
+    UnknownType(String),
 }
 
 /// The global context for Python compilation.
@@ -71,8 +73,8 @@ impl PythonOptions {
                 return Ok(path_string)
             }
         }
-        let error = CodeGenError(String::from("Not found"), None);
-        Err(Box::new(error))
+        let error = CodeGenError::PathNotFound(format!("Not found {}", file.into()));
+        Err(error.into())
     }
 
     /// Searches the Python path for the module and returns its contents.
