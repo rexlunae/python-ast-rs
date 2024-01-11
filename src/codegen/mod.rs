@@ -3,9 +3,6 @@ use std::{
     collections::{BTreeMap, HashSet},
     default::Default,
     fmt::{Debug},
-    fs::File,
-    io::prelude::*,
-    path::{Path, MAIN_SEPARATOR},
 };
 
 use pyo3::{PyAny, PyResult};
