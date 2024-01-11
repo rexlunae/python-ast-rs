@@ -1,5 +1,5 @@
 use crate::{
-    tree::Module,
+    Module,
     ast_dump,
 };
 
