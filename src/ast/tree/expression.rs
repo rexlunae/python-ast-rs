@@ -4,6 +4,7 @@ use quote::{quote, format_ident};
 use serde::{Serialize, Deserialize};
 
 use crate::{
+    dump,
     Node,
     BinOp, BoolOp, Call, Constant, UnaryOp, Name, Compare,
     CodeGen, PythonOptions, CodeGenContext, CodeGenError,
@@ -19,7 +20,7 @@ impl<'a> FromPyObject<'a> for Container<crate::pytypes::List<ExprType>> {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         let list = crate::pytypes::List::<ExprType>::new();
 
-        log::debug!("pylist: {}", crate::ast_dump(ob, Some(4))?);
+        log::debug!("pylist: {}", dump(ob, Some(4))?);
         let _converted_list: Vec<&PyAny> = ob.extract()?;
         for item in ob.iter().expect("extracting list") {
             log::debug!("item: {:?}", item);
@@ -65,12 +66,12 @@ pub enum ExprType {
 
 impl<'a> FromPyObject<'a> for ExprType {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        log::debug!("exprtype ob: {}", crate::ast_dump(ob, Some(4))?);
+        log::debug!("exprtype ob: {}", dump(ob, Some(4))?);
 
         let expr_type = ob.get_type().name().expect(
             ob.error_message("<unknown>", format!("extracting type name {:?} in expression", ob).as_str()).as_str()
         );
-        log::debug!("expression type: {}, value: {}", expr_type, crate::ast_dump(ob, None)?);
+        log::debug!("expression type: {}, value: {}", expr_type, dump(ob, None)?);
 
         let r = match expr_type {
             "Name" => {
@@ -89,17 +90,17 @@ impl<'a> FromPyObject<'a> for ExprType {
                 let c = Compare::extract(ob)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting Compare in expression {:?}", crate::ast_dump(ob, None)?
+                            format!("extracting Compare in expression {:?}", dump(ob, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self::Compare(c))
             },
             "Constant" => {
-                log::debug!("constant: {}", crate::ast_dump(ob, None)?);
+                log::debug!("constant: {}", dump(ob, None)?);
                 let c = Constant::extract(ob)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting Constant in expression {:?}", crate::ast_dump(ob, None)?
+                            format!("extracting Constant in expression {:?}", dump(ob, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self::Constant(c))
@@ -113,7 +114,7 @@ impl<'a> FromPyObject<'a> for ExprType {
                 let c = UnaryOp::extract(ob)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting UnaryOp in expression {:?}", crate::ast_dump(ob, None)?
+                            format!("extracting UnaryOp in expression {:?}", dump(ob, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self::UnaryOp(c))
@@ -122,13 +123,13 @@ impl<'a> FromPyObject<'a> for ExprType {
                 let c = BinOp::extract(ob)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting BinOp in expression {:?}", crate::ast_dump(ob, None)?
+                            format!("extracting BinOp in expression {:?}", dump(ob, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self::BinOp(c))
             },
             _ => {
-                let err_msg = format!("Unimplemented expression type {}, {}", expr_type, crate::ast_dump(ob, None)?);
+                let err_msg = format!("Unimplemented expression type {}, {}", expr_type, dump(ob, None)?);
                 Err(pyo3::exceptions::PyValueError::new_err(
                     ob.error_message("<unknown>", err_msg.as_str())
                 ))
@@ -193,7 +194,7 @@ impl<'a> FromPyObject<'a> for Expr {
         let ob_value = ob.getattr("value").expect(
             ob.error_message("<unknown>", err_msg.as_str()).as_str()
         );
-        log::debug!("ob_value: {}", crate::ast_dump(ob_value, None)?);
+        log::debug!("ob_value: {}", dump(ob_value, None)?);
 
         // The context is Load, Store, etc. For some types of expressions such as Constants, it does not exist.
         let ctx: Option<String> = if let Ok(pyany) = ob_value.getattr("ctx") {
@@ -203,7 +204,7 @@ impl<'a> FromPyObject<'a> for Expr {
         let expr_type = ob_value.get_type().name().expect(
             ob.error_message("<unknown>", format!("extracting type name {:?} in expression", ob_value).as_str()).as_str()
         );
-        log::debug!("expression type: {}, value: {}", expr_type, crate::ast_dump(ob_value, None)?);
+        log::debug!("expression type: {}, value: {}", expr_type, dump(ob_value, None)?);
         let r = match expr_type {
             "Name" => {
                 let name = Name::extract(ob_value).expect(
@@ -215,7 +216,7 @@ impl<'a> FromPyObject<'a> for Expr {
                 let c = BinOp::extract(ob_value)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting BinOp in expression {:?}", crate::ast_dump(ob_value, None)?
+                            format!("extracting BinOp in expression {:?}", dump(ob_value, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self {
@@ -228,7 +229,7 @@ impl<'a> FromPyObject<'a> for Expr {
                 let c = BoolOp::extract(ob_value)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting BinOp in expression {:?}", crate::ast_dump(ob_value, None)?
+                            format!("extracting BinOp in expression {:?}", dump(ob_value, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self {
@@ -247,7 +248,7 @@ impl<'a> FromPyObject<'a> for Expr {
                 let c = Constant::extract(ob_value)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting Constant in expression {:?}", crate::ast_dump(ob_value, None)?
+                            format!("extracting Constant in expression {:?}", dump(ob_value, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self {
@@ -259,7 +260,7 @@ impl<'a> FromPyObject<'a> for Expr {
                 let c = Compare::extract(ob_value)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting Compare in expression {:?}", crate::ast_dump(ob_value, None)?
+                            format!("extracting Compare in expression {:?}", dump(ob_value, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self {
@@ -279,7 +280,7 @@ impl<'a> FromPyObject<'a> for Expr {
                 let c = UnaryOp::extract(ob_value)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting UnaryOp in expression {:?}", crate::ast_dump(ob_value, None)?
+                            format!("extracting UnaryOp in expression {:?}", dump(ob_value, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self {
@@ -291,7 +292,7 @@ impl<'a> FromPyObject<'a> for Expr {
             // In sitations where an expression is optional, we may see a NoneType expressions.
             "NoneType" => Ok(Expr{ctx: ctx, value: ExprType::NoneType(Constant(None))}),
             _ => {
-                let err_msg = format!("Unimplemented expression type {}, {}", expr_type, crate::ast_dump(ob, None)?);
+                let err_msg = format!("Unimplemented expression type {}, {}", expr_type, dump(ob, None)?);
                 Err(pyo3::exceptions::PyValueError::new_err(
                     ob.error_message("<unknown>", err_msg.as_str())
                 ))

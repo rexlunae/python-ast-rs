@@ -4,6 +4,7 @@ use quote::{quote};
 use serde::{Serialize, Deserialize};
 
 use crate::{
+    dump,
     Node,
     ExprType,
     CodeGen, PythonOptions, CodeGenContext, CodeGenError,
@@ -29,7 +30,7 @@ pub enum Compares {
 
 impl<'a> FromPyObject<'a> for Compares {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        let err_msg = format!("Unimplemented unary op {}", crate::ast_dump(ob, None)?);
+        let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
             ob.error_message("<unknown>", err_msg.as_str())
         ))
@@ -45,7 +46,7 @@ pub struct Compare {
 
 impl<'a> FromPyObject<'a> for Compare {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        log::debug!("ob: {}", crate::ast_dump(ob, None)?);
+        log::debug!("ob: {}", dump(ob, None)?);
 
         // Python allows for multiple comparators, rust we only supports one, so we have to rewrite the comparison a little.
         let ops: Vec<&PyAny> = ob.getattr("ops").expect(
@@ -86,7 +87,7 @@ impl<'a> FromPyObject<'a> for Compare {
         let comparators = ob.getattr("comparators").expect(
             ob.error_message("<unknown>", "error getting compoarator").as_str()
         );
-        log::debug!("left: {}, comparators: {}", crate::ast_dump(left, None)?, crate::ast_dump(comparators, None)?);
+        log::debug!("left: {}, comparators: {}", dump(left, None)?, dump(comparators, None)?);
 
 
         let left = ExprType::extract(left).expect("getting binary operator operand");

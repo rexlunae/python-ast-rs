@@ -3,6 +3,7 @@ use quote::quote;
 use proc_macro2::TokenStream;
 
 use crate::{
+    dump,
     CodeGen, PythonOptions, CodeGenContext,
     SymbolTableScopes,
 };
@@ -29,7 +30,7 @@ impl<'a> CodeGen for List<'a> {
         log::debug!("================self:{:#?}", self);
         for elt in self.elts {
             let el: &PyAny = elt.extract()?;
-            log::debug!("elt: {}", crate::ast_dump(el, None)?);
+            log::debug!("elt: {}", dump(el, None)?);
             //ts.extend(elt.to_rust(ctx, options).expect("parsing list element"))
         }
         Ok(quote!(vec![#ts]))

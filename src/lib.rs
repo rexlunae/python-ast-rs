@@ -20,6 +20,3 @@ pub use pyo3::PyResult;
 
 pub mod parser;
 pub use parser::*;
-
-pub mod ast_dump;
-pub use ast_dump::*;

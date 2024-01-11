@@ -3,6 +3,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 use crate::{
+    dump,
     Node,
     Assign, FunctionDef, Import, ImportFrom, Expr, Call, ClassDef,
     CodeGen, CodeGenError, PythonOptions, CodeGenContext,
@@ -89,7 +90,7 @@ impl<'a> FromPyObject<'a> for StatementType {
             ob.error_message("<unknown>", err_msg.as_str()).as_str()
         );
 
-        debug!("statement...ob_type: {}...{}", ob_type, crate::ast_dump(ob, Some(4))?);
+        debug!("statement...ob_type: {}...{}", ob_type, dump(ob, Some(4))?);
         match ob_type {
             "Assign" => {
                 let assignment = Assign::extract(ob).expect("reading assignment");
@@ -106,7 +107,7 @@ impl<'a> FromPyObject<'a> for StatementType {
             "ClassDef" => Ok(StatementType::ClassDef(ClassDef::extract(ob).expect(format!("Class definition {:?}", ob).as_str()))),
             "Continue" => Ok(StatementType::Continue),
             "Break" => Ok(StatementType::Break),
-            "FunctionDef" => Ok(StatementType::FunctionDef(FunctionDef::extract(ob).expect(format!("Failed to extract function: {}", crate::ast_dump(ob, Some(4))?).as_str()))),
+            "FunctionDef" => Ok(StatementType::FunctionDef(FunctionDef::extract(ob).expect(format!("Failed to extract function: {}", dump(ob, Some(4))?).as_str()))),
             "Import" => Ok(StatementType::Import(Import::extract(ob).expect(format!("Import {:?}", ob).as_str()))),
             "ImportFrom" => Ok(StatementType::ImportFrom(ImportFrom::extract(ob).expect(format!("ImportFrom {:?}", ob).as_str()))),
             "Expr" => {
@@ -116,13 +117,13 @@ impl<'a> FromPyObject<'a> for StatementType {
                 Ok(StatementType::Expr(expr))
             },
             "Return" => {
-                log::debug!("return expression: {}", crate::ast_dump(ob, None)?);
+                log::debug!("return expression: {}", dump(ob, None)?);
                 let expr = Expr::extract(
                     ob.extract().expect(format!("extracting return Expr {:?}", ob).as_str())
-                ).expect(format!("return Expr {}", crate::ast_dump(ob, None)?).as_str());
+                ).expect(format!("return Expr {}", dump(ob, None)?).as_str());
                 Ok(StatementType::Return(Some(expr)))
             },
-            _ => Err(pyo3::exceptions::PyValueError::new_err(format!("Unimplemented statement type {}, {}", ob_type, crate::ast_dump(ob, None)?)))
+            _ => Err(pyo3::exceptions::PyValueError::new_err(format!("Unimplemented statement type {}, {}", ob_type, dump(ob, None)?)))
         }
     }
 }

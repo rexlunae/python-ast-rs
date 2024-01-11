@@ -4,6 +4,7 @@ use quote::{quote};
 use serde::{Serialize, Deserialize};
 
 use crate::{
+    dump,
     Node,
     ExprType,
     CodeGen, PythonOptions, CodeGenContext, CodeGenError,
@@ -20,7 +21,7 @@ pub enum BoolOps {
 
 impl<'a> FromPyObject<'a> for BoolOps {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        let err_msg = format!("Unimplemented unary op {}", crate::ast_dump(ob, None)?);
+        let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
             ob.error_message("<unknown>", err_msg.as_str())
         ))
@@ -36,7 +37,7 @@ pub struct BoolOp {
 
 impl<'a> FromPyObject<'a> for BoolOp {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        log::debug!("ob: {}", crate::ast_dump(ob, None)?);
+        log::debug!("ob: {}", dump(ob, None)?);
         let op = ob.getattr("op").expect(
             ob.error_message("<unknown>", "error getting unary operator").as_str()
         );
@@ -49,7 +50,7 @@ impl<'a> FromPyObject<'a> for BoolOp {
             ob.error_message("<unknown>", "error getting binary operand").as_str()
         );
 
-        println!("BoolOps values: {}", crate::ast_dump(values, None)?);
+        println!("BoolOps values: {}", dump(values, None)?);
 
         let value: Vec<ExprType> = values.extract().expect("getting values from BoolOp");
         let left = value[0].clone();

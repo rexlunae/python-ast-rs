@@ -1,7 +1,4 @@
-use crate::{
-    Module,
-    ast_dump,
-};
+use crate::{dump, Module};
 
 use pyo3::prelude::*;
 
@@ -18,7 +15,7 @@ pub fn parse<'a>(input: &'a str, filename: &str) -> PyResult<Module> {
         let args = (input, filename);
 
         let py_tree = t.call1(args)?;
-        log::debug!("py_tree: {}", ast_dump(py_tree, Some(4))?);
+        log::debug!("py_tree: {}", dump(py_tree, Some(4))?);
 
         let tree: Module = py_tree.extract()?;
 

@@ -3,6 +3,7 @@ use proc_macro2::TokenStream;
 use quote::{quote};
 
 use crate::{
+    dump,
     Node,
     ExprType,
     CodeGen, CodeGenError, PythonOptions, CodeGenContext,
@@ -23,7 +24,7 @@ pub enum Ops {
 
 impl<'a> FromPyObject<'a> for Ops {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        let err_msg = format!("Unimplemented unary op {}", crate::ast_dump(ob, None)?);
+        let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
             ob.error_message("<unknown>", err_msg.as_str())
         ))
@@ -38,7 +39,7 @@ pub struct UnaryOp {
 
 impl<'a> FromPyObject<'a> for UnaryOp {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        log::debug!("ob: {}", crate::ast_dump(ob, None)?);
+        log::debug!("ob: {}", dump(ob, None)?);
         let op = ob.getattr("op").expect(
             ob.error_message("<unknown>", "error getting unary operator").as_str()
         );
@@ -62,7 +63,7 @@ impl<'a> FromPyObject<'a> for UnaryOp {
             }
         };
 
-        log::debug!("operand: {}", crate::ast_dump(operand, None)?);
+        log::debug!("operand: {}", dump(operand, None)?);
         let operand = ExprType::extract(operand).expect("getting unary operator operand");
 
         return Ok(UnaryOp{
