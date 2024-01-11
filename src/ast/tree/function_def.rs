@@ -1,15 +1,15 @@
+use log::debug;
 use pyo3::{FromPyObject};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-//use syn::Visibility;
-
-use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
-use crate::tree::{ParameterList, Statement, StatementType, ExprType};
-use crate::symbols::{SymbolTableScopes, SymbolTableNode};
-
-use log::debug;
-
 use serde::{Serialize, Deserialize};
+
+use crate::{
+    CodeGen, PythonOptions, CodeGenContext,
+    ParameterList, Statement, StatementType, ExprType,
+    SymbolTableScopes, SymbolTableNode,
+};
+
 
 #[derive(Clone, Debug, FromPyObject, Serialize, Deserialize, PartialEq)]
 pub struct FunctionDef {

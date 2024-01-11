@@ -1,10 +1,11 @@
 use pyo3::{FromPyObject, PyAny};
-use quote::{quote};
+use quote::quote;
 use proc_macro2::TokenStream;
 
-//use crate::tree::{Expr};
-use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
-use crate::symbols::SymbolTableScopes;
+use crate::{
+    CodeGen, PythonOptions, CodeGenContext,
+    SymbolTableScopes,
+};
 
 // There are two concepts of List in the same place here. There's the "List" type that represents a node from the Python AST,
 // as received by the Rust AST converter, and there's the List representation of the Python List type. For the sake of

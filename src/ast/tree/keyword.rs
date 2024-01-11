@@ -1,13 +1,13 @@
-use pyo3::{FromPyObject};
-use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
+use pyo3::FromPyObject;
 use proc_macro2::TokenStream;
-
 use quote::{quote, format_ident};
-
-use crate::{tree::Arg};
-use crate::symbols::SymbolTableScopes;
-
 use serde::{Serialize, Deserialize};
+
+use crate::{
+    Arg,
+    CodeGen, PythonOptions, CodeGenContext,
+    SymbolTableScopes,
+};
 
 /// A keyword argument, gnerally used in function calls.
 #[derive(Clone, Debug, Default, FromPyObject, Serialize, Deserialize, PartialEq)]

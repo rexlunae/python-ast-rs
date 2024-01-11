@@ -1,15 +1,15 @@
 //! The module defines Python-syntax arguments and maps them into Rust-syntax versions.
-
-//use crate::tree::Constant;
-use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext, Node};
-use crate::tree::Constant;
-use crate::symbols::SymbolTableScopes;
-
 use proc_macro2::TokenStream;
 use quote::{quote};
 use pyo3::{PyAny, FromPyObject, PyResult};
-
 use serde::{Serialize, Deserialize};
+
+use crate::{
+    Node,
+    Constant,
+    CodeGen, PythonOptions, CodeGenContext, CodeGenError,
+    SymbolTableScopes,
+};
 
 /// An argument.
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]

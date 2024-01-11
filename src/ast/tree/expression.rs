@@ -1,14 +1,14 @@
 use pyo3::{FromPyObject, PyAny, PyResult};
-use crate::codegen::{Node};
-//use crate::pytypes::{ListLike};
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
-
 use serde::{Serialize, Deserialize};
 
-use crate::tree::{BinOp, BoolOp, Call, Constant, UnaryOp, Name, Compare};
-use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
-use crate::symbols::SymbolTableScopes;
+use crate::{
+    Node,
+    BinOp, BoolOp, Call, Constant, UnaryOp, Name, Compare,
+    CodeGen, PythonOptions, CodeGenContext, CodeGenError,
+    SymbolTableScopes,
+};
 
 /// Mostly this shouldn't be used, but it exists so that we don't have to manually implement FromPyObject on all of ExprType
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

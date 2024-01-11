@@ -2,8 +2,8 @@
 #![feature(associated_type_bounds)]
 extern crate proc_macro;
 
-pub mod tree;
-pub use tree::*;
+pub mod ast;
+pub use ast::*;
 
 pub mod codegen;
 pub use codegen::*;

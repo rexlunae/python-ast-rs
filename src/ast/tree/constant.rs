@@ -1,15 +1,16 @@
+use std::fmt::*;
+
 use pyo3::{FromPyObject, PyAny, PyResult};
-use crate::{CodeGen, PythonOptions, CodeGenContext, Node};
 use proc_macro2::*;
 use litrs::Literal;
 use quote::{quote};
-use std::fmt::*;
-
-use crate::symbols::SymbolTableScopes;
-
 use log::debug;
-use encoding::{Encoding, DecoderTrap};
-use encoding::all::ISO_8859_6;
+use encoding::{Encoding, DecoderTrap, all::ISO_8859_6};
+
+use crate::{
+    Node, CodeGen, PythonOptions, CodeGenContext,
+    SymbolTableScopes,
+};
 
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 

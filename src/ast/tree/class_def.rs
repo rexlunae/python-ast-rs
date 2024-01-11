@@ -27,9 +27,11 @@ use pyo3::{FromPyObject};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
-use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
-use crate::tree::{Statement, StatementType, Name, ExprType};
-use crate::symbols::{SymbolTableScopes, SymbolTableNode};
+use crate::{
+    Statement, StatementType, Name, ExprType,
+    CodeGen, PythonOptions, CodeGenContext,
+    SymbolTableScopes, SymbolTableNode,
+};
 
 use log::debug;
 

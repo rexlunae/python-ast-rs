@@ -1,6 +1,9 @@
-use crate::tree::Arg;
-use crate::codegen::{CodeGen, PythonOptions, CodeGenContext, Node};
-use crate::symbols::SymbolTableScopes;
+use crate::{
+    Node,
+    Arg,
+    CodeGen, PythonOptions, CodeGenContext,
+    SymbolTableScopes,
+};
 
 use proc_macro2::TokenStream;
 

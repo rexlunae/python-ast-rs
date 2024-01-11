@@ -1,13 +1,14 @@
 use pyo3::{FromPyObject, PyAny, PyResult};
-use crate::codegen::Node;
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
-
-use crate::tree::{ExprType, Name};
-use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
-use crate::symbols::{SymbolTableScopes, SymbolTableNode};
-
 use serde::{Serialize, Deserialize};
+
+use crate::{
+    Node,
+    ExprType, Name,
+    CodeGen, PythonOptions, CodeGenContext,
+    SymbolTableScopes, SymbolTableNode,
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Assign {

@@ -1,15 +1,13 @@
 use pyo3::{FromPyObject};
-use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
 use proc_macro2::TokenStream;
-
 use quote::{quote, format_ident};
-
-use crate::{tree::Arg, Name, Keyword};
-use crate::symbols::SymbolTableScopes;
-
-//use log::debug;
-
 use serde::{Serialize, Deserialize};
+
+use crate::{
+    CodeGen, PythonOptions, CodeGenContext,
+    Arg, Name, Keyword,
+    SymbolTableScopes,
+};
 
 #[derive(Clone, Debug, Default, FromPyObject, Serialize, Deserialize, PartialEq)]
 pub struct Call {

@@ -1,13 +1,14 @@
 use pyo3::{FromPyObject, PyAny, PyResult};
-use crate::codegen::Node;
 use proc_macro2::TokenStream;
 use quote::{quote};
-
-use crate::tree::{ExprType};
-use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
-use crate::symbols::SymbolTableScopes;
-
 use serde::{Serialize, Deserialize};
+
+use crate::{
+    Node,
+    ExprType,
+    CodeGen, PythonOptions, CodeGenContext, CodeGenError,
+    SymbolTableScopes,
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum BinOps {

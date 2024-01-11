@@ -1,13 +1,13 @@
+use log::debug;
 use pyo3::{FromPyObject};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-
-use log::debug;
-
-use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
-use crate::symbols::{SymbolTableScopes, SymbolTableNode};
-
 use serde::{Serialize, Deserialize};
+
+use crate::{
+    CodeGen, PythonOptions, CodeGenContext,
+    SymbolTableScopes, SymbolTableNode,
+};
 
 #[derive(Clone, Debug, FromPyObject, Serialize, Deserialize, PartialEq)]
 pub struct Alias {

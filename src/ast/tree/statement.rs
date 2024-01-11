@@ -2,9 +2,12 @@ use pyo3::{PyAny, FromPyObject, PyResult};
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::tree::{Assign, FunctionDef, Import, ImportFrom, Expr, Call, ClassDef};
-use crate::codegen::{CodeGen, CodeGenError, PythonOptions, Node, CodeGenContext};
-use crate::symbols::SymbolTableScopes;
+use crate::{
+    Node,
+    Assign, FunctionDef, Import, ImportFrom, Expr, Call, ClassDef,
+    CodeGen, CodeGenError, PythonOptions, CodeGenContext,
+    SymbolTableScopes,
+};
 
 use log::debug;
 

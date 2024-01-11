@@ -1,11 +1,13 @@
 use pyo3::{FromPyObject, PyAny, PyResult};
-use crate::codegen::Node;
 use proc_macro2::TokenStream;
 use quote::{quote};
 
-use crate::tree::{ExprType};
-use crate::codegen::{CodeGen, CodeGenError, PythonOptions, CodeGenContext};
-use crate::symbols::SymbolTableScopes;
+use crate::{
+    Node,
+    ExprType,
+    CodeGen, CodeGenError, PythonOptions, CodeGenContext,
+    SymbolTableScopes,
+};
 
 use serde::{Serialize, Deserialize};
 
