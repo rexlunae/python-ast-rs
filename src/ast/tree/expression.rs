@@ -333,10 +333,28 @@ impl<'a> CodeGen for Expr {
             // NoneType expressions generate no code.
             ExprType::NoneType(_c) => Ok(quote!()),
             _ => {
-                let error = CodeGenError::NotYetImplemented(format!("Expr not implemented converting to Rust {:?}", self));
+                let error = CodeGenError::NotYetImplemented(self.error_message("<unknown>", format!("Expr not implemented converting to Rust {:?}", self).as_str()));
                 Err(error.into())
             }
         }
+    }
+}
+
+impl<'a> Node<'a> for Expr {
+    fn lineno(&self) -> Option<usize> {
+        self.lineno
+    }
+
+    fn col_offset(&self) -> Option<usize> {
+        self.col_offset
+    }
+
+    fn end_lineno(&self) -> Option<usize> {
+        self.end_lineno
+    }
+
+    fn end_col_offset(&self) -> Option<usize> {
+        self.end_col_offset
     }
 }
 
