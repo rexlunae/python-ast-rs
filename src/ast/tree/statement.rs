@@ -180,7 +180,7 @@ mod tests {
     fn check_pass_statement() {
         let statement = StatementType::Pass;
         let options = PythonOptions::default();
-        let tokens = statement.clone().to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        let tokens = statement.clone().to_rust(CodeGenContext::Module("".to_string()), options, SymbolTableScopes::new());
 
         debug!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), true);
@@ -190,7 +190,7 @@ mod tests {
     fn check_break_statement() {
         let statement = StatementType::Break;
         let options = PythonOptions::default();
-        let tokens = statement.clone().to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        let tokens = statement.clone().to_rust(CodeGenContext::Module("".to_string()), options, SymbolTableScopes::new());
 
         debug!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);
@@ -200,7 +200,7 @@ mod tests {
     fn check_continue_statement() {
         let statement = StatementType::Continue;
         let options = PythonOptions::default();
-        let tokens = statement.clone().to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        let tokens = statement.clone().to_rust(CodeGenContext::Module("".to_string()), options, SymbolTableScopes::new());
 
         debug!("statement: {:?}, tokens: {:?}", statement, tokens);
         assert_eq!(tokens.unwrap().is_empty(), false);
@@ -247,7 +247,7 @@ def foo():
     pass
 ", "test_case").unwrap();
         log::info!("{:?}", result);
-        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        let code = result.to_rust(CodeGenContext::Module("".to_string()), options, SymbolTableScopes::new());
         log::info!("module: {:?}", code);
     }
 

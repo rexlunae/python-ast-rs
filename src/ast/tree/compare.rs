@@ -111,7 +111,7 @@ impl<'a> CodeGen for Compare {
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut outer_ts = TokenStream::new();
-        let left = self.left.clone().to_rust(ctx, options.clone(), symbols.clone())?;
+        let left = self.left.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
         let ops = self.ops.clone();
         let comparators = self.comparators.clone();
 
@@ -159,7 +159,7 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
         log::info!("module: {:?}", code);
     }
 
@@ -170,7 +170,7 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
         log::info!("module: {:?}", code);
     }
 }

@@ -110,7 +110,7 @@ impl<'a> CodeGen for ParameterList {
 
         // Ordinary args
         for arg in self.args {
-            stream.extend(arg.clone().to_rust(ctx, options.clone(), symbols.clone()).expect(format!("generating arg {:?}", arg).as_str()));
+            stream.extend(arg.clone().to_rust(ctx.clone(), options.clone(), symbols.clone()).expect(format!("generating arg {:?}", arg).as_str()));
             stream.extend(quote!(,));
         }
 
@@ -123,7 +123,7 @@ impl<'a> CodeGen for ParameterList {
 
         // kwonlyargs
         for arg in self.kwonlyargs {
-            stream.extend(arg.clone().to_rust(ctx, options.clone(), symbols.clone()).expect(format!("generating kwonlyarg {:?}", arg).as_str()));
+            stream.extend(arg.clone().to_rust(ctx.clone(), options.clone(), symbols.clone()).expect(format!("generating kwonlyarg {:?}", arg).as_str()));
             stream.extend(quote!(,));
         }
 

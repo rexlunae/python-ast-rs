@@ -83,8 +83,8 @@ impl<'a> CodeGen for BoolOp {
     type SymbolTable = SymbolTableScopes;
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let left = self.left.clone().to_rust(ctx, options.clone(), symbols.clone())?;
-        let right = self.right.clone().to_rust(ctx, options.clone(), symbols.clone())?;
+        let left = self.left.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+        let right = self.right.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
         match self.op {
             BoolOps::Or => Ok(quote!((#left) || (#right))),
             BoolOps::And => Ok(quote!((#left) && (#right))),
@@ -101,7 +101,6 @@ impl<'a> CodeGen for BoolOp {
 mod tests {
     use super::*;
 
-
     #[test]
     fn test_and() {
         let options = PythonOptions::default();
@@ -109,7 +108,7 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //log::info!("{}", result.to_rust().unwrap());
 
-        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new()).unwrap();
+        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new()).unwrap();
         log::info!("module: {:?}", code);
     }
 
@@ -120,7 +119,7 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //log::info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new()).unwrap();
+        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new()).unwrap();
         log::info!("module: {:?}", code);
     }
 }

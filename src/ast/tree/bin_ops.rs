@@ -109,8 +109,8 @@ impl<'a> CodeGen for BinOp {
     type SymbolTable = SymbolTableScopes;
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let left = self.left.clone().to_rust(ctx, options.clone(), symbols.clone())?;
-        let right = self.right.clone().to_rust(ctx, options.clone(), symbols.clone())?;
+        let left = self.left.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+        let right = self.right.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
         match self.op {
             BinOps::Add => Ok(quote!((#left) + (#right))),
             BinOps::Sub => Ok(quote!((#left) - (#right))),
@@ -146,7 +146,7 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
         log::info!("module: {:?}", code);
     }
 
@@ -157,7 +157,7 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
         log::info!("module: {:?}", code);
     }
 }

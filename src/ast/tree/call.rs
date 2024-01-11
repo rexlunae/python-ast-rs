@@ -57,7 +57,7 @@ mod tests {
 
 foo(b=9)", "test").unwrap();
         println!("Python tree: {:#?}", result);
-        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new()).unwrap();
+        let code = result.to_rust(CodeGenContext::Module("test".to_string()), options, SymbolTableScopes::new()).unwrap();
         println!("Rust code: {}", code);
     }
 }

@@ -21,9 +21,9 @@ pub enum CodeGenError<S: Into<String> + Clone + Ord + Borrow<S>> {
 /// Reexport the CodeGen from to_tokenstream
 pub use to_tokenstream::CodeGen;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum CodeGenContext {
-    Module,
+    Module(String),
     Class,
     Function,
 }

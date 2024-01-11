@@ -52,7 +52,7 @@ impl<'a> CodeGen for Module {
             stream.extend(quote!(use #stdpython::*;));
         }
         for s in self.body {
-            let statement = s.clone().to_rust(ctx, options.clone(), symbols.clone())
+            let statement = s.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())
                 .expect(format!("parsing statement {:?} in module", s).as_str());
             if statement.to_string() != "" {
                 stream.extend(statement);
@@ -76,7 +76,7 @@ def foo():
         info!("Python tree: {:?}", result);
         //info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
         info!("module: {:?}", code);
     }
 
@@ -86,7 +86,7 @@ def foo():
         let options = PythonOptions::default();
         info!("{:?}", result);
 
-        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
         info!("module: {:?}", code);
     }
 
@@ -96,7 +96,7 @@ def foo():
         let options = PythonOptions::default();
         info!("{:?}", result);
 
-        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new());
+        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
         info!("module: {:?}", code);
     }
 

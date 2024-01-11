@@ -154,7 +154,7 @@ impl<'a> CodeGen for ExprType {
                 let mut arg_stream = proc_macro2::TokenStream::new();
 
                 for s in call.args {
-                    arg_stream.extend(s.clone().to_rust(ctx, options.clone(), symbols.clone()).expect(format!("parsing argument {:?}", s).as_str()));
+                    arg_stream.extend(s.clone().to_rust(ctx.clone(), options.clone(), symbols.clone()).expect(format!("parsing argument {:?}", s).as_str()));
                 }
                 Ok(quote!{#name(#arg_stream)})
             },
@@ -163,7 +163,7 @@ impl<'a> CodeGen for ExprType {
             ExprType::List(l) => {
                 let mut ts = TokenStream::new();
                 for li in l {
-                    let code = li.clone().to_rust(ctx, options.clone(), symbols.clone()).expect(format!("Extracting list item {:?}", li).as_str());
+                    let code = li.clone().to_rust(ctx.clone(), options.clone(), symbols.clone()).expect(format!("Extracting list item {:?}", li).as_str());
                     ts.extend(code);
                     ts.extend(quote!(,));
                 }
@@ -314,15 +314,21 @@ impl<'a> CodeGen for Expr {
     type SymbolTable = SymbolTableScopes;
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        match self.value {
-            ExprType::BinOp(binop) => binop.to_rust(ctx, options, symbols),
-            ExprType::BoolOp(boolop) => boolop.to_rust(ctx, options, symbols),
+        let module_name = match ctx.clone() {
+            CodeGenContext::Module(name) => name,
+            _ => "unknown".to_string(),
+        };
+
+        match self.value.clone() {
+            ExprType::BinOp(binop) => binop.to_rust(ctx.clone(), options, symbols),
+            ExprType::BoolOp(boolop) => boolop.to_rust(ctx.clone(), options, symbols),
             ExprType::Call(call) => {
                 let name = format_ident!("{}", call.func.id);
                 let mut arg_stream = proc_macro2::TokenStream::new();
 
                 for s in call.args {
-                    arg_stream.extend(s.clone().to_rust(ctx, options.clone(), symbols.clone()).expect(format!("parsing argument {:?}", s).as_str()));
+                    arg_stream.extend(s.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())
+                        .expect(self.error_message(module_name.as_str(), format!("invalid argument {:?}", s).as_str()).as_str()));
                 }
                 Ok(quote!{#name(#arg_stream)})
             },
@@ -333,7 +339,7 @@ impl<'a> CodeGen for Expr {
             // NoneType expressions generate no code.
             ExprType::NoneType(_c) => Ok(quote!()),
             _ => {
-                let error = CodeGenError::NotYetImplemented(self.error_message("<unknown>", format!("Expr not implemented converting to Rust {:?}", self).as_str()));
+                let error = CodeGenError::NotYetImplemented(self.error_message(module_name.as_str(), format!("Expr not implemented converting to Rust {:?}", self).as_str()));
                 Err(error.into())
             }
         }
@@ -376,7 +382,7 @@ mod tests {
         };
         let options = PythonOptions::default();
         let symbols = SymbolTableScopes::new();
-        let tokens = expression.clone().to_rust(CodeGenContext::Module, options, symbols).unwrap();
+        let tokens = expression.clone().to_rust(CodeGenContext::Module("test".to_string()), options, symbols).unwrap();
         assert_eq!(tokens.to_string(), quote!(test()).to_string());
     }
 

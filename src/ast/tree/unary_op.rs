@@ -111,7 +111,7 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //log::info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module, options, SymbolTableScopes::new()).unwrap();
+        let code = result.to_rust(CodeGenContext::Module("test".to_string()), options, SymbolTableScopes::new()).unwrap();
         log::info!("module: {:?}", code);
     }
 }
