@@ -210,7 +210,13 @@ mod tests {
     fn return_with_nothing() {
         let tree = crate::parse("return", "<none>").unwrap();
         assert_eq!(tree.body.len(), 1);
-        assert_eq!(tree.body[0].statement, StatementType::Return(Some(Expr{value: crate::tree::ExprType::NoneType(crate::tree::Constant(None)), ctx: None})));
+        assert_eq!(tree.body[0].statement, StatementType::Return(Some(Expr{value: crate::tree::ExprType::NoneType(crate::tree::Constant(None)),
+            lineno: Some(1),
+            col_offset: Some(0),
+            end_lineno: Some(1),
+            end_col_offset: Some(6),
+            ..Default::default()
+        })));
     }
 
     #[test]
@@ -218,12 +224,17 @@ mod tests {
         let lit = litrs::Literal::Integer(litrs::IntegerLit::parse(String::from("8")).unwrap());
         let tree = crate::parse("return 8", "<none>").unwrap();
         assert_eq!(tree.body.len(), 1);
-        assert_eq!(tree.body[0].statement, StatementType::Return(Some(Expr{value: crate::tree::ExprType::Constant(
-            crate::tree::Constant(Some(
-                lit
-            )))
-                , ctx: None
-            }))
+        assert_eq!(tree.body[0].statement, StatementType::Return(Some(
+            Expr{value: crate::tree::ExprType::Constant(
+                crate::tree::Constant(Some(
+                    lit
+                ))),
+                    lineno: Some(1),
+                    col_offset: Some(0),
+                    end_lineno: Some(1),
+                    end_col_offset: Some(8),
+                    ..Default::default()
+                }))
         );
     }
 

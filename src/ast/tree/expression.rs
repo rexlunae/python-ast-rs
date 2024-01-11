@@ -30,7 +30,7 @@ impl<'a> FromPyObject<'a> for Container<crate::pytypes::List<ExprType>> {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub enum ExprType {
     BoolOp(BoolOp),/*
     NamedExpr(NamedExpr),*/
@@ -62,6 +62,8 @@ pub enum ExprType {
     NoneType(Constant),
 
     Unimplemented(String),
+    #[default]
+    Unknown,
 }
 
 impl<'a> FromPyObject<'a> for ExprType {
@@ -181,11 +183,16 @@ impl<'a> CodeGen for ExprType {
 
 /// An Expr only contains a single value key, which leads to the actual expression,
 /// which is one of several types.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Expr {
     pub value: ExprType,
     pub ctx: Option<String>,
+    pub lineno: Option<usize>,
+    pub col_offset: Option<usize>,
+    pub end_lineno: Option<usize>,
+    pub end_col_offset: Option<usize>,
 }
+
 
 impl<'a> FromPyObject<'a> for Expr {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
@@ -201,16 +208,27 @@ impl<'a> FromPyObject<'a> for Expr {
             pyany.get_type().extract().unwrap_or_default()
         } else { None };
 
+        let mut r = Self{
+            value: ExprType::Unknown,
+            ctx: ctx,
+            lineno: ob.lineno(),
+            col_offset: ob.col_offset(),
+            end_lineno: ob.end_lineno(),
+            end_col_offset: ob.end_col_offset(),
+        };
+
+
         let expr_type = ob_value.get_type().name().expect(
             ob.error_message("<unknown>", format!("extracting type name {:?} in expression", ob_value).as_str()).as_str()
         );
         log::debug!("expression type: {}, value: {}", expr_type, dump(ob_value, None)?);
-        let r = match expr_type {
+        match expr_type {
             "Name" => {
                 let name = Name::extract(ob_value).expect(
                     ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
                 );
-                Ok(Self{ctx: ctx, value: ExprType::Name(name)})
+                r.value = ExprType::Name(name);
+                Ok(r)
             }
             "BinOp" => {
                 let c = BinOp::extract(ob_value)
@@ -219,11 +237,8 @@ impl<'a> FromPyObject<'a> for Expr {
                             format!("extracting BinOp in expression {:?}", dump(ob_value, None)?
                         ).as_str()).as_str()
                     );
-                Ok(Self {
-                    ctx: ctx,
-                    value: ExprType::BinOp(c)
-                })
-
+                r.value = ExprType::BinOp(c);
+                Ok(r)
             },
             "BoolOp" => {
                 let c = BoolOp::extract(ob_value)
@@ -232,17 +247,15 @@ impl<'a> FromPyObject<'a> for Expr {
                             format!("extracting BinOp in expression {:?}", dump(ob_value, None)?
                         ).as_str()).as_str()
                     );
-                Ok(Self {
-                    ctx: ctx,
-                    value: ExprType::BoolOp(c)
-                })
-
+                r.value = ExprType::BoolOp(c);
+                Ok(r)
             },
             "Call" => {
                 let et = Call::extract(ob_value).expect(
                     ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
                 );
-                Ok(Self{ctx: ctx, value: ExprType::Call(et)})
+                r.value = ExprType::Call(et);
+                Ok(r)
             },
             "Constant" => {
                 let c = Constant::extract(ob_value)
@@ -251,10 +264,8 @@ impl<'a> FromPyObject<'a> for Expr {
                             format!("extracting Constant in expression {:?}", dump(ob_value, None)?
                         ).as_str()).as_str()
                     );
-                Ok(Self {
-                    ctx: ctx,
-                    value: ExprType::Constant(c)
-                })
+                r.value = ExprType::Constant(c);
+                Ok(r)
             },
             "Compare" => {
                 let c = Compare::extract(ob_value)
@@ -263,18 +274,14 @@ impl<'a> FromPyObject<'a> for Expr {
                             format!("extracting Compare in expression {:?}", dump(ob_value, None)?
                         ).as_str()).as_str()
                     );
-                Ok(Self {
-                    ctx: ctx,
-                    value: ExprType::Compare(c)
-                })
+                r.value = ExprType::Compare(c);
+                Ok(r)
             },
             "List" => {
                 //let list = crate::pytypes::List::<ExprType>::new();
                 let list: Vec<ExprType> = ob.extract().expect("extracting List");
-                Ok(Self {
-                    value: ExprType::List(list),
-                    ctx: None,
-                })
+                r.value = ExprType::List(list);
+                Ok(r)
             }
             "UnaryOp" => {
                 let c = UnaryOp::extract(ob_value)
@@ -283,22 +290,21 @@ impl<'a> FromPyObject<'a> for Expr {
                             format!("extracting UnaryOp in expression {:?}", dump(ob_value, None)?
                         ).as_str()).as_str()
                     );
-                Ok(Self {
-                    ctx: ctx,
-                    value: ExprType::UnaryOp(c)
-                })
-
+                r.value = ExprType::UnaryOp(c);
+                Ok(r)
             },
             // In sitations where an expression is optional, we may see a NoneType expressions.
-            "NoneType" => Ok(Expr{ctx: ctx, value: ExprType::NoneType(Constant(None))}),
+            "NoneType" => {
+                r.value = ExprType::NoneType(Constant(None));
+                Ok(r)
+            },
             _ => {
                 let err_msg = format!("Unimplemented expression type {}, {}", expr_type, dump(ob, None)?);
                 Err(pyo3::exceptions::PyValueError::new_err(
                     ob.error_message("<unknown>", err_msg.as_str())
                 ))
             }
-        };
-        r
+        }
     }
 }
 
@@ -348,7 +354,7 @@ mod tests {
                 args: Vec::new(),
                 keywords: Vec::new(),
             }),
-            ctx: None,
+            ..Default::default()
         };
         let options = PythonOptions::default();
         let symbols = SymbolTableScopes::new();
