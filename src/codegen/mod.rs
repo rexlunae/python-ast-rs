@@ -15,11 +15,11 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum CodeGenError<S: Into<String> + Clone + Ord + Borrow<S>> {
-    #[error("{0}")]
+    #[error("searching path {0} failed")]
     PathNotFound(S),
-    #[error("{0}")]
+    #[error("Not yet implemented: {0}")]
     NotYetImplemented(S),
-    #[error("{0}")]
+    #[error("Unknown type {0}")]
     UnknownType(S),
 }
 
