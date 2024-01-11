@@ -1,9 +1,3 @@
-pub mod statement;
-pub use statement::*;
-
-pub mod function_def;
-pub use function_def::*;
-
 pub mod arguments;
 pub use arguments::*;
 
@@ -31,6 +25,9 @@ pub use constant::*;
 pub mod expression;
 pub use expression::*;
 
+pub mod function_def;
+pub use function_def::*;
+
 pub mod import;
 pub use import::*;
 
@@ -51,3 +48,6 @@ pub use unary_op::*;
 
 pub mod module;
 pub use module::*;
+
+pub mod statement;
+pub use statement::*;
