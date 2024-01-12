@@ -8,14 +8,30 @@ This project is at a very early state, and should be considered completely unsta
 
 Reading a Python file into an ast works like this:
 
-```rust
+```Rust
 use python_ast::parse;
 
 fn read_python_file(input: std::path::Path) {
     let py = read_to_string(input).unwrap();
-    let ast = parse(&py, "__main__").unwrap();
+    let ast = parse(&py, "mod_name").unwrap();
 
     println!("{:?}", ast);
+}
+
+```
+
+You can also use the CodeGen trait to convert the Python code into Rust code. Please note that this feature is extremely unstable and experimental.
+
+```Rust
+use python_ast::{parse, CodeGen, CodeGenContext, PythonOptions, SymbolTableScopes};
+
+fn read_python_file(input: std::path::Path) {
+    let py = read_to_string(input).unwrap();
+    let ast = parse(&py, "mod_name").unwrap();
+
+    let rust = ast.to_rust(Context::Module("mod_name".to_string(), PythonOptions::default(), SymbolTableScopes::new())).unwrap();
+
+    println!("{}", rust);
 }
 
 ```
