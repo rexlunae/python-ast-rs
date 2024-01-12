@@ -71,20 +71,20 @@ impl<'a> FromPyObject<'a> for ExprType {
         log::debug!("exprtype ob: {}", dump(ob, Some(4))?);
 
         let expr_type = ob.get_type().name().expect(
-            ob.error_message("<unknown>", format!("extracting type name {:?} in expression", ob).as_str()).as_str()
+            ob.error_message("<unknown>", format!("extracting type name {:?} in expression", dump(ob, None)).as_str()).as_str()
         );
         log::debug!("expression type: {}, value: {}", expr_type, dump(ob, None)?);
 
         let r = match expr_type {
             "Name" => {
                 let name = Name::extract(ob).expect(
-                    ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob).as_str()).as_str()
+                    ob.error_message("<unknown>", format!("parsing Name expression {}", dump(ob, None)?).as_str()).as_str()
                 );
                 Ok(Self::Name(name))
             }
             "Call" => {
                 let et = Call::extract(ob).expect(
-                    ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob).as_str()).as_str()
+                    ob.error_message("<unknown>", format!("parsing Call expression {}", dump(ob, None)?).as_str()).as_str()
                 );
                 Ok(Self::Call(et))
             },
@@ -92,7 +92,7 @@ impl<'a> FromPyObject<'a> for ExprType {
                 let c = Compare::extract(ob)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting Compare in expression {:?}", dump(ob, None)?
+                            format!("extracting Compare in expression {}", dump(ob, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self::Compare(c))
@@ -102,21 +102,21 @@ impl<'a> FromPyObject<'a> for ExprType {
                 let c = Constant::extract(ob)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting Constant in expression {:?}", dump(ob, None)?
+                            format!("extracting Constant in expression {}", dump(ob, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self::Constant(c))
             },
             "List" => {
                 //let list = crate::pytypes::List::<ExprType>::new();
-                let list: Vec<ExprType> = ob.extract().expect("extracting List");
+                let list: Vec<ExprType> = ob.extract().expect(format!("extracting List {}", dump(ob, None)?).as_str());
                 Ok(Self::List(list))
             }
             "UnaryOp" => {
                 let c = UnaryOp::extract(ob)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting UnaryOp in expression {:?}", dump(ob, None)?
+                            format!("extracting UnaryOp in expression {}", dump(ob, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self::UnaryOp(c))
@@ -125,7 +125,7 @@ impl<'a> FromPyObject<'a> for ExprType {
                 let c = BinOp::extract(ob)
                     .expect(
                         ob.error_message("<unknown>",
-                            format!("extracting BinOp in expression {:?}", dump(ob, None)?
+                            format!("extracting BinOp in expression {}", dump(ob, None)?
                         ).as_str()).as_str()
                     );
                 Ok(Self::BinOp(c))
