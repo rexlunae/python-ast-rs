@@ -8,7 +8,7 @@ This project is at a very early state, and should be considered completely unsta
 
 Reading a Python file into an ast works like this:
 
-```Rust
+```rust
 use python_ast::parse;
 
 fn read_python_file(input: std::path::Path) {
@@ -22,7 +22,7 @@ fn read_python_file(input: std::path::Path) {
 
 You can also use the CodeGen trait to convert the Python code into Rust code. Please note that this feature is extremely unstable and experimental.
 
-```Rust
+```rust
 use python_ast::{parse, CodeGen, CodeGenContext, PythonOptions, SymbolTableScopes};
 
 fn read_python_file(input: std::path::Path) {
