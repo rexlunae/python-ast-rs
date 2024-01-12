@@ -3,6 +3,16 @@ use crate::{dump, Module};
 use pyo3::prelude::*;
 
 /// Takes a string of bytes and returns the Python-tokenized version of it.
+/// use python_ast::parse;
+///
+/// ```Rust
+/// fn read_python_file(input: std::path::Path) {
+///    let py = read_to_string(input).unwrap();
+///    let ast = parse(&py, "__main__").unwrap();
+///
+///    println!("{:?}", ast);
+///}
+/// ```
 pub fn parse<'a>(input: &'a str, filename: &str) -> PyResult<Module> {
 
     let pymodule_code = include_str!("__init__.py");
