@@ -1,12 +1,12 @@
 use pyo3::{FromPyObject, PyAny, PyResult};
 use proc_macro2::TokenStream;
-use quote::{quote, format_ident};
+use quote::{quote};
 use serde::{Serialize, Deserialize};
 
 use crate::{
     dump,
     Node,
-    BinOp, BoolOp, Call, Constant, UnaryOp, Name, Compare,
+    Attribute, BinOp, BoolOp, Call, Constant, UnaryOp, Name, Compare,
     CodeGen, PythonOptions, CodeGenContext, CodeGenError,
     SymbolTableScopes,
 };
@@ -52,7 +52,9 @@ pub enum ExprType {
     /*FormattedValue(),
     JoinedStr(),*/
     Constant(Constant),
-    /*Attribute(),
+
+    /// These can appear in a few places, such as the left side of an assignment.
+    Attribute(Attribute),/*
     Subscript(),
     Starred(),*/
     Name(Name),
@@ -76,12 +78,15 @@ impl<'a> FromPyObject<'a> for ExprType {
         log::debug!("expression type: {}, value: {}", expr_type, dump(ob, None)?);
 
         let r = match expr_type {
-            "Name" => {
-                let name = Name::extract(ob).expect(
-                    ob.error_message("<unknown>", format!("parsing Name expression {}", dump(ob, None)?).as_str()).as_str()
-                );
-                Ok(Self::Name(name))
-            }
+            "Attribute" => {
+                let a = Attribute::extract(ob)
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting Attribute in expression {}", dump(ob, None)?
+                        ).as_str()).as_str()
+                    );
+                Ok(Self::Attribute(a))
+            },
             "Call" => {
                 let et = Call::extract(ob).expect(
                     ob.error_message("<unknown>", format!("parsing Call expression {}", dump(ob, None)?).as_str()).as_str()
@@ -111,6 +116,12 @@ impl<'a> FromPyObject<'a> for ExprType {
                 //let list = crate::pytypes::List::<ExprType>::new();
                 let list: Vec<ExprType> = ob.extract().expect(format!("extracting List {}", dump(ob, None)?).as_str());
                 Ok(Self::List(list))
+            }
+            "Name" => {
+                let name = Name::extract(ob).expect(
+                    ob.error_message("<unknown>", format!("parsing Name expression {}", dump(ob, None)?).as_str()).as_str()
+                );
+                Ok(Self::Name(name))
             }
             "UnaryOp" => {
                 let c = UnaryOp::extract(ob)
@@ -148,15 +159,10 @@ impl<'a> CodeGen for ExprType {
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
+            ExprType::Attribute(attribute) => attribute.to_rust(ctx, options, symbols),
             ExprType::BinOp(binop) => binop.to_rust(ctx, options, symbols),
             ExprType::Call(call) => {
-                let name = format_ident!("{}", call.func.id);
-                let mut arg_stream = proc_macro2::TokenStream::new();
-
-                for s in call.args {
-                    arg_stream.extend(s.clone().to_rust(ctx.clone(), options.clone(), symbols.clone()).expect(format!("parsing argument {:?}", s).as_str()));
-                }
-                Ok(quote!{#name(#arg_stream)})
+                call.to_rust(ctx, options, symbols)
             },
             ExprType::Compare(c) => c.to_rust(ctx, options, symbols),
             ExprType::Constant(c) => c.to_rust(ctx, options, symbols),
@@ -196,7 +202,7 @@ pub struct Expr {
 
 impl<'a> FromPyObject<'a> for Expr {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        let err_msg = format!("extracting object value {:?} in expression", ob);
+        let err_msg = format!("extracting object value {} in expression", dump(ob, None)?);
 
         let ob_value = ob.getattr("value").expect(
             ob.error_message("<unknown>", err_msg.as_str()).as_str()
@@ -223,11 +229,14 @@ impl<'a> FromPyObject<'a> for Expr {
         );
         log::debug!("expression type: {}, value: {}", expr_type, dump(ob_value, None)?);
         match expr_type {
-            "Name" => {
-                let name = Name::extract(ob_value).expect(
-                    ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
-                );
-                r.value = ExprType::Name(name);
+            "Atribute" =>  {
+                let a = Attribute::extract(ob_value)
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting BinOp in expression {:?}", dump(ob_value, None)?
+                        ).as_str()).as_str()
+                    );
+                r.value = ExprType::Attribute(a);
                 Ok(r)
             }
             "BinOp" => {
@@ -283,6 +292,13 @@ impl<'a> FromPyObject<'a> for Expr {
                 r.value = ExprType::List(list);
                 Ok(r)
             }
+            "Name" => {
+                let name = Name::extract(ob_value).expect(
+                    ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
+                );
+                r.value = ExprType::Name(name);
+                Ok(r)
+            }
             "UnaryOp" => {
                 let c = UnaryOp::extract(ob_value)
                     .expect(
@@ -322,16 +338,7 @@ impl<'a> CodeGen for Expr {
         match self.value.clone() {
             ExprType::BinOp(binop) => binop.to_rust(ctx.clone(), options, symbols),
             ExprType::BoolOp(boolop) => boolop.to_rust(ctx.clone(), options, symbols),
-            ExprType::Call(call) => {
-                let name = format_ident!("{}", call.func.id);
-                let mut arg_stream = proc_macro2::TokenStream::new();
-
-                for s in call.args {
-                    arg_stream.extend(s.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())
-                        .expect(self.error_message(module_name.as_str(), format!("invalid argument {:?}", s).as_str()).as_str()));
-                }
-                Ok(quote!{#name(#arg_stream)})
-            },
+            ExprType::Call(call) => { call.to_rust(ctx.clone(), options, symbols)},
             ExprType::Constant(constant) => constant.to_rust(ctx, options, symbols),
             ExprType::Compare(compare) => compare.to_rust(ctx, options, symbols),
             ExprType::UnaryOp(operand) => operand.to_rust(ctx, options, symbols),
@@ -367,22 +374,16 @@ impl<'a> Node<'a> for Expr {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tree::Name;
-
 
     #[test]
     fn check_call_expression() {
-        let expression = Expr{
-            value: ExprType::Call(Call{
-                func: Name{id: "test".to_string()},
-                args: Vec::new(),
-                keywords: Vec::new(),
-            }),
-            ..Default::default()
-        };
-        let options = PythonOptions::default();
+        let expression = crate::parse("test()", "test").unwrap();
+        println!("Python tree: {:#?}", expression);
+        let mut options = PythonOptions::default();
+        options.with_std_python = false;
         let symbols = SymbolTableScopes::new();
         let tokens = expression.clone().to_rust(CodeGenContext::Module("test".to_string()), options, symbols).unwrap();
+        println!("Rust tokens: {}", tokens.to_string());
         assert_eq!(tokens.to_string(), quote!(test()).to_string());
     }
 

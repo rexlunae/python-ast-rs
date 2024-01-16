@@ -1,6 +1,9 @@
 pub mod arguments;
 pub use arguments::*;
 
+pub mod attribute;
+pub use attribute::*;
+
 pub mod assign;
 pub use assign::*;
 

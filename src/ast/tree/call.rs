@@ -1,34 +1,35 @@
-use pyo3::{FromPyObject};
+use pyo3::{FromPyObject, PyAny, PyResult};
 use proc_macro2::TokenStream;
-use quote::{quote, format_ident};
+use quote::quote;
 use serde::{Serialize, Deserialize};
 
 use crate::{
     CodeGen, PythonOptions, CodeGenContext,
-    Arg, Name, Keyword,
+    Arg, Keyword, ExprType,
     SymbolTableScopes,
 };
 
-#[derive(Clone, Debug, Default, FromPyObject, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Call {
-    pub func: Name,
+    pub func: Box<ExprType>,
     pub args: Vec<Arg>,
     pub keywords: Vec<Keyword>,
 }
 
-/*
+
 impl<'a> FromPyObject<'a> for Call {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        debug!("100000000 {}", dump(ob, Some(2))?);
-        let func = ob.getattr("func")?;
-        debug!("110000000 {}", dump(func, Some(2))?);
-        let func_name = Name::extract(func)?;
-        debug!("200000000");
-        debug!("300000000");
-        Err(pyo3::exceptions::PyValueError::new_err(format!("Unimplemented call {}...{}", ob, dump(ob, None)?)))
+        let func = ob.getattr("func").expect("Call.func");
+        let args = ob.getattr("args").expect("Call.args");
+        let keywords = ob.getattr("keywords").expect("Call.keywords");
+        Ok(Call {
+            func: Box::new(func.extract().expect("Call.func")),
+            args: args.extract().expect("Call.args"),
+            keywords: keywords.extract().expect("Call.keywords"),
+        })
     }
 }
-*/
+
 
 impl<'a> CodeGen for Call {
     type Context = CodeGenContext;
@@ -36,11 +37,16 @@ impl<'a> CodeGen for Call {
     type SymbolTable = SymbolTableScopes;
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let name = format_ident!("{}", self.func.id);
+        let name = self.func.to_rust(ctx.clone(), options.clone(), symbols.clone()).expect("Call.func");
         // XXX - How are we going to figure out the parameter list?
-        let symbol = symbols.get(&self.func.id).expect(format!("looking up function {}", self.func.id).as_str());
-        println!("symbol: {:?}", symbol);
-        let args = self.args[0].clone().to_rust(ctx, options, symbols).expect(format!("parsing arguments {:?}", self.args[0]).as_str());
+        //let symbol = symbols.get(&self.func.id).expect(format!("looking up function {}", self.func.id).as_str());
+        //println!("symbol: {:?}", symbol);
+        let mut args = TokenStream::new();
+        for arg in self.args {
+            let arg = arg.clone().to_rust(ctx.clone(), options.clone(), symbols.clone()).expect(format!("Call.args {:?}", arg).as_str());
+            args.extend(arg);
+            args.extend(quote!(,));
+        }
         Ok(quote!(#name(#args)))
     }
 }
