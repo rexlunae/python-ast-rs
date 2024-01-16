@@ -6,6 +6,7 @@ description = "A library for compiling Python to Rust"
 license = "Apache-2.0"
 license_file = "LICENSE"
 repository = "https://github.com/rexlunae/python-ast-rs.git"
+documentation = "https://docs.rs/python-ast"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
