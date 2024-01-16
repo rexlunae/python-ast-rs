@@ -6,7 +6,7 @@ use serde::{Serialize, Deserialize};
 use crate::{
     dump,
     Node,
-    Attribute, BinOp, BoolOp, Call, Constant, UnaryOp, Name, Compare,
+    Attribute, BinOp, BoolOp, Call, Constant, UnaryOp, Name, Compare, NamedExpr,
     CodeGen, PythonOptions, CodeGenContext, CodeGenError,
     SymbolTableScopes,
 };
@@ -32,8 +32,8 @@ impl<'a> FromPyObject<'a> for Container<crate::pytypes::List<ExprType>> {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub enum ExprType {
-    BoolOp(BoolOp),/*
-    NamedExpr(NamedExpr),*/
+    BoolOp(BoolOp),
+    NamedExpr(NamedExpr),
     BinOp(BinOp),
     UnaryOp(UnaryOp),
     /*Lambda(Lamda),

@@ -46,6 +46,9 @@ pub use parameters::*;
 pub mod name;
 pub use name::*;
 
+pub mod named_expression;
+pub use named_expression::*;
+
 pub mod unary_op;
 pub use unary_op::*;
 
