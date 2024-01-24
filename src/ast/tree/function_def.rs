@@ -71,7 +71,7 @@ impl<'a> CodeGen for FunctionDef {
             }
         };
 
-        println!("function: {}", function);
+        debug!("function: {}", function);
         Ok(function)
     }
 
@@ -87,9 +87,4 @@ impl<'a> CodeGen for FunctionDef {
             _ => None,
         }
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
 }
