@@ -44,6 +44,13 @@ impl<'a> CodeGen for FunctionDef {
             format_ident!("pub")
         };
 
+        let is_async = match ctx.clone() {
+            CodeGenContext::Async(_) => {
+                quote!(async)
+            },
+            _ => quote!(),
+        };
+
         let parameters = self.args.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())
             .expect(format!("parsing arguments {:?}", self.args).as_str());
 
@@ -59,12 +66,12 @@ impl<'a> CodeGen for FunctionDef {
 
         // XXX: Figure out how to add docstrict.
         let function = quote!{
-            #visibility fn #fn_name(#parameters) {
+            #visibility #is_async fn #fn_name(#parameters) {
                 #streams
             }
         };
 
-        debug!("function: {}", function);
+        println!("function: {}", function);
         Ok(function)
     }
 
@@ -80,4 +87,9 @@ impl<'a> CodeGen for FunctionDef {
             _ => None,
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
 }

@@ -151,7 +151,7 @@ mod tests {
     use pyo3::{PyResult};
 
     fn setup(input: &str) -> PyResult<Module> {
-        let ast = parse(&input, "__test__")?;
+        let ast = parse(input, "__test__")?;
         Ok(ast)
     }
 

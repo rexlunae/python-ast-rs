@@ -6,7 +6,7 @@ use serde::{Serialize, Deserialize};
 use crate::{
     dump,
     Node,
-    Attribute, BinOp, BoolOp, Call, Constant, UnaryOp, Name, Compare, NamedExpr,
+    Attribute, Await, BinOp, BoolOp, Call, Constant, UnaryOp, Name, Compare, NamedExpr,
     CodeGen, PythonOptions, CodeGenContext, CodeGenError,
     SymbolTableScopes,
 };
@@ -43,9 +43,9 @@ pub enum ExprType {
     ListComp(ListComp),
     SetComp(SetComp),
     DictComp(DictComp),
-    GeneratorExp(),
-    Await(),
-    Yield(),
+    GeneratorExp(),*/
+    Await(Await),
+    /*Yield(),
     YieldFrom(),*/
     Compare(Compare),
     Call(Call),
@@ -86,6 +86,16 @@ impl<'a> FromPyObject<'a> for ExprType {
                         ).as_str()).as_str()
                     );
                 Ok(Self::Attribute(a))
+            },
+            "Await" => {
+                println!("await: {}", dump(ob, None)?);
+                let a = Await::extract(ob)
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting await value in expression {}", dump(ob, None)?
+                        ).as_str()).as_str()
+                    );
+                Ok(Self::Await(a))
             },
             "Call" => {
                 let et = Call::extract(ob).expect(
@@ -160,6 +170,7 @@ impl<'a> CodeGen for ExprType {
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             ExprType::Attribute(attribute) => attribute.to_rust(ctx, options, symbols),
+            ExprType::Await(func) => func.to_rust(ctx, options, symbols),
             ExprType::BinOp(binop) => binop.to_rust(ctx, options, symbols),
             ExprType::Call(call) => {
                 call.to_rust(ctx, options, symbols)
@@ -237,6 +248,16 @@ impl<'a> FromPyObject<'a> for Expr {
                         ).as_str()).as_str()
                     );
                 r.value = ExprType::Attribute(a);
+                Ok(r)
+            }
+            "Await" =>  {
+                let a = Await::extract(ob_value)
+                    .expect(
+                        ob.error_message("<unknown>",
+                            format!("extracting BinOp in expression {:?}", dump(ob_value, None)?
+                        ).as_str()).as_str()
+                    );
+                r.value = ExprType::Await(a);
                 Ok(r)
             }
             "BinOp" => {
@@ -336,6 +357,7 @@ impl<'a> CodeGen for Expr {
         };
 
         match self.value.clone() {
+            ExprType::Await(a) => a.to_rust(ctx.clone(), options, symbols),
             ExprType::BinOp(binop) => binop.to_rust(ctx.clone(), options, symbols),
             ExprType::BoolOp(boolop) => boolop.to_rust(ctx.clone(), options, symbols),
             ExprType::Call(call) => { call.to_rust(ctx.clone(), options, symbols)},

@@ -68,6 +68,7 @@ impl<'a> CodeGen for Statement {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum StatementType {
+    AsyncFunctionDef(FunctionDef),
     Assign(Assign),
     Break,
     Continue,
@@ -92,6 +93,7 @@ impl<'a> FromPyObject<'a> for StatementType {
 
         debug!("statement...ob_type: {}...{}", ob_type, dump(ob, Some(4))?);
         match ob_type {
+            "AsyncFunctionDef" => Ok(StatementType::AsyncFunctionDef(FunctionDef::extract(ob).expect(format!("Failed to extract async function: {}", dump(ob, Some(4))?).as_str()))),
             "Assign" => {
                 let assignment = Assign::extract(ob).expect("reading assignment");
                 Ok(StatementType::Assign(assignment))
@@ -147,6 +149,10 @@ impl<'a> CodeGen for StatementType {
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
+            StatementType::AsyncFunctionDef(s) => {
+                let func_def = s.to_rust(Self::Context::Async(Box::new(ctx)), options, symbols).expect("Parsing async function");
+                Ok(quote!(#func_def))
+            },
             StatementType::Assign(a) => a.to_rust(ctx, options, symbols),
             StatementType::Break => Ok(quote!{break;}),
             StatementType::Call(c) => c.to_rust(ctx, options, symbols),

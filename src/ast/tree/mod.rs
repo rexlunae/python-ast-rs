@@ -7,6 +7,9 @@ pub use attribute::*;
 pub mod assign;
 pub use assign::*;
 
+pub mod await_kw;
+pub use await_kw::*;
+
 pub mod bin_ops;
 pub use bin_ops::*;
 

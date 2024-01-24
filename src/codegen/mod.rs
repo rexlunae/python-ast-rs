@@ -26,4 +26,5 @@ pub enum CodeGenContext {
     Module(String),
     Class,
     Function,
+    Async(Box<CodeGenContext>),
 }
