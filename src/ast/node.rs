@@ -1,3 +1,6 @@
+//! A module for AST elements that represent a position in a source file. Implementing thie Node trait allows
+//! an ergonomic means of extracting line and column information from an item.
+
 use pyo3::{PyAny, PyResult};
 
 /// A trait for AST elements that represent a position in a source file. Implementing this trait allows
