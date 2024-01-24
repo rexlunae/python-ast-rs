@@ -1,6 +1,7 @@
 use pyo3::prelude::*;
 
-/// Accepts any Python object and dumps it using the Python ast module.
+/// A wrapper for the Python ast.dump function. This is a convenience function for dumping the AST
+/// to the terminal.
 pub fn dump(o: &PyAny, indent: Option<u8>) -> PyResult<String> {
 
     let pymodule_code = include_str!("__init__.py");
