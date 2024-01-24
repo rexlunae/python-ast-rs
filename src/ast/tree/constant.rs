@@ -97,9 +97,8 @@ pub fn try_option(value: &PyAny) -> PyResult<Option<Literal<String>>> {
 impl<'a> FromPyObject<'a> for Constant {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         // Extracts the values as a PyAny.
-        let value = ob.getattr("value").expect(
-            ob.error_message("<unknown>", "error getting constant value").as_str()
-        );
+        let value = ob.getattr("value")
+            .expect(ob.error_message("<unknown>", "error getting constant value").as_str());
         debug!("[2] constant value: {}", value);
 
         let l = if let Ok(l) = try_string(value) {

@@ -25,7 +25,7 @@ impl<'a> FromPyObject<'a> for Attribute {
         let attr = ob.getattr("attr").expect("Attribute.attr");
         let ctx = ob.getattr("ctx").expect("getting attribute context")
             .get_type().name().expect(
-                ob.error_message("<unknown>", format!("extracting type name {:?} in attribute", dump(ob, None)).as_str()).as_str()
+                ob.error_message("<unknown>", format!("extracting type name {:?} in attribute", dump(ob, None))).as_str()
         );
         Ok(Attribute {
             value: Box::new(ExprType::extract(&value).expect("Attribute.value")),

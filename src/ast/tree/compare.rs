@@ -32,7 +32,7 @@ impl<'a> FromPyObject<'a> for Compares {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
-            ob.error_message("<unknown>", err_msg.as_str())
+            ob.error_message("<unknown>", err_msg)
         ))
     }
 }
@@ -49,15 +49,15 @@ impl<'a> FromPyObject<'a> for Compare {
         log::debug!("ob: {}", dump(ob, None)?);
 
         // Python allows for multiple comparators, rust we only supports one, so we have to rewrite the comparison a little.
-        let ops: Vec<&PyAny> = ob.getattr("ops").expect(
-            ob.error_message("<unknown>", "error getting unary operator").as_str()
-        ).extract().expect("getting ops from Compare");
+        let ops: Vec<&PyAny> = ob.getattr("ops")
+            .expect(ob.error_message("<unknown>", "error getting unary operator").as_str())
+            .extract().expect("getting ops from Compare");
 
         let mut op_list = Vec::new();
 
         for op in ops.iter() {
             let op_type = op.get_type().name().expect(
-                ob.error_message("<unknown>", format!("extracting type name {:?} for binary operator", op).as_str()).as_str()
+                ob.error_message("<unknown>", format!("extracting type name {:?} for binary operator", op)).as_str()
             );
 
             let op = match op_type {
@@ -80,13 +80,11 @@ impl<'a> FromPyObject<'a> for Compare {
             op_list.push(op);
         }
 
-        let left = ob.getattr("left").expect(
-            ob.error_message("<unknown>", "error getting comparator").as_str()
-        );
+        let left = ob.getattr("left")
+            .expect(ob.error_message("<unknown>", "error getting comparator").as_str());
 
-        let comparators = ob.getattr("comparators").expect(
-            ob.error_message("<unknown>", "error getting compoarator").as_str()
-        );
+        let comparators = ob.getattr("comparators")
+            .expect(ob.error_message("<unknown>", "error getting compoarator").as_str());
         log::debug!("left: {}, comparators: {}", dump(left, None)?, dump(comparators, None)?);
 
 

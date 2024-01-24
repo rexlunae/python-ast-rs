@@ -2,7 +2,7 @@ use pyo3::{PyAny, PyResult};
 
 /// A trait for AST elements that represent a position in a source file. Implementing this trait allows
 /// an ergonomic means of extracting line and column information from an item.
-pub trait Node<'a> {
+pub trait Node {
     /// A method for getting the starting line number of the node. This may not exist for all node types.
     fn lineno(&self) -> Option<usize> {
         None
@@ -24,13 +24,13 @@ pub trait Node<'a> {
     }
 
     /// Generate an error message for the current code, adding line and column number.
-    fn error_message(&self, mod_name: &'a str, message: &'a str) -> String {
-        format!("{} {}:{:?}:{:?}", message, mod_name, self.lineno(), self.col_offset())
+    fn error_message<S1: Into<String>, S2: Into<String>>(&self, mod_name: S1, message: S2) -> String {
+        format!("{} {}:{:?}:{:?}", message.into(), mod_name.into(), self.lineno(), self.col_offset())
     }
 }
 
 // These will only work on objects of Python's ast library's nodes, but you can try them on anything.
-impl<'a> Node<'a> for PyAny {
+impl Node for PyAny {
     /// A method for getting the starting line number of the node. This may not exist for all node types.
     fn lineno(&self) -> Option<usize> {
         let lineno = self.getattr("lineno");

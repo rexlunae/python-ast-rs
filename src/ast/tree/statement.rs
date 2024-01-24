@@ -35,7 +35,7 @@ impl<'a> FromPyObject<'a> for Statement {
     }
 }
 
-impl<'a> Node<'a> for Statement {
+impl Node for Statement {
     fn lineno(&self) -> Option<usize> {
         self.lineno
     }
@@ -61,7 +61,7 @@ impl<'a> CodeGen for Statement {
 
     fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
         Ok(self.statement.clone().to_rust(ctx, options, symbols).expect(
-            self.error_message("<unknown>", format!("failed to compile statement {:#?}", self).as_str()).as_str()
+            self.error_message("<unknown>", format!("failed to compile statement {:#?}", self)).as_str()
         ))
     }
 }

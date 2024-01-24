@@ -42,13 +42,11 @@ impl<'a> FromPyObject<'a> for BoolOp {
             ob.error_message("<unknown>", "error getting unary operator").as_str()
         );
 
-        let op_type = op.get_type().name().expect(
-            ob.error_message("<unknown>", format!("extracting type name {:?} for binary operator", op).as_str()).as_str()
-        );
+        let op_type = op.get_type().name()
+            .expect(ob.error_message("<unknown>", format!("extracting type name {:?} for binary operator", op)).as_str());
 
-        let values = ob.getattr("values").expect(
-            ob.error_message("<unknown>", "error getting binary operand").as_str()
-        );
+        let values = ob.getattr("values")
+            .expect(ob.error_message("<unknown>", "error getting binary operand").as_str());
 
         println!("BoolOps values: {}", dump(values, None)?);
 

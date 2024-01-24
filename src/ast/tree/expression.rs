@@ -72,9 +72,8 @@ impl<'a> FromPyObject<'a> for ExprType {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         log::debug!("exprtype ob: {}", dump(ob, Some(4))?);
 
-        let expr_type = ob.get_type().name().expect(
-            ob.error_message("<unknown>", format!("extracting type name {:?} in expression", dump(ob, None)).as_str()).as_str()
-        );
+        let expr_type = ob.get_type().name()
+            .expect(ob.error_message("<unknown>", format!("extracting type name {:?} in expression", dump(ob, None))).as_str());
         log::debug!("expression type: {}, value: {}", expr_type, dump(ob, None)?);
 
         let r = match expr_type {
@@ -83,7 +82,7 @@ impl<'a> FromPyObject<'a> for ExprType {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting Attribute in expression {}", dump(ob, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 Ok(Self::Attribute(a))
             },
@@ -93,13 +92,13 @@ impl<'a> FromPyObject<'a> for ExprType {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting await value in expression {}", dump(ob, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 Ok(Self::Await(a))
             },
             "Call" => {
                 let et = Call::extract(ob).expect(
-                    ob.error_message("<unknown>", format!("parsing Call expression {}", dump(ob, None)?).as_str()).as_str()
+                    ob.error_message("<unknown>", format!("parsing Call expression {}", dump(ob, None)?)).as_str()
                 );
                 Ok(Self::Call(et))
             },
@@ -108,7 +107,7 @@ impl<'a> FromPyObject<'a> for ExprType {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting Compare in expression {}", dump(ob, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 Ok(Self::Compare(c))
             },
@@ -118,7 +117,7 @@ impl<'a> FromPyObject<'a> for ExprType {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting Constant in expression {}", dump(ob, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 Ok(Self::Constant(c))
             },
@@ -129,7 +128,7 @@ impl<'a> FromPyObject<'a> for ExprType {
             }
             "Name" => {
                 let name = Name::extract(ob).expect(
-                    ob.error_message("<unknown>", format!("parsing Name expression {}", dump(ob, None)?).as_str()).as_str()
+                    ob.error_message("<unknown>", format!("parsing Name expression {}", dump(ob, None)?)).as_str()
                 );
                 Ok(Self::Name(name))
             }
@@ -138,7 +137,7 @@ impl<'a> FromPyObject<'a> for ExprType {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting UnaryOp in expression {}", dump(ob, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 Ok(Self::UnaryOp(c))
             },
@@ -147,7 +146,7 @@ impl<'a> FromPyObject<'a> for ExprType {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting BinOp in expression {}", dump(ob, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 Ok(Self::BinOp(c))
             },
@@ -236,7 +235,7 @@ impl<'a> FromPyObject<'a> for Expr {
 
 
         let expr_type = ob_value.get_type().name().expect(
-            ob.error_message("<unknown>", format!("extracting type name {:?} in expression", ob_value).as_str()).as_str()
+            ob.error_message("<unknown>", format!("extracting type name {:?} in expression", ob_value)).as_str()
         );
         log::debug!("expression type: {}, value: {}", expr_type, dump(ob_value, None)?);
         match expr_type {
@@ -245,7 +244,7 @@ impl<'a> FromPyObject<'a> for Expr {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting BinOp in expression {:?}", dump(ob_value, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 r.value = ExprType::Attribute(a);
                 Ok(r)
@@ -255,7 +254,7 @@ impl<'a> FromPyObject<'a> for Expr {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting BinOp in expression {:?}", dump(ob_value, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 r.value = ExprType::Await(a);
                 Ok(r)
@@ -265,7 +264,7 @@ impl<'a> FromPyObject<'a> for Expr {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting BinOp in expression {:?}", dump(ob_value, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 r.value = ExprType::BinOp(c);
                 Ok(r)
@@ -275,14 +274,14 @@ impl<'a> FromPyObject<'a> for Expr {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting BinOp in expression {:?}", dump(ob_value, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 r.value = ExprType::BoolOp(c);
                 Ok(r)
             },
             "Call" => {
                 let et = Call::extract(ob_value).expect(
-                    ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
+                    ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value)).as_str()
                 );
                 r.value = ExprType::Call(et);
                 Ok(r)
@@ -292,7 +291,7 @@ impl<'a> FromPyObject<'a> for Expr {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting Constant in expression {:?}", dump(ob_value, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 r.value = ExprType::Constant(c);
                 Ok(r)
@@ -302,7 +301,7 @@ impl<'a> FromPyObject<'a> for Expr {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting Compare in expression {:?}", dump(ob_value, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 r.value = ExprType::Compare(c);
                 Ok(r)
@@ -315,7 +314,7 @@ impl<'a> FromPyObject<'a> for Expr {
             }
             "Name" => {
                 let name = Name::extract(ob_value).expect(
-                    ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value).as_str()).as_str()
+                    ob.error_message("<unknown>", format!("parsing Call expression {:?}", ob_value)).as_str()
                 );
                 r.value = ExprType::Name(name);
                 Ok(r)
@@ -325,7 +324,7 @@ impl<'a> FromPyObject<'a> for Expr {
                     .expect(
                         ob.error_message("<unknown>",
                             format!("extracting UnaryOp in expression {:?}", dump(ob_value, None)?
-                        ).as_str()).as_str()
+                        )).as_str()
                     );
                 r.value = ExprType::UnaryOp(c);
                 Ok(r)
@@ -375,7 +374,7 @@ impl<'a> CodeGen for Expr {
     }
 }
 
-impl<'a> Node<'a> for Expr {
+impl Node for Expr {
     fn lineno(&self) -> Option<usize> {
         self.lineno
     }

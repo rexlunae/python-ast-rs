@@ -45,7 +45,7 @@ impl<'a> FromPyObject<'a> for UnaryOp {
         );
 
         let op_type = op.get_type().name().expect(
-            ob.error_message("<unknown>", format!("extracting type name {:?} for unary operator", op).as_str()).as_str()
+            ob.error_message("<unknown>", format!("extracting type name {:?} for unary operator", op)).as_str()
         );
 
         let operand = ob.getattr("operand").expect(
