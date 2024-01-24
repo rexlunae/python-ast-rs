@@ -1,6 +1,4 @@
-#![feature(extend_one)]
-#![feature(associated_type_bounds)]
-extern crate proc_macro;
+#[doc = include_str!("../../README.md")]
 
 pub mod ast;
 pub use ast::*;
