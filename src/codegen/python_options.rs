@@ -1,3 +1,5 @@
+//! Options for Python compilation.
+
 use std::{
     collections::{BTreeMap, HashSet},
     default::Default,
