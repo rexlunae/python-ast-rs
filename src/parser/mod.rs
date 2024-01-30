@@ -13,7 +13,7 @@ use pyo3::prelude::*;
 ///    println!("{:?}", ast);
 ///}
 /// ```
-pub fn parse<S1: Into<String>, S2: Into<String>>(input: S1, filename: S2) -> PyResult<Module> {
+pub fn parse<S1: AsRef<str>, S2: AsRef<str>>(input: S1, filename: S2) -> PyResult<Module> {
 
     let pymodule_code = include_str!("__init__.py");
 
@@ -22,7 +22,7 @@ pub fn parse<S1: Into<String>, S2: Into<String>>(input: S1, filename: S2) -> PyR
         let pymodule = PyModule::from_code(py, pymodule_code, "parser.py", "parser")?;
         let t = pymodule.getattr("parse")?;
         assert!(t.is_callable());
-        let args = (input.into(), filename.into());
+        let args = (input.as_ref(), filename.as_ref());
 
         let py_tree = t.call1(args)?;
         log::debug!("py_tree: {}", dump(py_tree, Some(4))?);

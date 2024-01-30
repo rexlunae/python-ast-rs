@@ -27,8 +27,8 @@ pub trait Node {
     }
 
     /// Generate an error message for the current code, adding line and column number.
-    fn error_message<S1: Into<String>, S2: Into<String>>(&self, mod_name: S1, message: S2) -> String {
-        format!("{} {}:{:?}:{:?}", message.into(), mod_name.into(), self.lineno(), self.col_offset())
+    fn error_message<S1: AsRef<str>, S2: AsRef<str>>(&self, mod_name: S1, message: S2) -> String {
+        format!("{} {}:{:?}:{:?}", message.as_ref(), mod_name.as_ref(), self.lineno(), self.col_offset())
     }
 }
 
