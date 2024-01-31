@@ -13,13 +13,13 @@ use pyo3::prelude::*;
 ///    println!("{:?}", ast);
 ///}
 /// ```
-pub fn parse<S1: AsRef<str>, S2: AsRef<str>>(input: S1, filename: S2) -> PyResult<Module> {
+pub fn parse(input: impl AsRef<str>, filename: impl AsRef<str>) -> PyResult<Module> {
 
     let pymodule_code = include_str!("__init__.py");
 
     Python::with_gil(|py| -> PyResult<Module> {
         // We want to call tokenize.tokenize from Python.
-        let pymodule = PyModule::from_code(py, pymodule_code, "parser.py", "parser")?;
+        let pymodule = PyModule::from_code(py, pymodule_code, "__init__.py", "parser")?;
         let t = pymodule.getattr("parse")?;
         assert!(t.is_callable());
         let args = (input.as_ref(), filename.as_ref());
