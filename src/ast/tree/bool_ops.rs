@@ -23,7 +23,7 @@ impl<'a> FromPyObject<'a> for BoolOps {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
-            ob.error_message("<unknown>", err_msg.as_str())
+            ob.error_message("<unknown>", err_msg)
         ))
     }
 }

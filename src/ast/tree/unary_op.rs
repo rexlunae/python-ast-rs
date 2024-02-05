@@ -26,7 +26,7 @@ impl<'a> FromPyObject<'a> for Ops {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
-            ob.error_message("<unknown>", err_msg.as_str())
+            ob.error_message("<unknown>", err_msg)
         ))
     }
 }
@@ -74,7 +74,7 @@ impl<'a> FromPyObject<'a> for UnaryOp {
     }
 }
 
-impl<'a> CodeGen for UnaryOp {
+impl CodeGen for UnaryOp {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
