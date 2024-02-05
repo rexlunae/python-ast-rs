@@ -88,18 +88,12 @@ impl CodeGen for ClassDef {
             streams.extend(s.clone().to_rust(CodeGenContext::Class, options.clone(), symbols.clone()).expect(format!("Failed to parse statement {:?}", s).as_str()));
         }
 
-        let _docstring = if let Some(d) = self.get_docstring() {
-            format!("/// {}", d)
+        let docstring = if let Some(d) = self.get_docstring() {
+            format!("{}", d)
         } else { "".to_string() };
 
-        /*
         let class = quote!{
-            #visibility trait #class_name #bases {
-                #streams
-            }
-        };*/
-
-        let class = quote!{
+            #[doc #docstring]
             #visibility mod #class_name {
                 use super::*;
                 #visibility trait Cls #bases {

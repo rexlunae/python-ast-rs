@@ -19,7 +19,7 @@ pub struct FunctionDef {
     pub decorator_list: Vec<String>,
 }
 
-impl<'a> CodeGen for FunctionDef {
+impl CodeGen for FunctionDef {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
@@ -59,13 +59,14 @@ impl<'a> CodeGen for FunctionDef {
             streams.extend(quote!(;));
         }
 
-        let _docstring = if let Some(d) = self.get_docstring() {
+        let docstring = if let Some(d) = self.get_docstring() {
             format!("{}", d)
-        } else { "No docstring\n".to_string() };
+        } else { "".to_string() };
 
 
         // XXX: Figure out how to add docstrict.
         let function = quote!{
+            #[doc = #docstring]
             #visibility #is_async fn #fn_name(#parameters) {
                 #streams
             }
