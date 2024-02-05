@@ -16,7 +16,7 @@ pub struct Keyword {
     value: Arg,
 }
 
-impl<'a> CodeGen for Keyword {
+impl CodeGen for Keyword {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;

@@ -50,7 +50,7 @@ impl Node for Statement {
     }
 }
 
-impl<'a> CodeGen for Statement {
+impl CodeGen for Statement {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
@@ -130,7 +130,7 @@ impl<'a> FromPyObject<'a> for StatementType {
     }
 }
 
-impl<'a> CodeGen for StatementType {
+impl CodeGen for StatementType {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;

@@ -31,7 +31,7 @@ pub struct Module {
     pub type_ignores: Vec<Type>,
 }
 
-impl<'a> CodeGen for Module {
+impl CodeGen for Module {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;

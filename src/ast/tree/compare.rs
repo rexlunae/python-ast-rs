@@ -102,7 +102,7 @@ impl<'a> FromPyObject<'a> for Compare {
     }
 }
 
-impl<'a> CodeGen for Compare {
+impl CodeGen for Compare {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;

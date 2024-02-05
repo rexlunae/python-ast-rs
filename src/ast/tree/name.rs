@@ -13,7 +13,7 @@ pub struct Name {
     pub id: String,
 }
 
-impl<'a> CodeGen for Name {
+impl CodeGen for Name {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;

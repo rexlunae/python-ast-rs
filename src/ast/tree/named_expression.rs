@@ -27,7 +27,7 @@ impl<'a> FromPyObject<'a> for NamedExpr {
     }
 }
 
-impl<'a> CodeGen for NamedExpr {
+impl CodeGen for NamedExpr {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;

@@ -344,7 +344,7 @@ impl<'a> FromPyObject<'a> for Expr {
     }
 }
 
-impl<'a> CodeGen for Expr {
+impl CodeGen for Expr {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;

@@ -100,7 +100,7 @@ impl<'source> FromPyObject<'source> for ParameterList {
 }
 
 
-impl<'a> CodeGen for ParameterList {
+impl CodeGen for ParameterList {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
