@@ -15,7 +15,7 @@ use crate::{
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
 #[derive(Clone, Debug, PartialEq)]
-//#[pyo3(transparent)]
+#[repr(transparent)]
 pub struct Constant(pub Option<Literal<String>>);
 
 impl Serialize for Constant {
