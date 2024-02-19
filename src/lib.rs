@@ -1,3 +1,4 @@
+#![feature(strict_provenance)]
 #[doc = include_str!("../README.md")]
 
 pub mod ast;
@@ -18,3 +19,6 @@ pub use pyo3::PyResult;
 
 pub mod parser;
 pub use parser::*;
+
+pub mod datamodel;
+pub use datamodel::*;

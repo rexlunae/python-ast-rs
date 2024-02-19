@@ -215,8 +215,8 @@ mod tests {
     #[test]
     fn return_with_nothing() {
         let tree = crate::parse("return", "<none>").unwrap();
-        assert_eq!(tree.body.len(), 1);
-        assert_eq!(tree.body[0].statement, StatementType::Return(Some(Expr{value: crate::tree::ExprType::NoneType(crate::tree::Constant(None)),
+        assert_eq!(tree.raw.body.len(), 1);
+        assert_eq!(tree.raw.body[0].statement, StatementType::Return(Some(Expr{value: crate::tree::ExprType::NoneType(crate::tree::Constant(None)),
             lineno: Some(1),
             col_offset: Some(0),
             end_lineno: Some(1),
@@ -229,8 +229,8 @@ mod tests {
     fn return_with_expr() {
         let lit = litrs::Literal::Integer(litrs::IntegerLit::parse(String::from("8")).unwrap());
         let tree = crate::parse("return 8", "<none>").unwrap();
-        assert_eq!(tree.body.len(), 1);
-        assert_eq!(tree.body[0].statement, StatementType::Return(Some(
+        assert_eq!(tree.raw.body.len(), 1);
+        assert_eq!(tree.raw.body[0].statement, StatementType::Return(Some(
             Expr{value: crate::tree::ExprType::Constant(
                 crate::tree::Constant(Some(
                     lit

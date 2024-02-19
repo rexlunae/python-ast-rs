@@ -49,7 +49,7 @@ mod tests {
     #[test]
     fn parse_list() {
         let module = crate::parse("[1, 2, 3]", "nothing").unwrap();
-        let statement = module.body[0].statement.clone();
+        let statement = module.raw.body[0].statement.clone();
         match statement {
             StatementType::Expr(e) => {
                 match e.value {

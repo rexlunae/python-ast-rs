@@ -2,8 +2,6 @@ use crate::{dump, Module};
 
 use pyo3::prelude::*;
 
-use serde_pyobject::*;
-
 /// Takes a string of Python code and emits a Python struct that represents the AST.
 fn parse_to_py(input: impl AsRef<str>, filename: impl AsRef<str>, py: Python<'_>) -> PyResult<PyObject> {
 
@@ -34,10 +32,12 @@ fn parse_to_py(input: impl AsRef<str>, filename: impl AsRef<str>, py: Python<'_>
 ///}
 /// ```
 pub fn parse(input: impl AsRef<str>, filename: impl AsRef<str>) -> PyResult<Module> {
-    let module = Python::with_gil(|py| {
-        let py_tree = parse_to_py(input, filename, py)?;
+    let filename = filename.as_ref();
+    let mut module: Module = Python::with_gil(|py| {
+        let py_tree = parse_to_py(input, filename.clone(), py)?;
         py_tree.extract(py)
-    });
+    })?;
+    module.filename = Some(filename.into());
 
-    Ok(module?)
+    Ok(module)
 }

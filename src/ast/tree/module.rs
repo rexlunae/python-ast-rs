@@ -24,11 +24,33 @@ impl<'a> FromPyObject<'a> for Type {
     }
 }
 
-/// Represents a module as imported from an ast.
+/// Represents a module as imported from an ast. Because of some of the requirements of Python's
+/// data module, we augment this by 
 #[derive(Clone, Debug, Default, FromPyObject, Serialize, Deserialize)]
-pub struct Module {
+pub struct RawModule {
     pub body: Vec<Statement>,
     pub type_ignores: Vec<Type>,
+}
+
+/// Represents a module as imported from an ast.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+
+pub struct Module {
+    pub raw: RawModule,
+    pub name: Option<crate::Name>,
+    pub doc: Option<String>,
+    pub filename: Option<String>,
+}
+
+impl<'a> FromPyObject<'a> for Module {
+    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+        let raw_module = RawModule::extract(ob).expect("Failed parsing module.");
+
+        Ok(Self {
+            raw: raw_module,
+            ..Default::default()
+        })
+    }
 }
 
 impl CodeGen for Module {
@@ -39,7 +61,7 @@ impl CodeGen for Module {
     fn find_symbols(self, symbols: Self::SymbolTable) -> Self::SymbolTable {
         let mut symbols = symbols;
         symbols.new_scope();
-        for s in self.body {
+        for s in self.raw.body {
             symbols = s.clone().find_symbols(symbols);
         }
         symbols
@@ -51,7 +73,7 @@ impl CodeGen for Module {
         if options.with_std_python {
             stream.extend(quote!(use #stdpython::*;));
         }
-        for s in self.body {
+        for s in self.raw.body {
             let statement = s.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())
                 .expect(format!("parsing statement {:?} in module", s).as_str());
             if statement.to_string() != "" {
@@ -61,6 +83,9 @@ impl CodeGen for Module {
         Ok(stream)
     }
 }
+
+impl crate::Object for Module {}
+
 
 #[cfg(test)]
 mod tests {
