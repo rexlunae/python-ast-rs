@@ -34,7 +34,7 @@ fn parse_to_py(input: impl AsRef<str>, filename: impl AsRef<str>, py: Python<'_>
 pub fn parse(input: impl AsRef<str>, filename: impl AsRef<str>) -> PyResult<Module> {
     let filename = filename.as_ref();
     let mut module: Module = Python::with_gil(|py| {
-        let py_tree = parse_to_py(input, filename.clone(), py)?;
+        let py_tree = parse_to_py(input, filename, py)?;
         py_tree.extract(py)
     })?;
     module.filename = Some(filename.into());
