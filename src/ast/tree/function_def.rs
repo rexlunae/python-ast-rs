@@ -63,8 +63,6 @@ impl CodeGen for FunctionDef {
             format!("{}", d)
         } else { "".to_string() };
 
-
-        // XXX: Figure out how to add docstrict.
         let function = quote!{
             #[doc = #docstring]
             #visibility #is_async fn #fn_name(#parameters) {
