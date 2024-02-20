@@ -1,4 +1,4 @@
-use crate::{dump, Module};
+use crate::{dump, Module, Name};
 
 use pyo3::prelude::*;
 
@@ -39,5 +39,10 @@ pub fn parse(input: impl AsRef<str>, filename: impl AsRef<str>) -> PyResult<Modu
     })?;
     module.filename = Some(filename.into());
 
+    if let Some(name_str) = filename.strip_suffix(".py") {
+        module.name = Some(Name::from(name_str));
+    }
+
+    println!("module: {:#?}", module);
     Ok(module)
 }
