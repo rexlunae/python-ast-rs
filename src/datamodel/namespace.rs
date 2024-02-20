@@ -3,7 +3,10 @@
 
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use crate::Name;
+use crate::{
+    Name,
+    Object,
+};
 
 pub enum PyPath {
     Name(Name),
@@ -11,7 +14,7 @@ pub enum PyPath {
     Super,
 }
 
-pub trait NameSpace: crate::Object {
+pub trait NameSpace: Object {
     /// Returns the name of the object
     fn name(&self) -> Name;
 
@@ -24,5 +27,5 @@ pub trait NameSpace: crate::Object {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    //use super::*;
 }

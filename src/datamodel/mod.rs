@@ -17,12 +17,43 @@ pub trait Object: Sized {
     fn is<T: Object>(&self, other: &Option<T>) -> bool {
         self.id() == other.id()
     }
+
+    /// __getattribute__ is called to look up an attribute of the object.
+    fn __getattribute__(&self, name: impl AsRef<str>) -> Option<impl Object> {
+        std::option::Option::<i32>::None
+    }
+
+    /// __setattribute__ is called to set an attribute of the object.
+    fn __setattribute__<T: Object>(&mut self, name: impl AsRef<str>, value: T) {
+        unimplemented!()
+    }
+
+    /// __delattribute__ is called to delete an attribute of the object.
+    fn __delattribute__(&mut self, name: impl AsRef<str>) {
+        unimplemented!()
+    }
+
+    /// __dir__ is called to list the attributes of the object.
+    fn __dir__(&self) -> impl Iterator<Item = &String> {
+        unimplemented!();
+        Vec::<String>::new().iter()
+    }
 }
 
+impl Object for i8 {}
+impl Object for i16 {}
 impl Object for i32 {}
+impl Object for i64 {}
+impl Object for i128 {}
+impl Object for u8 {}
+impl Object for u16 {}
+impl Object for u32 {}
+impl Object for u64 {}
+impl Object for u128 {}
 impl Object for String {}
 impl Object for &str {}
 impl Object for bool {}
+impl Object for f32 {}
 impl Object for f64 {}
 impl Object for char {}
 
@@ -55,6 +86,9 @@ pub use number::*;
 
 pub mod namespace;
 pub use namespace::*;
+
+pub mod class;
+pub use class::*;
 
 #[cfg(test)]
 mod tests {
