@@ -24,8 +24,7 @@ impl<'a> FromPyObject<'a> for Type {
     }
 }
 
-/// Represents a module as imported from an ast. Because of some of the requirements of Python's
-/// data module, we augment this by 
+/// Represents a module as imported from an ast. See the Module struct for the processed module.
 #[derive(Clone, Debug, Default, FromPyObject, Serialize, Deserialize)]
 pub struct RawModule {
     pub body: Vec<Statement>,
@@ -97,7 +96,7 @@ mod tests {
         let result = crate::parse("#test comment
 def foo():
     print(\"Test print.\")
-", "test_case").unwrap();
+", "test_case.py").unwrap();
         info!("Python tree: {:?}", result);
         //info!("{}", result);
 
@@ -107,7 +106,7 @@ def foo():
 
     #[test]
     fn can_we_import() {
-        let result = crate::parse("import ast", "ast").unwrap();
+        let result = crate::parse("import ast", "ast.py").unwrap();
         let options = PythonOptions::default();
         info!("{:?}", result);
 
@@ -117,7 +116,7 @@ def foo():
 
     #[test]
     fn can_we_import2() {
-        let result = crate::parse("import ast.test as test", "ast").unwrap();
+        let result = crate::parse("import ast.test as test", "ast.py").unwrap();
         let options = PythonOptions::default();
         info!("{:?}", result);
 
