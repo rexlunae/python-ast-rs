@@ -13,6 +13,15 @@ pub struct Name {
     pub id: String,
 }
 
+impl From<&str> for Name {
+    fn from(s: &str) -> Self {
+        Name {
+            id: s.to_string(),
+        }
+    }
+}
+
+
 impl CodeGen for Name {
     type Context = CodeGenContext;
     type Options = PythonOptions;
