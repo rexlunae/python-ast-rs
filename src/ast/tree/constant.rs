@@ -148,7 +148,7 @@ mod tests {
 
     #[test]
     fn parse_string() {
-        let s = crate::parse("'I ate a bug'", "test").unwrap();
+        let s = crate::parse("'I ate a bug'", "test.py").unwrap();
         let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         debug!("ast: {}", ast.to_string());
 
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn parse_bytes() {
-        let s = crate::parse("b'I ate a bug'", "test").unwrap();
+        let s = crate::parse("b'I ate a bug'", "test.py").unwrap();
         println!("parsed value: {:?}", s);
         let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         println!("ast: {:?}", ast);
@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn parse_number_int() {
-        let s = crate::parse("871234234", "test").unwrap();
+        let s = crate::parse("871234234", "test.py").unwrap();
         println!("parsed value: {:?}", s);
         let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         println!("ast: {:?}", ast);
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn parse_number_neg_int() {
-        let s = crate::parse("-871234234", "test").unwrap();
+        let s = crate::parse("-871234234", "test.py").unwrap();
         println!("parsed value: {:?}", s);
         let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         println!("ast: {:?}", ast);
@@ -187,7 +187,7 @@ mod tests {
 
     #[test]
     fn parse_number_float() {
-        let s = crate::parse("87123.4234", "test").unwrap();
+        let s = crate::parse("87123.4234", "test.py").unwrap();
         println!("parsed value: {:?}", s);
         let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         println!("ast: {:?}", ast);
@@ -197,7 +197,7 @@ mod tests {
 
     #[test]
     fn parse_bool() {
-        let s = crate::parse("True", "test").unwrap();
+        let s = crate::parse("True", "test.py").unwrap();
         println!("parsed value: {:?}", s);
         let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         println!("ast: {:?}", ast);
@@ -207,7 +207,7 @@ mod tests {
 
     #[test]
     fn parse_none() {
-        let s = crate::parse("None", "test").unwrap();
+        let s = crate::parse("None", "test.py").unwrap();
         println!("parsed value: {:?}", s);
         let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
         println!("ast: {:?}", ast);

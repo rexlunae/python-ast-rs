@@ -153,7 +153,7 @@ mod tests {
     #[test]
     fn test_simple_eq() {
         let options = PythonOptions::default();
-        let result = crate::parse("1 == 2", "test_case").unwrap();
+        let result = crate::parse("1 == 2", "test_case.py").unwrap();
         log::info!("Python tree: {:?}", result);
         //info!("{}", result);
 
@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn test_complex_compare() {
         let options = PythonOptions::default();
-        let result = crate::parse("1 < a > 6", "test_case").unwrap();
+        let result = crate::parse("1 < a > 6", "test_case.py").unwrap();
         log::info!("Python tree: {:?}", result);
         //info!("{}", result);
 

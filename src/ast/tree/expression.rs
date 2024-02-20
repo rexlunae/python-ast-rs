@@ -398,7 +398,7 @@ mod tests {
 
     #[test]
     fn check_call_expression() {
-        let expression = crate::parse("test()", "test").unwrap();
+        let expression = crate::parse("test()", "test.py").unwrap();
         println!("Python tree: {:#?}", expression);
         let mut options = PythonOptions::default();
         options.with_std_python = false;

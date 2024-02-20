@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn test_add() {
         let options = PythonOptions::default();
-        let result = crate::parse("1 + 2", "test_case").unwrap();
+        let result = crate::parse("1 + 2", "test_case.py").unwrap();
         log::info!("Python tree: {:?}", result);
         //info!("{}", result);
 
@@ -153,7 +153,7 @@ mod tests {
     #[test]
     fn test_subtract() {
         let options = PythonOptions::default();
-        let result = crate::parse("1 - 2", "test_case").unwrap();
+        let result = crate::parse("1 - 2", "test_case.py").unwrap();
         log::info!("Python tree: {:?}", result);
         //info!("{}", result);
 

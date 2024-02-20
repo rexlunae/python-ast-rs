@@ -13,7 +13,7 @@ use python_ast::parse;
 
 fn read_python_file(input: std::path::Path) {
     let py = read_to_string(input).unwrap();
-    let ast = parse(&py, "mod_name").unwrap();
+    let ast = parse(&py, "mod_name.py").unwrap();
 
     println!("{:?}", ast);
 }
@@ -27,7 +27,7 @@ use python_ast::{parse, CodeGen, CodeGenContext, PythonOptions, SymbolTableScope
 
 fn read_python_file(input: std::path::Path) {
     let py = read_to_string(input).unwrap();
-    let ast = parse(&py, "mod_name").unwrap();
+    let ast = parse(&py, "mod_name.py").unwrap();
 
     let rust = ast.to_rust(Context::Module("mod_name".to_string(), PythonOptions::default(), SymbolTableScopes::new())).unwrap();
 

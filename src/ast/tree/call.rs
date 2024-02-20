@@ -61,7 +61,7 @@ mod tests {
         let result = crate::parse("def foo(a = 7):
     pass
 
-foo(b=9)", "test").unwrap();
+foo(b=9)", "test.py").unwrap();
         println!("Python tree: {:#?}", result);
         let code = result.to_rust(CodeGenContext::Module("test".to_string()), options, SymbolTableScopes::new()).unwrap();
         println!("Rust code: {}", code);
