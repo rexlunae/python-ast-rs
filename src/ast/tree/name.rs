@@ -10,7 +10,7 @@ use crate::{
 use serde::{Serialize, Deserialize};
 
 /// Identifiers represent valid Python identifiers.
-#[derive(Clone, Debug, Default, FromPyObject, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Eq, FromPyObject, Hash, PartialEq, Serialize, Deserialize)]
 #[repr(transparent)]
 pub struct Identifier(String);
 
@@ -32,8 +32,14 @@ impl AsRef<str> for Identifier {
     }
 }
 
+impl Into<String> for Identifier {
+    fn into(self) -> String {
+        self.0
+    }
+}
+
 /// Names are Python identifiers, separated by '.'
-#[derive(Clone, Debug, Default, FromPyObject, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Eq, FromPyObject, Hash, PartialEq, Serialize, Deserialize)]
 pub struct Name {
     pub id: String,
 }
@@ -54,6 +60,18 @@ impl TryFrom<&str> for Name {
         Ok(Name {
             id: v.join("."),
         })
+    }
+}
+
+impl AsRef<str> for Name {
+    fn as_ref(&self) -> &str {
+        self.id.as_str()
+    }
+}
+
+impl Into<String> for Name {
+    fn into(self) -> String {
+        self.id
     }
 }
 
