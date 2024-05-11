@@ -1,18 +1,15 @@
 use std::fmt::*;
 
-use pyo3::{FromPyObject, PyAny, PyResult};
-use proc_macro2::*;
+use encoding::{all::ISO_8859_6, DecoderTrap, Encoding};
 use litrs::Literal;
-use quote::{quote};
 use log::debug;
-use encoding::{Encoding, DecoderTrap, all::ISO_8859_6};
+use proc_macro2::*;
+use pyo3::{FromPyObject, PyAny, PyResult};
+use quote::quote;
 
-use crate::{
-    Node, CodeGen, PythonOptions, CodeGenContext,
-    SymbolTableScopes,
-};
+use crate::{CodeGen, CodeGenContext, Node, PythonOptions, SymbolTableScopes};
 
-use serde::{Serialize, Deserialize, Serializer, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Clone, Debug, PartialEq)]
 #[repr(transparent)]
@@ -20,14 +17,18 @@ pub struct Constant(pub Option<Literal<String>>);
 
 impl Serialize for Constant {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where S: Serializer {
+    where
+        S: Serializer,
+    {
         serializer.serialize_str(self.to_string().as_str())
     }
 }
 
 impl<'de> Deserialize<'de> for Constant {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where D: Deserializer<'de> {
+    where
+        D: Deserializer<'de>,
+    {
         let s = String::deserialize(deserializer)?;
         let l = Literal::parse(s).expect("[3] Parsing the literal");
         Ok(Self(Some(l)))
@@ -52,7 +53,13 @@ pub fn try_string(value: &PyAny) -> PyResult<Option<Literal<String>>> {
 
 pub fn try_bytes(value: &PyAny) -> PyResult<Option<Literal<String>>> {
     let v: &[u8] = value.extract()?;
-    let l = Literal::parse(format!("b\"{}\"", ISO_8859_6.decode(v, DecoderTrap::Replace).expect("decoding byte string"))).expect("[4] Parsing the literal");
+    let l = Literal::parse(format!(
+        "b\"{}\"",
+        ISO_8859_6
+            .decode(v, DecoderTrap::Replace)
+            .expect("decoding byte string")
+    ))
+    .expect("[4] Parsing the literal");
 
     Ok(Some(l))
 }
@@ -97,8 +104,10 @@ pub fn try_option(value: &PyAny) -> PyResult<Option<Literal<String>>> {
 impl<'a> FromPyObject<'a> for Constant {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         // Extracts the values as a PyAny.
-        let value = ob.getattr("value")
-            .expect(ob.error_message("<unknown>", "error getting constant value").as_str());
+        let value = ob.getattr("value").expect(
+            ob.error_message("<unknown>", "error getting constant value")
+                .as_str(),
+        );
         debug!("[2] constant value: {}", value);
 
         let l = if let Ok(l) = try_string(value) {
@@ -127,14 +136,21 @@ impl CodeGen for Constant {
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, _ctx: Self::Context, _options: Self::Options, _symbols: Self::SymbolTable) -> std::result::Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(
+        self,
+        _ctx: Self::Context,
+        _options: Self::Options,
+        _symbols: Self::SymbolTable,
+    ) -> std::result::Result<TokenStream, Box<dyn std::error::Error>> {
         match self.0 {
             Some(c) => {
-                let v: TokenStream = c.to_string().parse()
+                let v: TokenStream = c
+                    .to_string()
+                    .parse()
                     .expect(format!("parsing Constant {}", c).as_str());
                 Ok(quote!(#v))
             }
-            None => Ok(quote!(None))
+            None => Ok(quote!(None)),
         }
     }
 }
@@ -143,13 +159,19 @@ impl CodeGen for Constant {
 mod tests {
     use test_log::test;
     //use super::*;
-    use crate::{CodeGen, symbols::SymbolTableScopes};
+    use crate::{symbols::SymbolTableScopes, CodeGen};
     use log::debug;
 
     #[test]
     fn parse_string() {
         let s = crate::parse("'I ate a bug'", "test.py").unwrap();
-        let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
+        let ast = s
+            .to_rust(
+                crate::CodeGenContext::Module("test".to_string()),
+                crate::PythonOptions::default(),
+                SymbolTableScopes::new(),
+            )
+            .unwrap();
         debug!("ast: {}", ast.to_string());
 
         assert_eq!("use stdpython :: * ; \"I ate a bug\"", ast.to_string());
@@ -159,7 +181,13 @@ mod tests {
     fn parse_bytes() {
         let s = crate::parse("b'I ate a bug'", "test.py").unwrap();
         println!("parsed value: {:?}", s);
-        let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
+        let ast = s
+            .to_rust(
+                crate::CodeGenContext::Module("test".to_string()),
+                crate::PythonOptions::default(),
+                SymbolTableScopes::new(),
+            )
+            .unwrap();
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; b\"I ate a bug\"", ast.to_string());
@@ -169,7 +197,13 @@ mod tests {
     fn parse_number_int() {
         let s = crate::parse("871234234", "test.py").unwrap();
         println!("parsed value: {:?}", s);
-        let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
+        let ast = s
+            .to_rust(
+                crate::CodeGenContext::Module("test".to_string()),
+                crate::PythonOptions::default(),
+                SymbolTableScopes::new(),
+            )
+            .unwrap();
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; 871234234", ast.to_string());
@@ -179,7 +213,13 @@ mod tests {
     fn parse_number_neg_int() {
         let s = crate::parse("-871234234", "test.py").unwrap();
         println!("parsed value: {:?}", s);
-        let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
+        let ast = s
+            .to_rust(
+                crate::CodeGenContext::Module("test".to_string()),
+                crate::PythonOptions::default(),
+                SymbolTableScopes::new(),
+            )
+            .unwrap();
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; - 871234234", ast.to_string());
@@ -189,7 +229,13 @@ mod tests {
     fn parse_number_float() {
         let s = crate::parse("87123.4234", "test.py").unwrap();
         println!("parsed value: {:?}", s);
-        let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
+        let ast = s
+            .to_rust(
+                crate::CodeGenContext::Module("test".to_string()),
+                crate::PythonOptions::default(),
+                SymbolTableScopes::new(),
+            )
+            .unwrap();
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; 87123.4234", ast.to_string());
@@ -199,7 +245,13 @@ mod tests {
     fn parse_bool() {
         let s = crate::parse("True", "test.py").unwrap();
         println!("parsed value: {:?}", s);
-        let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
+        let ast = s
+            .to_rust(
+                crate::CodeGenContext::Module("test".to_string()),
+                crate::PythonOptions::default(),
+                SymbolTableScopes::new(),
+            )
+            .unwrap();
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; true", ast.to_string());
@@ -209,7 +261,13 @@ mod tests {
     fn parse_none() {
         let s = crate::parse("None", "test.py").unwrap();
         println!("parsed value: {:?}", s);
-        let ast = s.to_rust(crate::CodeGenContext::Module("test".to_string()), crate::PythonOptions::default(), SymbolTableScopes::new()).unwrap();
+        let ast = s
+            .to_rust(
+                crate::CodeGenContext::Module("test".to_string()),
+                crate::PythonOptions::default(),
+                SymbolTableScopes::new(),
+            )
+            .unwrap();
         println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; None", ast.to_string());

@@ -19,24 +19,71 @@ pub trait Object: Sized {
     }
 
     /// __getattribute__ is called to look up an attribute of the object.
-    fn __getattribute__(&self, name: impl AsRef<str>) -> Option<impl Object> {
+    fn __getattribute__(&self, _name: impl AsRef<str>) -> Option<impl Object> {
         std::option::Option::<i32>::None
     }
 
     /// __setattribute__ is called to set an attribute of the object.
-    fn __setattribute__<T: Object>(&mut self, name: impl AsRef<str>, value: T) {
+    fn __setattribute__<T: Object>(&mut self, _name: impl AsRef<str>, _value: T) {
         unimplemented!()
     }
 
     /// __delattribute__ is called to delete an attribute of the object.
-    fn __delattribute__(&mut self, name: impl AsRef<str>) {
+    fn __delattribute__(&mut self, _name: impl AsRef<str>) {
         unimplemented!()
     }
 
     /// __dir__ is called to list the attributes of the object.
-    fn __dir__(&self) -> impl Iterator<Item = &String> {
+    fn __dir__(&self) -> Vec<impl AsRef<str>> {
         unimplemented!();
-        Vec::<String>::new().iter()
+        vec![
+            "__class__",
+            "__class_getitem__",
+            "__contains__",
+            "__delattr__",
+            "__delitem__",
+            "__dir__",
+            "__doc__",
+            "__eq__",
+            "__format__",
+            "__ge__",
+            "__getattribute__",
+            "__getitem__",
+            "__getstate__",
+            "__gt__",
+            "__hash__",
+            "__init__",
+            "__init_subclass__",
+            "__ior__",
+            "__iter__",
+            "__le__",
+            "__len__",
+            "__lt__",
+            "__ne__",
+            "__new__",
+            "__or__",
+            "__reduce__",
+            "__reduce_ex__",
+            "__repr__",
+            "__reversed__",
+            "__ror__",
+            "__setattr__",
+            "__setitem__",
+            "__sizeof__",
+            "__str__",
+            "__subclasshook__",
+            "clear",
+            "copy",
+            "fromkeys",
+            "get",
+            "items",
+            "keys",
+            "pop",
+            "popitem",
+            "setdefault",
+            "update",
+            "values",
+        ]
     }
 }
 
@@ -82,7 +129,7 @@ pub static NotImplemented: Option<&str> = Some("NotImplemented");
 pub static Ellipsis: &str = "...";
 
 pub mod number;
-pub use number::*;
+//pub use number::*;
 
 pub mod namespace;
 pub use namespace::*;

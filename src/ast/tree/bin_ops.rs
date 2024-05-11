@@ -1,14 +1,10 @@
-use pyo3::{FromPyObject, PyAny, PyResult};
 use proc_macro2::TokenStream;
-use quote::{quote};
-use serde::{Serialize, Deserialize};
+use pyo3::{FromPyObject, PyAny, PyResult};
+use quote::quote;
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    dump,
-    Node,
-    ExprType,
-    CodeGen, PythonOptions, CodeGenContext, CodeGenError,
-    SymbolTableScopes,
+    dump, CodeGen, CodeGenContext, CodeGenError, ExprType, Node, PythonOptions, SymbolTableScopes,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -30,12 +26,11 @@ pub enum BinOps {
     Unknown,
 }
 
-
 impl<'a> FromPyObject<'a> for BinOps {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
-            ob.error_message("<unknown>", err_msg)
+            ob.error_message("<unknown>", err_msg),
         ))
     }
 }
@@ -51,19 +46,26 @@ impl<'a> FromPyObject<'a> for BinOp {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         log::debug!("ob: {}", dump(ob, None)?);
         let op = ob.getattr("op").expect(
-            ob.error_message("<unknown>", "error getting unary operator").as_str()
+            ob.error_message("<unknown>", "error getting unary operator")
+                .as_str(),
         );
 
         let op_type = op.get_type().name().expect(
-            ob.error_message("<unknown>", format!("extracting type name {:?} for binary operator", op)).as_str()
+            ob.error_message(
+                "<unknown>",
+                format!("extracting type name {:?} for binary operator", op),
+            )
+            .as_str(),
         );
 
         let left = ob.getattr("left").expect(
-            ob.error_message("<unknown>", "error getting binary operand").as_str()
+            ob.error_message("<unknown>", "error getting binary operand")
+                .as_str(),
         );
 
         let right = ob.getattr("right").expect(
-            ob.error_message("<unknown>", "error getting binary operand").as_str()
+            ob.error_message("<unknown>", "error getting binary operand")
+                .as_str(),
         );
         log::debug!("left: {}, right: {}", dump(left, None)?, dump(right, None)?);
 
@@ -88,18 +90,22 @@ impl<'a> FromPyObject<'a> for BinOp {
             }
         };
 
-        log::debug!("left: {}, right: {}, op: {:?}/{:?}", dump(left, None)?, dump(right, None)?, op_type, op);
+        log::debug!(
+            "left: {}, right: {}, op: {:?}/{:?}",
+            dump(left, None)?,
+            dump(right, None)?,
+            op_type,
+            op
+        );
 
         let right = ExprType::extract(right).expect("getting binary operator operand");
         let left = ExprType::extract(left).expect("getting binary operator operand");
 
-
-        return Ok(BinOp{
+        return Ok(BinOp {
             op: op,
             left: Box::new(left),
             right: Box::new(right),
         });
-
     }
 }
 
@@ -108,9 +114,20 @@ impl<'a> CodeGen for BinOp {
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let left = self.left.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
-        let right = self.right.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+    fn to_rust(
+        self,
+        ctx: Self::Context,
+        options: Self::Options,
+        symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        let left = self
+            .left
+            .clone()
+            .to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+        let right = self
+            .right
+            .clone()
+            .to_rust(ctx.clone(), options.clone(), symbols.clone())?;
         match self.op {
             BinOps::Add => Ok(quote!((#left) + (#right))),
             BinOps::Sub => Ok(quote!((#left) - (#right))),
@@ -125,9 +142,9 @@ impl<'a> CodeGen for BinOp {
             BinOps::BitXor => Ok(quote!((#left) ^ (#right))),
             BinOps::BitAnd => Ok(quote!((#left) & (#right))),
             //MatMult, XXX implement this
-
             _ => {
-                let error = CodeGenError::NotYetImplemented(format!("BinOp not implemented {:?}", self));
+                let error =
+                    CodeGenError::NotYetImplemented(format!("BinOp not implemented {:?}", self));
                 Err(error.into())
             }
         }
@@ -138,7 +155,6 @@ impl<'a> CodeGen for BinOp {
 mod tests {
     use super::*;
 
-
     #[test]
     fn test_add() {
         let options = PythonOptions::default();
@@ -146,7 +162,11 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
+        let code = result.to_rust(
+            CodeGenContext::Module("test_case".to_string()),
+            options,
+            SymbolTableScopes::new(),
+        );
         log::info!("module: {:?}", code);
     }
 
@@ -157,7 +177,11 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
+        let code = result.to_rust(
+            CodeGenContext::Module("test_case".to_string()),
+            options,
+            SymbolTableScopes::new(),
+        );
         log::info!("module: {:?}", code);
     }
 }

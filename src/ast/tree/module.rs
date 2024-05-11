@@ -1,16 +1,12 @@
-use std::default::Default;
+use std::{collections::HashMap, default::Default};
 
-use proc_macro2::TokenStream;
-use quote::{quote, format_ident};
-use pyo3::{PyAny, FromPyObject, PyResult};
 use log::info;
-use serde::{Serialize, Deserialize};
+use proc_macro2::TokenStream;
+use pyo3::{FromPyObject, PyAny, PyObject, PyResult};
+use quote::{format_ident, quote};
+use serde::{Deserialize, Serialize};
 
-use crate::{
-    Statement,
-    CodeGen, PythonOptions, CodeGenContext,
-    SymbolTableScopes,
-};
+use crate::{CodeGen, CodeGenContext, Name, Object, PythonOptions, Statement, SymbolTableScopes};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Type {
@@ -33,12 +29,12 @@ pub struct RawModule {
 
 /// Represents a module as imported from an ast.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-
 pub struct Module {
     pub raw: RawModule,
-    pub name: Option<crate::Name>,
+    pub name: Option<Name>,
     pub doc: Option<String>,
     pub filename: Option<String>,
+    pub attributes: HashMap<Name, String>,
 }
 
 impl<'a> FromPyObject<'a> for Module {
@@ -66,14 +62,21 @@ impl CodeGen for Module {
         symbols
     }
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(
+        self,
+        ctx: Self::Context,
+        options: Self::Options,
+        symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
         let stdpython = format_ident!("{}", options.stdpython);
         if options.with_std_python {
             stream.extend(quote!(use #stdpython::*;));
         }
         for s in self.raw.body {
-            let statement = s.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())
+            let statement = s
+                .clone()
+                .to_rust(ctx.clone(), options.clone(), symbols.clone())
                 .expect(format!("parsing statement {:?} in module", s).as_str());
             if statement.to_string() != "" {
                 stream.extend(statement);
@@ -83,8 +86,60 @@ impl CodeGen for Module {
     }
 }
 
-impl crate::Object for Module {}
-
+impl Object for Module {
+    /// __dir__ is called to list the attributes of the object.
+    fn __dir__(&self) -> Vec<impl AsRef<str>> {
+        // XXX - Make this meaningful.
+        vec![
+            "__class__",
+            "__class_getitem__",
+            "__contains__",
+            "__delattr__",
+            "__delitem__",
+            "__dir__",
+            "__doc__",
+            "__eq__",
+            "__format__",
+            "__ge__",
+            "__getattribute__",
+            "__getitem__",
+            "__getstate__",
+            "__gt__",
+            "__hash__",
+            "__init__",
+            "__init_subclass__",
+            "__ior__",
+            "__iter__",
+            "__le__",
+            "__len__",
+            "__lt__",
+            "__ne__",
+            "__new__",
+            "__or__",
+            "__reduce__",
+            "__reduce_ex__",
+            "__repr__",
+            "__reversed__",
+            "__ror__",
+            "__setattr__",
+            "__setitem__",
+            "__sizeof__",
+            "__str__",
+            "__subclasshook__",
+            "clear",
+            "copy",
+            "fromkeys",
+            "get",
+            "items",
+            "keys",
+            "pop",
+            "popitem",
+            "setdefault",
+            "update",
+            "values",
+        ]
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -93,14 +148,22 @@ mod tests {
     #[test]
     fn can_we_print() {
         let options = PythonOptions::default();
-        let result = crate::parse("#test comment
+        let result = crate::parse(
+            "#test comment
 def foo():
     print(\"Test print.\")
-", "test_case.py").unwrap();
+",
+            "test_case.py",
+        )
+        .unwrap();
         info!("Python tree: {:?}", result);
         //info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
+        let code = result.to_rust(
+            CodeGenContext::Module("test_case".to_string()),
+            options,
+            SymbolTableScopes::new(),
+        );
         info!("module: {:?}", code);
     }
 
@@ -110,7 +173,11 @@ def foo():
         let options = PythonOptions::default();
         info!("{:?}", result);
 
-        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
+        let code = result.to_rust(
+            CodeGenContext::Module("test_case".to_string()),
+            options,
+            SymbolTableScopes::new(),
+        );
         info!("module: {:?}", code);
     }
 
@@ -120,8 +187,11 @@ def foo():
         let options = PythonOptions::default();
         info!("{:?}", result);
 
-        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
+        let code = result.to_rust(
+            CodeGenContext::Module("test_case".to_string()),
+            options,
+            SymbolTableScopes::new(),
+        );
         info!("module: {:?}", code);
     }
-
 }

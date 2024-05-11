@@ -1,14 +1,11 @@
 //! The module defines Python-syntax arguments and maps them into Rust-syntax versions.
 use proc_macro2::TokenStream;
-use quote::{quote};
-use pyo3::{PyAny, FromPyObject, PyResult};
-use serde::{Serialize, Deserialize};
+use pyo3::{FromPyObject, PyAny, PyResult};
+use quote::quote;
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    Node,
-    Constant,
-    CodeGen, PythonOptions, CodeGenContext, CodeGenError,
-    SymbolTableScopes,
+    CodeGen, CodeGenContext, CodeGenError, Constant, Node, PythonOptions, SymbolTableScopes,
 };
 
 /// An argument.
@@ -25,17 +22,24 @@ impl<'a> CodeGen for Arg {
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(
+        self,
+        ctx: Self::Context,
+        options: Self::Options,
+        symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             Self::Constant(c) => {
-                let v = c.to_rust(ctx, options, symbols).expect(format!("Error generating constant argument.").as_str());
+                let v = c
+                    .to_rust(ctx, options, symbols)
+                    .expect(format!("Error generating constant argument.").as_str());
                 println!("{:?}", v);
                 Ok(quote!(#v))
-            },
+            }
             _ => {
                 let error = CodeGenError::UnknownType("Unknown argument type");
                 Err(error.into())
-            },
+            }
         }
     }
 }
@@ -43,17 +47,25 @@ impl<'a> CodeGen for Arg {
 impl<'a> FromPyObject<'a> for Arg {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         let ob_type = ob.get_type().name().expect(
-            ob.error_message("<unknown>", "Could not extract argument type").as_str()
+            ob.error_message("<unknown>", "Could not extract argument type")
+                .as_str(),
         );
         // FIXME: Hangle the rest of argument types.
         let r = match ob_type {
             "Constant" => {
                 let err_msg = format!("parsing argument {:?} as a constant", ob);
 
-                Self::Constant(Constant::extract(ob).expect(
-                ob.error_message("<unknown>", err_msg.as_str()).as_str()
-            ))},
-            _ => return Err(pyo3::exceptions::PyValueError::new_err(format!("Argument {} is of unknown type {}", ob, ob_type)))
+                Self::Constant(
+                    Constant::extract(ob)
+                        .expect(ob.error_message("<unknown>", err_msg.as_str()).as_str()),
+                )
+            }
+            _ => {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "Argument {} is of unknown type {}",
+                    ob, ob_type
+                )))
+            }
         };
         Ok(r)
     }

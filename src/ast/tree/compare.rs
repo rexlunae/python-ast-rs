@@ -1,14 +1,10 @@
-use pyo3::{FromPyObject, PyAny, PyResult};
 use proc_macro2::TokenStream;
-use quote::{quote};
-use serde::{Serialize, Deserialize};
+use pyo3::{FromPyObject, PyAny, PyResult};
+use quote::quote;
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    dump,
-    Node,
-    ExprType,
-    CodeGen, PythonOptions, CodeGenContext, CodeGenError,
-    SymbolTableScopes,
+    dump, CodeGen, CodeGenContext, CodeGenError, ExprType, Node, PythonOptions, SymbolTableScopes,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -27,12 +23,11 @@ pub enum Compares {
     Unknown,
 }
 
-
 impl<'a> FromPyObject<'a> for Compares {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
-            ob.error_message("<unknown>", err_msg)
+            ob.error_message("<unknown>", err_msg),
         ))
     }
 }
@@ -49,15 +44,24 @@ impl<'a> FromPyObject<'a> for Compare {
         log::debug!("ob: {}", dump(ob, None)?);
 
         // Python allows for multiple comparators, rust we only supports one, so we have to rewrite the comparison a little.
-        let ops: Vec<&PyAny> = ob.getattr("ops")
-            .expect(ob.error_message("<unknown>", "error getting unary operator").as_str())
-            .extract().expect("getting ops from Compare");
+        let ops: Vec<&PyAny> = ob
+            .getattr("ops")
+            .expect(
+                ob.error_message("<unknown>", "error getting unary operator")
+                    .as_str(),
+            )
+            .extract()
+            .expect("getting ops from Compare");
 
         let mut op_list = Vec::new();
 
         for op in ops.iter() {
             let op_type = op.get_type().name().expect(
-                ob.error_message("<unknown>", format!("extracting type name {:?} for binary operator", op)).as_str()
+                ob.error_message(
+                    "<unknown>",
+                    format!("extracting type name {:?} for binary operator", op),
+                )
+                .as_str(),
             );
 
             let op = match op_type {
@@ -80,25 +84,38 @@ impl<'a> FromPyObject<'a> for Compare {
             op_list.push(op);
         }
 
-        let left = ob.getattr("left")
-            .expect(ob.error_message("<unknown>", "error getting comparator").as_str());
+        let left = ob.getattr("left").expect(
+            ob.error_message("<unknown>", "error getting comparator")
+                .as_str(),
+        );
 
-        let comparators = ob.getattr("comparators")
-            .expect(ob.error_message("<unknown>", "error getting compoarator").as_str());
-        log::debug!("left: {}, comparators: {}", dump(left, None)?, dump(comparators, None)?);
-
+        let comparators = ob.getattr("comparators").expect(
+            ob.error_message("<unknown>", "error getting compoarator")
+                .as_str(),
+        );
+        log::debug!(
+            "left: {}, comparators: {}",
+            dump(left, None)?,
+            dump(comparators, None)?
+        );
 
         let left = ExprType::extract(left).expect("getting binary operator operand");
-        let comparators: Vec<ExprType> = comparators.extract().expect("getting comparators from Compare");
+        let comparators: Vec<ExprType> = comparators
+            .extract()
+            .expect("getting comparators from Compare");
 
-        log::debug!("left: {:?}, comparators: {:?}, op: {:?}", left, comparators, op_list);
+        log::debug!(
+            "left: {:?}, comparators: {:?}, op: {:?}",
+            left,
+            comparators,
+            op_list
+        );
 
-        return Ok(Compare{
+        return Ok(Compare {
             ops: op_list,
             left: Box::new(left),
             comparators: comparators,
         });
-
     }
 }
 
@@ -107,15 +124,27 @@ impl CodeGen for Compare {
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(
+        self,
+        ctx: Self::Context,
+        options: Self::Options,
+        symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut outer_ts = TokenStream::new();
-        let left = self.left.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+        let left = self
+            .left
+            .clone()
+            .to_rust(ctx.clone(), options.clone(), symbols.clone())?;
         let ops = self.ops.clone();
         let comparators = self.comparators.clone();
 
         let mut index = 0;
         for op in ops.iter() {
-            let comparator = comparators.get(index).expect("getting comparator").clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+            let comparator = comparators
+                .get(index)
+                .expect("getting comparator")
+                .clone()
+                .to_rust(ctx.clone(), options.clone(), symbols.clone())?;
             let tokens = match op {
                 Compares::Eq => quote!(((#left) == (#comparator))),
                 Compares::NotEq => quote!(((#left) != (#comparator))),
@@ -129,8 +158,11 @@ impl CodeGen for Compare {
                 Compares::NotIn => quote!(((#comparator).get(#left) == None)),
 
                 _ => {
-                    let error = CodeGenError::NotYetImplemented(format!("Compare not implemented {:?}", self));
-                    return Err(error.into())
+                    let error = CodeGenError::NotYetImplemented(format!(
+                        "Compare not implemented {:?}",
+                        self
+                    ));
+                    return Err(error.into());
                 }
             };
 
@@ -149,7 +181,6 @@ impl CodeGen for Compare {
 mod tests {
     use super::*;
 
-
     #[test]
     fn test_simple_eq() {
         let options = PythonOptions::default();
@@ -157,7 +188,11 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
+        let code = result.to_rust(
+            CodeGenContext::Module("test_case".to_string()),
+            options,
+            SymbolTableScopes::new(),
+        );
         log::info!("module: {:?}", code);
     }
 
@@ -168,7 +203,11 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new());
+        let code = result.to_rust(
+            CodeGenContext::Module("test_case".to_string()),
+            options,
+            SymbolTableScopes::new(),
+        );
         log::info!("module: {:?}", code);
     }
 }

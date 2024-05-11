@@ -1,10 +1,13 @@
-use crate::{dump, Module, Name};
+use crate::{dump, Module, Name, *};
 
 use pyo3::prelude::*;
 
 /// Takes a string of Python code and emits a Python struct that represents the AST.
-fn parse_to_py(input: impl AsRef<str>, filename: impl AsRef<str>, py: Python<'_>) -> PyResult<PyObject> {
-
+fn parse_to_py(
+    input: impl AsRef<str>,
+    filename: impl AsRef<str>,
+    py: Python<'_>,
+) -> PyResult<PyObject> {
     let pymodule_code = include_str!("__init__.py");
 
     // We want to call tokenize.tokenize from Python.
@@ -18,7 +21,6 @@ fn parse_to_py(input: impl AsRef<str>, filename: impl AsRef<str>, py: Python<'_>
 
     Ok(py_tree.into())
 }
-
 
 /// Takes a string of bytes and returns the Python-tokenized version of it.
 /// use python_ast::parse;
@@ -40,9 +42,13 @@ pub fn parse(input: impl AsRef<str>, filename: impl AsRef<str>) -> PyResult<Modu
     module.filename = Some(filename.into());
 
     if let Some(name_str) = filename.strip_suffix(".py") {
-        module.name = Some(Name::try_from(name_str).expect(format!("Invalid name {}", name_str).as_str()));
+        module.name =
+            Some(Name::try_from(name_str).expect(format!("Invalid name {}", name_str).as_str()));
     }
 
     println!("module: {:#?}", module);
+    for item in module.__dir__() {
+        println!("module.__dir__: {:#?}", item.as_ref());
+    }
     Ok(module)
 }

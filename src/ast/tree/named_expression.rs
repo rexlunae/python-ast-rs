@@ -1,13 +1,9 @@
-use pyo3::FromPyObject;
 use proc_macro2::TokenStream;
+use pyo3::FromPyObject;
 use quote::quote;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::{
-    ExprType,
-    CodeGen, PythonOptions, CodeGenContext,
-    SymbolTableScopes,
-};
+use crate::{CodeGen, CodeGenContext, ExprType, PythonOptions, SymbolTableScopes};
 
 /// A keyword argument, gnerally used in function calls.
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
@@ -32,18 +28,29 @@ impl CodeGen for NamedExpr {
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let left = self.left.clone().to_rust(ctx.clone(), options.clone(), symbols.clone()).expect(format!("parsing left side of named expression {:?}", self.left).as_str());
-        let right = self.right.clone().to_rust(ctx, options, symbols).expect(format!("parsing right side of named expression {:?}", self.right).as_str());
+    fn to_rust(
+        self,
+        ctx: Self::Context,
+        options: Self::Options,
+        symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        let left = self
+            .left
+            .clone()
+            .to_rust(ctx.clone(), options.clone(), symbols.clone())
+            .expect(format!("parsing left side of named expression {:?}", self.left).as_str());
+        let right =
+            self.right.clone().to_rust(ctx, options, symbols).expect(
+                format!("parsing right side of named expression {:?}", self.right).as_str(),
+            );
         Ok(quote!(#left = #right))
     }
-
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{ExprType, Name, Constant};
+    use crate::{Constant, ExprType, Name};
     use litrs::*;
 
     #[test]
@@ -52,9 +59,17 @@ mod test {
             left: Box::new(ExprType::Name(Name {
                 id: "a".to_string(),
             })),
-            right: Box::new(ExprType::Constant(Constant(Some(Literal::Integer(IntegerLit::parse("1".to_string()).unwrap()))))),
+            right: Box::new(ExprType::Constant(Constant(Some(Literal::Integer(
+                IntegerLit::parse("1".to_string()).unwrap(),
+            ))))),
         };
-        let rust = named_expression.to_rust(CodeGenContext::Module("test".to_string()), PythonOptions::default(), SymbolTableScopes::new()).unwrap();
+        let rust = named_expression
+            .to_rust(
+                CodeGenContext::Module("test".to_string()),
+                PythonOptions::default(),
+                SymbolTableScopes::new(),
+            )
+            .unwrap();
         assert_eq!(rust.to_string(), "a = 1");
     }
 }

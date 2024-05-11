@@ -1,13 +1,10 @@
-use pyo3::{FromPyObject, PyErr};
-use quote::{quote, format_ident};
 use proc_macro2::TokenStream;
+use pyo3::{FromPyObject, PyErr};
+use quote::{format_ident, quote};
 
-use crate::{
-    CodeGen, PythonOptions, CodeGenContext, IsIdentifier,
-    SymbolTableScopes,
-};
+use crate::{CodeGen, CodeGenContext, IsIdentifier, PythonOptions, SymbolTableScopes};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// Identifiers represent valid Python identifiers.
 #[derive(Clone, Debug, Default, Eq, FromPyObject, Hash, PartialEq, Serialize, Deserialize)]
@@ -21,7 +18,10 @@ impl TryFrom<&str> for Identifier {
         if value.isidentifier()? {
             Ok(Identifier(value.to_string()))
         } else {
-            Err(PyErr::new::<pyo3::exceptions::PyNameError, _>(format!("Invalid Identifier: {}", String::from(value))))
+            Err(PyErr::new::<pyo3::exceptions::PyNameError, _>(format!(
+                "Invalid Identifier: {}",
+                String::from(value)
+            )))
         }
     }
 }
@@ -57,9 +57,7 @@ impl TryFrom<&str> for Name {
             v.push(String::from(ident.as_ref()));
         }
 
-        Ok(Name {
-            id: v.join("."),
-        })
+        Ok(Name { id: v.join(".") })
     }
 }
 
@@ -80,7 +78,12 @@ impl CodeGen for Name {
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, _ctx: Self::Context, _options: Self::Options, _symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(
+        self,
+        _ctx: Self::Context,
+        _options: Self::Options,
+        _symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let name = format_ident!("{}", self.id);
         Ok(quote!(#name))
     }

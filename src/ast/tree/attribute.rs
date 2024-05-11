@@ -1,15 +1,10 @@
-use pyo3::{FromPyObject};
-use quote::{quote, format_ident};
 use proc_macro2::TokenStream;
+use pyo3::FromPyObject;
+use quote::{format_ident, quote};
 
-use crate::{
-    dump,
-    CodeGen, PythonOptions, CodeGenContext,
-    ExprType,
-    SymbolTableScopes, Node,
-};
+use crate::{dump, CodeGen, CodeGenContext, ExprType, Node, PythonOptions, SymbolTableScopes};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 //#[pyo3(transparent)]
@@ -23,10 +18,18 @@ impl<'a> FromPyObject<'a> for Attribute {
     fn extract(ob: &pyo3::PyAny) -> pyo3::PyResult<Self> {
         let value = ob.getattr("value").expect("Attribute.value");
         let attr = ob.getattr("attr").expect("Attribute.attr");
-        let ctx = ob.getattr("ctx").expect("getting attribute context")
-            .get_type().name().expect(
-                ob.error_message("<unknown>", format!("extracting type name {:?} in attribute", dump(ob, None))).as_str()
-        );
+        let ctx = ob
+            .getattr("ctx")
+            .expect("getting attribute context")
+            .get_type()
+            .name()
+            .expect(
+                ob.error_message(
+                    "<unknown>",
+                    format!("extracting type name {:?} in attribute", dump(ob, None)),
+                )
+                .as_str(),
+            );
         Ok(Attribute {
             value: Box::new(ExprType::extract(&value).expect("Attribute.value")),
             attr: attr.extract().expect("Attribute.attr"),
@@ -40,8 +43,16 @@ impl<'a> CodeGen for Attribute {
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, _ctx: Self::Context, _options: Self::Options, _symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let name = self.value.to_rust(_ctx, _options, _symbols).expect("Attribute.value");
+    fn to_rust(
+        self,
+        _ctx: Self::Context,
+        _options: Self::Options,
+        _symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        let name = self
+            .value
+            .to_rust(_ctx, _options, _symbols)
+            .expect("Attribute.value");
         let attr = format_ident!("{}", self.attr);
         Ok(quote!(#name.#attr))
     }

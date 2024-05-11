@@ -1,18 +1,13 @@
-use crate::{
-    Node,
-    Arg,
-    CodeGen, PythonOptions, CodeGenContext,
-    SymbolTableScopes,
-};
+use crate::{Arg, CodeGen, CodeGenContext, Node, PythonOptions, SymbolTableScopes};
 
 use proc_macro2::TokenStream;
 
 use std::default::Default;
 
+use pyo3::FromPyObject;
 use quote::{format_ident, quote};
-use pyo3::{FromPyObject};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, FromPyObject, PartialEq, Serialize, Deserialize)]
 pub struct Parameter {
@@ -24,9 +19,14 @@ impl CodeGen for Parameter {
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, _ctx: Self::Context, _options: Self::Options, _symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(
+        self,
+        _ctx: Self::Context,
+        _options: Self::Options,
+        _symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let ident = format_ident!("{}", self.arg);
-        Ok(quote!{
+        Ok(quote! {
             #ident: PyObject
         })
     }
@@ -53,10 +53,11 @@ use pyo3::{PyAny, PyResult};
 // have to do it manually.
 impl<'source> FromPyObject<'source> for ParameterList {
     fn extract(ob: &'source PyAny) -> PyResult<Self> {
-
         let err_msg = ob.error_message("<unknown>", "failed extracting posonlyargs");
         let posonlyargs = ob.getattr("posonlyargs").expect(err_msg.as_str());
-        let posonlyargs_list: Vec<Parameter> = posonlyargs.extract().expect("failed extracting posonlyargs");
+        let posonlyargs_list: Vec<Parameter> = posonlyargs
+            .extract()
+            .expect("failed extracting posonlyargs");
 
         let err_msg = ob.error_message("<unknown>", "failed extracting args");
         let args = ob.getattr("args").expect(err_msg.as_str());
@@ -74,7 +75,9 @@ impl<'source> FromPyObject<'source> for ParameterList {
         let kw_defaults = ob.getattr("kw_defaults").expect(err_msg.as_str());
         let kw_defaults_list: Vec<Arg> = if let Ok(list) = kw_defaults.extract() {
             list
-        } else { Vec::new() };
+        } else {
+            Vec::new()
+        };
 
         let err_msg = ob.error_message("<unknown>", "failed extracting kwargs");
         let kwarg = ob.getattr("kwarg").expect(err_msg.as_str());
@@ -84,7 +87,7 @@ impl<'source> FromPyObject<'source> for ParameterList {
         let defaults = ob.getattr("defaults").expect(err_msg.as_str());
         let defaults_list: Vec<Arg> = defaults.extract().expect(err_msg.as_str());
 
-        Ok(ParameterList{
+        Ok(ParameterList {
             posonlyargs: posonlyargs_list,
             args: args_list,
             vararg: vararg_option,
@@ -98,18 +101,26 @@ impl<'source> FromPyObject<'source> for ParameterList {
     }
 }
 
-
 impl CodeGen for ParameterList {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(
+        self,
+        ctx: Self::Context,
+        options: Self::Options,
+        symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut stream = TokenStream::new();
 
         // Ordinary args
         for arg in self.args {
-            stream.extend(arg.clone().to_rust(ctx.clone(), options.clone(), symbols.clone()).expect(format!("generating arg {:?}", arg).as_str()));
+            stream.extend(
+                arg.clone()
+                    .to_rust(ctx.clone(), options.clone(), symbols.clone())
+                    .expect(format!("generating arg {:?}", arg).as_str()),
+            );
             stream.extend(quote!(,));
         }
 
@@ -122,7 +133,11 @@ impl CodeGen for ParameterList {
 
         // kwonlyargs
         for arg in self.kwonlyargs {
-            stream.extend(arg.clone().to_rust(ctx.clone(), options.clone(), symbols.clone()).expect(format!("generating kwonlyarg {:?}", arg).as_str()));
+            stream.extend(
+                arg.clone()
+                    .to_rust(ctx.clone(), options.clone(), symbols.clone())
+                    .expect(format!("generating kwonlyarg {:?}", arg).as_str()),
+            );
             stream.extend(quote!(,));
         }
 
@@ -141,13 +156,13 @@ impl CodeGen for ParameterList {
 // test coverage for the various types of
 #[cfg(test)]
 mod tests {
-    use test_log::test;
     use super::*;
+    use test_log::test;
 
-    use crate::{parse};
+    use crate::parse;
+    use crate::tree::statement::StatementType;
     use crate::tree::Module;
-    use crate::tree::statement::{StatementType};
-    use pyo3::{PyResult};
+    use pyo3::PyResult;
 
     fn setup(input: &str) -> PyResult<Module> {
         let ast = parse(input, "__test__.py")?;
@@ -164,7 +179,10 @@ mod tests {
         if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 0)
         } else {
-            panic!("Expected function definition, found {:#?}", function_def_statement);
+            panic!(
+                "Expected function definition, found {:#?}",
+                function_def_statement
+            );
         }
     }
 
@@ -178,7 +196,10 @@ mod tests {
         if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 1)
         } else {
-            panic!("Expected function definition, found {:#?}", function_def_statement);
+            panic!(
+                "Expected function definition, found {:#?}",
+                function_def_statement
+            );
         }
     }
 
@@ -192,7 +213,10 @@ mod tests {
         if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 3)
         } else {
-            panic!("Expected function definition, found {:#?}", function_def_statement);
+            panic!(
+                "Expected function definition, found {:#?}",
+                function_def_statement
+            );
         }
     }
 
@@ -205,9 +229,17 @@ mod tests {
 
         if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 0);
-            assert_eq!(f.args.vararg, Some(Parameter{ arg: "a".to_string()}));
+            assert_eq!(
+                f.args.vararg,
+                Some(Parameter {
+                    arg: "a".to_string()
+                })
+            );
         } else {
-            panic!("Expected function definition, found {:#?}", function_def_statement);
+            panic!(
+                "Expected function definition, found {:#?}",
+                function_def_statement
+            );
         }
     }
 
@@ -220,9 +252,17 @@ mod tests {
 
         if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 1);
-            assert_eq!(f.args.vararg, Some(Parameter{ arg: "b".to_string()}));
+            assert_eq!(
+                f.args.vararg,
+                Some(Parameter {
+                    arg: "b".to_string()
+                })
+            );
         } else {
-            panic!("Expected function definition, found {:#?}", function_def_statement);
+            panic!(
+                "Expected function definition, found {:#?}",
+                function_def_statement
+            );
         }
     }
 
@@ -235,10 +275,23 @@ mod tests {
 
         if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 1);
-            assert_eq!(f.args.vararg, Some(Parameter{ arg: "b".to_string()}));
-            assert_eq!(f.args.kwonlyargs, vec![Parameter{ arg: "c".to_string()}]);
+            assert_eq!(
+                f.args.vararg,
+                Some(Parameter {
+                    arg: "b".to_string()
+                })
+            );
+            assert_eq!(
+                f.args.kwonlyargs,
+                vec![Parameter {
+                    arg: "c".to_string()
+                }]
+            );
         } else {
-            panic!("Expected function definition, found {:#?}", function_def_statement);
+            panic!(
+                "Expected function definition, found {:#?}",
+                function_def_statement
+            );
         }
     }
 
@@ -256,7 +309,10 @@ mod tests {
             assert_eq!(f.args.defaults.len(), 1);
             //assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant(Literal::parse(String::from("7")).unwrap())));
         } else {
-            panic!("Expected function definition, found {:#?}", function_def_statement);
+            panic!(
+                "Expected function definition, found {:#?}",
+                function_def_statement
+            );
         }
     }
 
@@ -272,7 +328,10 @@ mod tests {
             assert_eq!(f.args.defaults.len(), 1);
             //assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant(Literal::parse(String::from("7")).unwrap())));
         } else {
-            panic!("Expected function definition, found {:#?}", function_def_statement);
+            panic!(
+                "Expected function definition, found {:#?}",
+                function_def_statement
+            );
         }
     }
 
@@ -285,9 +344,17 @@ mod tests {
 
         if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 0);
-            assert_eq!(f.args.kwarg, Some(Parameter{ arg: "a".to_string()}));
+            assert_eq!(
+                f.args.kwarg,
+                Some(Parameter {
+                    arg: "a".to_string()
+                })
+            );
         } else {
-            panic!("Expected function definition, found {:#?}", function_def_statement);
+            panic!(
+                "Expected function definition, found {:#?}",
+                function_def_statement
+            );
         }
     }
 
@@ -301,10 +368,17 @@ mod tests {
         if let StatementType::FunctionDef(f) = function_def_statement.statement {
             assert_eq!(f.args.args.len(), 1);
             assert_eq!(f.args.vararg, None);
-            assert_eq!(f.args.kwonlyargs, vec![Parameter{ arg: "b".to_string()}]);
+            assert_eq!(
+                f.args.kwonlyargs,
+                vec![Parameter {
+                    arg: "b".to_string()
+                }]
+            );
         } else {
-            panic!("Expected function definition, found {:#?}", function_def_statement);
+            panic!(
+                "Expected function definition, found {:#?}",
+                function_def_statement
+            );
         }
     }
-
 }

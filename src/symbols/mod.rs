@@ -1,24 +1,23 @@
 //! Implements a Python-compatilble symbol table for Rust.
 
 use std::collections::HashMap;
-use std::fmt;
 use std::collections::VecDeque;
+use std::fmt;
 
 use crate::tree::{ClassDef, FunctionDef, Import, ImportFrom};
-
 
 //use log::{debug, info};
 
 //use crate::codegen::{CodeGen, PythonOptions, CodeGenContext};
-use crate::tree::{ExprType};
+use crate::tree::ExprType;
 
 /// A stack of symbol tables of different scopes. Topmost is the current scope.
 #[derive(Clone, Debug)]
-pub struct SymbolTableScopes (VecDeque<SymbolTable>);
+pub struct SymbolTableScopes(VecDeque<SymbolTable>);
 
 impl SymbolTableScopes {
     pub fn new() -> Self {
-        Self (VecDeque::new())
+        Self(VecDeque::new())
     }
 
     pub fn push(&mut self, table: SymbolTable) {
@@ -49,10 +48,9 @@ impl SymbolTableScopes {
     }
 }
 
-
 #[derive(Clone, Debug)]
 pub enum SymbolTableNode {
-    Assign{position: usize, value: ExprType},
+    Assign { position: usize, value: ExprType },
     ClassDef(ClassDef),
     FunctionDef(FunctionDef),
     Import(Import),

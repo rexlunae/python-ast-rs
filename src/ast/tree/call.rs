@@ -1,13 +1,9 @@
-use pyo3::{FromPyObject, PyAny, PyResult};
 use proc_macro2::TokenStream;
+use pyo3::{FromPyObject, PyAny, PyResult};
 use quote::quote;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::{
-    CodeGen, PythonOptions, CodeGenContext,
-    Arg, Keyword, ExprType,
-    SymbolTableScopes,
-};
+use crate::{Arg, CodeGen, CodeGenContext, ExprType, Keyword, PythonOptions, SymbolTableScopes};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Call {
@@ -15,7 +11,6 @@ pub struct Call {
     pub args: Vec<Arg>,
     pub keywords: Vec<Keyword>,
 }
-
 
 impl<'a> FromPyObject<'a> for Call {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
@@ -30,20 +25,30 @@ impl<'a> FromPyObject<'a> for Call {
     }
 }
 
-
 impl<'a> CodeGen for Call {
     type Context = CodeGenContext;
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let name = self.func.to_rust(ctx.clone(), options.clone(), symbols.clone()).expect("Call.func");
+    fn to_rust(
+        self,
+        ctx: Self::Context,
+        options: Self::Options,
+        symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        let name = self
+            .func
+            .to_rust(ctx.clone(), options.clone(), symbols.clone())
+            .expect("Call.func");
         // XXX - How are we going to figure out the parameter list?
         //let symbol = symbols.get(&self.func.id).expect(format!("looking up function {}", self.func.id).as_str());
         //println!("symbol: {:?}", symbol);
         let mut args = TokenStream::new();
         for arg in self.args {
-            let arg = arg.clone().to_rust(ctx.clone(), options.clone(), symbols.clone()).expect(format!("Call.args {:?}", arg).as_str());
+            let arg = arg
+                .clone()
+                .to_rust(ctx.clone(), options.clone(), symbols.clone())
+                .expect(format!("Call.args {:?}", arg).as_str());
             args.extend(arg);
             args.extend(quote!(,));
         }
@@ -58,12 +63,22 @@ mod tests {
     #[test]
     fn test_lookup_of_function() {
         let options = PythonOptions::default();
-        let result = crate::parse("def foo(a = 7):
+        let result = crate::parse(
+            "def foo(a = 7):
     pass
 
-foo(b=9)", "test.py").unwrap();
+foo(b=9)",
+            "test.py",
+        )
+        .unwrap();
         println!("Python tree: {:#?}", result);
-        let code = result.to_rust(CodeGenContext::Module("test".to_string()), options, SymbolTableScopes::new()).unwrap();
+        let code = result
+            .to_rust(
+                CodeGenContext::Module("test".to_string()),
+                options,
+                SymbolTableScopes::new(),
+            )
+            .unwrap();
         println!("Rust code: {}", code);
     }
 }

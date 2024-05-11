@@ -23,19 +23,18 @@
 //! an impl Cls for Data block.
 //! 8. Cls will implement Clone, Default.
 
-use pyo3::{FromPyObject};
 use proc_macro2::TokenStream;
+use pyo3::FromPyObject;
 use quote::{format_ident, quote};
 
 use crate::{
-    Statement, StatementType, Name, ExprType,
-    CodeGen, PythonOptions, CodeGenContext,
-    SymbolTableScopes, SymbolTableNode,
+    CodeGen, CodeGenContext, ExprType, Name, PythonOptions, Statement, StatementType,
+    SymbolTableNode, SymbolTableScopes,
 };
 
 use log::debug;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, FromPyObject, Serialize, Deserialize, PartialEq)]
 pub struct ClassDef {
@@ -56,7 +55,12 @@ impl CodeGen for ClassDef {
         symbols
     }
 
-    fn to_rust(self, _ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(
+        self,
+        _ctx: Self::Context,
+        options: Self::Options,
+        symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut streams = TokenStream::new();
         let class_name = format_ident!("{}", self.name);
 
@@ -85,14 +89,20 @@ impl CodeGen for ClassDef {
         }
 
         for s in self.body.clone() {
-            streams.extend(s.clone().to_rust(CodeGenContext::Class, options.clone(), symbols.clone()).expect(format!("Failed to parse statement {:?}", s).as_str()));
+            streams.extend(
+                s.clone()
+                    .to_rust(CodeGenContext::Class, options.clone(), symbols.clone())
+                    .expect(format!("Failed to parse statement {:?}", s).as_str()),
+            );
         }
 
         let docstring = if let Some(d) = self.get_docstring() {
             format!("{}", d)
-        } else { "".to_string() };
+        } else {
+            "".to_string()
+        };
 
-        let class = quote!{
+        let class = quote! {
             #[doc #docstring]
             #visibility mod #class_name {
                 use super::*;
@@ -113,11 +123,9 @@ impl CodeGen for ClassDef {
     fn get_docstring(&self) -> Option<String> {
         let expr = self.body[0].clone();
         match expr.statement {
-            StatementType::Expr(e) => {
-                match e.value {
-                    ExprType::Constant(c) => Some(c.to_string()),
-                    _ => None,
-                }
+            StatementType::Expr(e) => match e.value {
+                ExprType::Constant(c) => Some(c.to_string()),
+                _ => None,
             },
             _ => None,
         }

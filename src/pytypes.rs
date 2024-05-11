@@ -1,7 +1,4 @@
-use std::{
-    collections::VecDeque,
-    iter::Iterator,
-};
+use std::{collections::VecDeque, iter::Iterator};
 
 /// The Python list type. Generally, it's used with a `dyn Object` trait object to allow
 /// for arbitrary contents. Since Rust doesn't have a native type that supports mixed type

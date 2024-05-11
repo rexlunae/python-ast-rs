@@ -1,9 +1,6 @@
 //! Code generation for Python ASTs.
 
-use std::{
-    borrow::Borrow,
-    fmt::Debug,
-};
+use std::{borrow::Borrow, fmt::Debug};
 
 pub mod python_options;
 pub use python_options::*;

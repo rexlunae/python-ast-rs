@@ -1,14 +1,10 @@
-use pyo3::{FromPyObject, PyAny, PyResult};
 use proc_macro2::TokenStream;
-use quote::{quote};
-use serde::{Serialize, Deserialize};
+use pyo3::{FromPyObject, PyAny, PyResult};
+use quote::quote;
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    dump,
-    Node,
-    ExprType,
-    CodeGen, PythonOptions, CodeGenContext, CodeGenError,
-    SymbolTableScopes,
+    dump, CodeGen, CodeGenContext, CodeGenError, ExprType, Node, PythonOptions, SymbolTableScopes,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -18,12 +14,11 @@ pub enum BoolOps {
     Unknown,
 }
 
-
 impl<'a> FromPyObject<'a> for BoolOps {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
-            ob.error_message("<unknown>", err_msg)
+            ob.error_message("<unknown>", err_msg),
         ))
     }
 }
@@ -39,14 +34,22 @@ impl<'a> FromPyObject<'a> for BoolOp {
     fn extract(ob: &'a PyAny) -> PyResult<Self> {
         log::debug!("ob: {}", dump(ob, None)?);
         let op = ob.getattr("op").expect(
-            ob.error_message("<unknown>", "error getting unary operator").as_str()
+            ob.error_message("<unknown>", "error getting unary operator")
+                .as_str(),
         );
 
-        let op_type = op.get_type().name()
-            .expect(ob.error_message("<unknown>", format!("extracting type name {:?} for binary operator", op)).as_str());
+        let op_type = op.get_type().name().expect(
+            ob.error_message(
+                "<unknown>",
+                format!("extracting type name {:?} for binary operator", op),
+            )
+            .as_str(),
+        );
 
-        let values = ob.getattr("values")
-            .expect(ob.error_message("<unknown>", "error getting binary operand").as_str());
+        let values = ob.getattr("values").expect(
+            ob.error_message("<unknown>", "error getting binary operand")
+                .as_str(),
+        );
 
         println!("BoolOps values: {}", dump(values, None)?);
 
@@ -64,14 +67,19 @@ impl<'a> FromPyObject<'a> for BoolOp {
             }
         };
 
-        log::debug!("left: {:?}, right: {:?}, op: {:?}/{:?}", left, right, op_type, op);
+        log::debug!(
+            "left: {:?}, right: {:?}, op: {:?}/{:?}",
+            left,
+            right,
+            op_type,
+            op
+        );
 
-        return Ok(BoolOp{
+        return Ok(BoolOp {
             op: op,
             left: Box::new(left),
             right: Box::new(right),
         });
-
     }
 }
 
@@ -80,15 +88,27 @@ impl<'a> CodeGen for BoolOp {
     type Options = PythonOptions;
     type SymbolTable = SymbolTableScopes;
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: Self::SymbolTable) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let left = self.left.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
-        let right = self.right.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+    fn to_rust(
+        self,
+        ctx: Self::Context,
+        options: Self::Options,
+        symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        let left = self
+            .left
+            .clone()
+            .to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+        let right = self
+            .right
+            .clone()
+            .to_rust(ctx.clone(), options.clone(), symbols.clone())?;
         match self.op {
             BoolOps::Or => Ok(quote!((#left) || (#right))),
             BoolOps::And => Ok(quote!((#left) && (#right))),
 
             _ => {
-                let error = CodeGenError::NotYetImplemented(format!("BoolOp not implemented {:?}", self));
+                let error =
+                    CodeGenError::NotYetImplemented(format!("BoolOp not implemented {:?}", self));
                 Err(error.into())
             }
         }
@@ -106,7 +126,13 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //log::info!("{}", result.to_rust().unwrap());
 
-        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new()).unwrap();
+        let code = result
+            .to_rust(
+                CodeGenContext::Module("test_case".to_string()),
+                options,
+                SymbolTableScopes::new(),
+            )
+            .unwrap();
         log::info!("module: {:?}", code);
     }
 
@@ -117,7 +143,13 @@ mod tests {
         log::info!("Python tree: {:?}", result);
         //log::info!("{}", result);
 
-        let code = result.to_rust(CodeGenContext::Module("test_case".to_string()), options, SymbolTableScopes::new()).unwrap();
+        let code = result
+            .to_rust(
+                CodeGenContext::Module("test_case".to_string()),
+                options,
+                SymbolTableScopes::new(),
+            )
+            .unwrap();
         log::info!("module: {:?}", code);
     }
 }

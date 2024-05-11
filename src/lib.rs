@@ -1,6 +1,5 @@
 #![feature(strict_provenance)]
 #[doc = include_str!("../README.md")]
-
 pub mod ast;
 pub use ast::*;
 

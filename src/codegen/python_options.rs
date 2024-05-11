@@ -9,12 +9,13 @@ use crate::Scope;
 use pyo3::{prelude::*, PyResult};
 
 pub fn sys_path() -> PyResult<Vec<String>> {
-
     let pymodule_code = include_str!("path.py");
 
     Python::with_gil(|py| -> PyResult<Vec<String>> {
         let pymodule = PyModule::from_code(py, pymodule_code, "path.py", "path")?;
-        let t = pymodule.getattr("path").expect("Reading path variable from interpretter");
+        let t = pymodule
+            .getattr("path")
+            .expect("Reading path variable from interpretter");
         assert!(t.is_callable());
         let args = ();
         let paths: Vec<String> = t.call1(args)?.extract()?;
@@ -22,7 +23,6 @@ pub fn sys_path() -> PyResult<Vec<String>> {
         Ok(paths)
     })
 }
-
 
 /// The global context for Python compilation.
 #[derive(Clone, Debug)]

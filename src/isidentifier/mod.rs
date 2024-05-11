@@ -4,7 +4,6 @@ use pyo3::prelude::*;
 
 /// Determines if a string is a valid Python idetifier, and returns a Python object wrapping a bool.
 fn isidentifier_to_py(input: impl AsRef<str>, py: Python<'_>) -> PyResult<PyObject> {
-
     let pymodule_code = include_str!("__init__.py");
 
     // We want to call tokenize.tokenize from Python.
@@ -17,7 +16,6 @@ fn isidentifier_to_py(input: impl AsRef<str>, py: Python<'_>) -> PyResult<PyObje
 
     Ok(isidentifier.into())
 }
-
 
 /// Takes a string of bytes and returns the Python-tokenized version of it.
 /// use python_ast::parse;
@@ -69,5 +67,4 @@ mod tests {
     fn bad_symbol_works_as_method() {
         assert_eq!("0alpha".isidentifier().unwrap(), false)
     }
-
 }

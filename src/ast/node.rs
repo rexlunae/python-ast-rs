@@ -28,7 +28,13 @@ pub trait Node {
 
     /// Generate an error message for the current code, adding line and column number.
     fn error_message(&self, mod_name: impl AsRef<str>, message: impl AsRef<str>) -> String {
-        format!("{} {}:{:?}:{:?}", message.as_ref(), mod_name.as_ref(), self.lineno(), self.col_offset())
+        format!(
+            "{} {}:{:?}:{:?}",
+            message.as_ref(),
+            mod_name.as_ref(),
+            self.lineno(),
+            self.col_offset()
+        )
     }
 }
 
@@ -44,8 +50,9 @@ impl Node for PyAny {
             } else {
                 None
             }
+        } else {
+            None
         }
-        else { None }
     }
 
     /// A method for getting the starting column of the node. This may not exist for all node types.
@@ -58,8 +65,9 @@ impl Node for PyAny {
             } else {
                 None
             }
+        } else {
+            None
         }
-        else { None }
     }
 
     /// A method for getting the ending line number of the node. This may not exist for all node types.
@@ -72,8 +80,9 @@ impl Node for PyAny {
             } else {
                 None
             }
+        } else {
+            None
         }
-        else { None }
     }
 
     /// A method for getting the ending column of the node. This may not exist for all node types.
@@ -86,7 +95,8 @@ impl Node for PyAny {
             } else {
                 None
             }
+        } else {
+            None
         }
-        else { None }
     }
 }

@@ -1,17 +1,15 @@
 //! Rust traits used to abstract Python data objects that are namespaces and contain symbols.
 //! This includes Modules, Functions, Classes, and other objects.
 
+use crate::{Name, Object};
 use std::collections::HashMap;
-use crate::{
-    Name,
-    Object,
-};
 
+/*
 pub enum PyPath {
     Name(Name),
     SubModule(Vec<PyPath>),
     Super,
-}
+}*/
 
 pub trait NameSpace: Object {
     /// Returns the name of the object

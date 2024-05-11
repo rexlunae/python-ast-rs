@@ -1,15 +1,13 @@
 use log::debug;
-use pyo3::{FromPyObject};
 use proc_macro2::TokenStream;
+use pyo3::FromPyObject;
 use quote::{format_ident, quote};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    CodeGen, PythonOptions, CodeGenContext,
-    ParameterList, Statement, StatementType, ExprType,
-    SymbolTableScopes, SymbolTableNode,
+    CodeGen, CodeGenContext, ExprType, Object, ParameterList, PythonOptions, Statement,
+    StatementType, SymbolTableNode, SymbolTableScopes,
 };
-
 
 #[derive(Clone, Debug, FromPyObject, Serialize, Deserialize, PartialEq)]
 pub struct FunctionDef {
@@ -26,11 +24,19 @@ impl CodeGen for FunctionDef {
 
     fn find_symbols(self, symbols: Self::SymbolTable) -> Self::SymbolTable {
         let mut symbols = symbols;
-        symbols.insert(self.name.clone(), SymbolTableNode::FunctionDef(self.clone()));
+        symbols.insert(
+            self.name.clone(),
+            SymbolTableNode::FunctionDef(self.clone()),
+        );
         symbols
     }
 
-    fn to_rust(self, ctx: Self::Context, options: Self::Options, symbols: SymbolTableScopes) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    fn to_rust(
+        self,
+        ctx: Self::Context,
+        options: Self::Options,
+        symbols: SymbolTableScopes,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut streams = TokenStream::new();
         let fn_name = format_ident!("{}", self.name);
 
@@ -47,23 +53,32 @@ impl CodeGen for FunctionDef {
         let is_async = match ctx.clone() {
             CodeGenContext::Async(_) => {
                 quote!(async)
-            },
+            }
             _ => quote!(),
         };
 
-        let parameters = self.args.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())
+        let parameters = self
+            .args
+            .clone()
+            .to_rust(ctx.clone(), options.clone(), symbols.clone())
             .expect(format!("parsing arguments {:?}", self.args).as_str());
 
         for s in self.body.iter() {
-            streams.extend(s.clone().to_rust(ctx.clone(), options.clone(), symbols.clone()).expect(format!("parsing statement {:?}", s).as_str()));
+            streams.extend(
+                s.clone()
+                    .to_rust(ctx.clone(), options.clone(), symbols.clone())
+                    .expect(format!("parsing statement {:?}", s).as_str()),
+            );
             streams.extend(quote!(;));
         }
 
         let docstring = if let Some(d) = self.get_docstring() {
             format!("{}", d)
-        } else { "".to_string() };
+        } else {
+            "".to_string()
+        };
 
-        let function = quote!{
+        let function = quote! {
             #[doc = #docstring]
             #visibility #is_async fn #fn_name(#parameters) {
                 #streams
@@ -77,13 +92,13 @@ impl CodeGen for FunctionDef {
     fn get_docstring(&self) -> Option<String> {
         let expr = self.body[0].clone();
         match expr.statement {
-            StatementType::Expr(e) => {
-                match e.value {
-                    ExprType::Constant(c) => Some(c.to_string()),
-                    _ => None,
-                }
+            StatementType::Expr(e) => match e.value {
+                ExprType::Constant(c) => Some(c.to_string()),
+                _ => None,
             },
             _ => None,
         }
     }
 }
+
+impl Object for FunctionDef {}
