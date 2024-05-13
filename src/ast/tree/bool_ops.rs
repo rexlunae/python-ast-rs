@@ -4,7 +4,7 @@ use quote::quote;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dump, CodeGen, CodeGenContext, CodeGenError, ExprType, Node, PythonOptions, SymbolTableScopes,
+    dump, CodeGen, CodeGenContext, Error, ExprType, Node, PythonOptions, SymbolTableScopes,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -106,11 +106,7 @@ impl<'a> CodeGen for BoolOp {
             BoolOps::Or => Ok(quote!((#left) || (#right))),
             BoolOps::And => Ok(quote!((#left) && (#right))),
 
-            _ => {
-                let error =
-                    CodeGenError::NotYetImplemented(format!("BoolOp not implemented {:?}", self));
-                Err(error.into())
-            }
+            _ => Err(Error::BoolOpNotYetImplemented(self).into())
         }
     }
 }

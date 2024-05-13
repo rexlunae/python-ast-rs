@@ -3,7 +3,7 @@ use pyo3::{FromPyObject, PyAny, PyResult};
 use quote::quote;
 
 use crate::{
-    dump, CodeGen, CodeGenContext, CodeGenError, ExprType, Node, PythonOptions, SymbolTableScopes,
+    dump, CodeGen, CodeGenContext, Error, ExprType, Node, PythonOptions, SymbolTableScopes,
 };
 
 use serde::{Deserialize, Serialize};
@@ -93,7 +93,7 @@ impl CodeGen for UnaryOp {
             Ops::USub => Ok(quote!(-#operand)),
             _ => {
                 let error =
-                    CodeGenError::NotYetImplemented(format!("UnaryOp not implemented {:?}", self));
+                    Error::UnaryOpNotYetImplemented(self);
                 Err(error.into())
             }
         }

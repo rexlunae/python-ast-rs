@@ -3,7 +3,7 @@ use pyo3::{FromPyObject, PyAny, PyResult};
 use quote::quote;
 
 use crate::{
-    dump, Assign, Call, ClassDef, CodeGen, CodeGenContext, CodeGenError, Expr, FunctionDef, Import,
+    dump, Assign, Call, ClassDef, CodeGen, CodeGenContext, Error, Expr, FunctionDef, Import,
     ImportFrom, Node, PythonOptions, SymbolTableScopes,
 };
 
@@ -213,10 +213,7 @@ impl CodeGen for StatementType {
                 Ok(quote!(return #exp))
             }
             _ => {
-                let error = CodeGenError::NotYetImplemented(format!(
-                    "StatementType not implemented {:?}",
-                    self
-                ));
+                let error = Error::StatementNotYetImplemented(self);
                 Err(Box::new(error))
             }
         }

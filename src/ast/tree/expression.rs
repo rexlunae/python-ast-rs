@@ -4,8 +4,8 @@ use quote::quote;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dump, Attribute, Await, BinOp, BoolOp, Call, CodeGen, CodeGenContext, CodeGenError, Compare,
-    Constant, Name, NamedExpr, Node, PythonOptions, SymbolTableScopes, UnaryOp,
+    dump, Attribute, Await, BinOp, BoolOp, Call, CodeGen, CodeGenContext, Error, Compare,
+    Constant, Name, NamedExpr, Node, PythonOptions, Result, SymbolTableScopes, UnaryOp,
 };
 
 /// Mostly this shouldn't be used, but it exists so that we don't have to manually implement FromPyObject on all of ExprType
@@ -90,7 +90,7 @@ impl<'a> FromPyObject<'a> for ExprType {
                 Ok(Self::Attribute(a))
             }
             "Await" => {
-                println!("await: {}", dump(ob, None)?);
+                //println!("await: {}", dump(ob, None)?);
                 let a = Await::extract(ob).expect(
                     ob.error_message(
                         "<unknown>",
@@ -193,7 +193,7 @@ impl<'a> CodeGen for ExprType {
         ctx: Self::Context,
         options: Self::Options,
         symbols: Self::SymbolTable,
-    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    ) -> std::result::Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             ExprType::Attribute(attribute) => attribute.to_rust(ctx, options, symbols),
             ExprType::Await(func) => func.to_rust(ctx, options, symbols),
@@ -218,10 +218,7 @@ impl<'a> CodeGen for ExprType {
             ExprType::UnaryOp(operand) => operand.to_rust(ctx, options, symbols),
 
             _ => {
-                let error = CodeGenError::NotYetImplemented(format!(
-                    "Expr not implemented converting to Rust {:?}",
-                    self
-                ));
+                let error = Error::ExprTypeNotYetImplemented(self);
                 Err(error.into())
             }
         }
@@ -421,7 +418,7 @@ impl CodeGen for Expr {
         ctx: Self::Context,
         options: Self::Options,
         symbols: Self::SymbolTable,
-    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    ) -> std::result::Result<TokenStream, Box<dyn std::error::Error>> {
         let module_name = match ctx.clone() {
             CodeGenContext::Module(name) => name,
             _ => "unknown".to_string(),
@@ -439,10 +436,7 @@ impl CodeGen for Expr {
             // NoneType expressions generate no code.
             ExprType::NoneType(_c) => Ok(quote!()),
             _ => {
-                let error = CodeGenError::NotYetImplemented(self.error_message(
-                    module_name.as_str(),
-                    format!("Expr not implemented converting to Rust {:?}", self).as_str(),
-                ));
+                let error = Error::ExprTypeNotYetImplemented(self.value);
                 Err(error.into())
             }
         }

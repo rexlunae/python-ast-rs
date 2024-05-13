@@ -5,7 +5,7 @@ use quote::quote;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    CodeGen, CodeGenContext, CodeGenError, Constant, Node, PythonOptions, SymbolTableScopes,
+    CodeGen, CodeGenContext, Error, Constant, Node, PythonOptions, Result, SymbolTableScopes,
 };
 
 /// An argument.
@@ -27,7 +27,7 @@ impl<'a> CodeGen for Arg {
         ctx: Self::Context,
         options: Self::Options,
         symbols: Self::SymbolTable,
-    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    ) -> std::result::Result<TokenStream, Box<dyn std::error::Error>> {
         match self {
             Self::Constant(c) => {
                 let v = c
@@ -37,7 +37,7 @@ impl<'a> CodeGen for Arg {
                 Ok(quote!(#v))
             }
             _ => {
-                let error = CodeGenError::UnknownType("Unknown argument type");
+                let error = Error::UnknownType("Unknown argument type".to_string());
                 Err(error.into())
             }
         }

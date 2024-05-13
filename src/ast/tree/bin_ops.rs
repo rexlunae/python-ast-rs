@@ -4,7 +4,7 @@ use quote::quote;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dump, CodeGen, CodeGenContext, CodeGenError, ExprType, Node, PythonOptions, SymbolTableScopes,
+    dump, CodeGen, CodeGenContext, Error, ExprType, Node, PythonOptions, Result, SymbolTableScopes,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -119,7 +119,7 @@ impl<'a> CodeGen for BinOp {
         ctx: Self::Context,
         options: Self::Options,
         symbols: Self::SymbolTable,
-    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    ) -> std::result::Result<TokenStream, Box<dyn std::error::Error>> {
         let left = self
             .left
             .clone()
@@ -142,11 +142,7 @@ impl<'a> CodeGen for BinOp {
             BinOps::BitXor => Ok(quote!((#left) ^ (#right))),
             BinOps::BitAnd => Ok(quote!((#left) & (#right))),
             //MatMult, XXX implement this
-            _ => {
-                let error =
-                    CodeGenError::NotYetImplemented(format!("BinOp not implemented {:?}", self));
-                Err(error.into())
-            }
+            _ => Err(Error::BinOpNotYetImplemented(self).into())
         }
     }
 }

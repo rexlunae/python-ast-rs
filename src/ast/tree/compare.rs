@@ -4,7 +4,7 @@ use quote::quote;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dump, CodeGen, CodeGenContext, CodeGenError, ExprType, Node, PythonOptions, SymbolTableScopes,
+    dump, CodeGen, CodeGenContext, Error, ExprType, Node, PythonOptions, SymbolTableScopes,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -157,13 +157,7 @@ impl CodeGen for Compare {
                 Compares::In => quote!(((#comparator).get(#left) == Some(_))),
                 Compares::NotIn => quote!(((#comparator).get(#left) == None)),
 
-                _ => {
-                    let error = CodeGenError::NotYetImplemented(format!(
-                        "Compare not implemented {:?}",
-                        self
-                    ));
-                    return Err(error.into());
-                }
+                _ => return Err(Error::CompareNotYetImplemented(self).into()),
             };
 
             index += 1;
