@@ -48,6 +48,12 @@ impl SymbolTableScopes {
     }
 }
 
+impl Default for SymbolTableScopes {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Default for SymbolTable {
     fn default() -> Self {
         Self::new()
