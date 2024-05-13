@@ -43,7 +43,7 @@ pub fn parse(input: impl AsRef<str>, filename: impl AsRef<str>) -> PyResult<Modu
 
     if let Some(name_str) = filename.strip_suffix(".py") {
         module.name =
-            Some(Name::try_from(name_str).expect(format!("Invalid name {}", name_str).as_str()));
+            Some(Name::try_from(name_str).unwrap_or_else(|_| panic!("Invalid name {}", name_str)));
     }
 
     println!("module: {:#?}", module);
