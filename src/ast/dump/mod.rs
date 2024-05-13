@@ -12,6 +12,6 @@ pub fn dump(o: &PyAny, indent: Option<u8>) -> PyResult<String> {
         assert!(t.is_callable());
         let args = (o, indent);
 
-        Ok(t.call1(args)?.extract()?)
+        t.call1(args)?.extract()
     })
 }
