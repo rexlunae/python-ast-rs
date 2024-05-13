@@ -2,7 +2,7 @@ use std::{collections::HashMap, default::Default};
 
 use log::info;
 use proc_macro2::TokenStream;
-use pyo3::{FromPyObject, PyAny, PyObject, PyResult};
+use pyo3::{FromPyObject, PyAny, PyResult};
 use quote::{format_ident, quote};
 use serde::{Deserialize, Serialize};
 
