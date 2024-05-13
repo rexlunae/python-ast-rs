@@ -142,7 +142,7 @@ impl<'a> CodeGen for BinOp {
             BinOps::BitXor => Ok(quote!((#left) ^ (#right))),
             BinOps::BitAnd => Ok(quote!((#left) & (#right))),
             //MatMult, XXX implement this
-            _ => Err(Error::BinOpNotYetImplemented(self).into())
+            _ => Err(Error::BinOpNotYetImplemented(self).into()),
         }
     }
 }
