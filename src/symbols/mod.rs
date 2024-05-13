@@ -48,6 +48,12 @@ impl SymbolTableScopes {
     }
 }
 
+impl Default for SymbolTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum SymbolTableNode {
     Assign { position: usize, value: ExprType },
