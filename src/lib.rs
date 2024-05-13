@@ -22,5 +22,8 @@ pub use pyo3::PyResult;
 pub mod parser;
 pub use parser::*;
 
+pub mod result;
+pub use result::*;
+
 pub mod datamodel;
 pub use datamodel::*;
