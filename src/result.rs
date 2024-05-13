@@ -1,11 +1,9 @@
 use std::borrow::Borrow;
 
-use thiserror::Error as E;
 use pyo3::PyErr;
+use thiserror::Error as E;
 
-use crate::{
-    BinOp, BoolOp, Compare, Expr, ExprType, StatementType, UnaryOp,
-};
+use crate::{BinOp, BoolOp, Compare, Expr, ExprType, StatementType, UnaryOp};
 
 #[derive(E, Debug)]
 pub enum Error {
@@ -37,7 +35,7 @@ pub enum Error {
 
     #[error("Unknown Error: {0}")]
     #[from(Box<dyn std::error::Error>)]
-    UnknownError(Box<dyn std::error::Error>)
+    UnknownError(Box<dyn std::error::Error>),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
