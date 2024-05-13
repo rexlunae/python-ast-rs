@@ -54,7 +54,7 @@ impl<'a> FromPyObject<'a> for UnaryOp {
                 .as_str(),
         );
 
-        let op = match op_type {
+        let op = match op_type.as_ref() {
             "Invert" => Ops::Invert,
             "Not" => Ops::Not,
             "UAdd" => Ops::UAdd,

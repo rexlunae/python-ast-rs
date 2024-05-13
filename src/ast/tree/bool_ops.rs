@@ -57,7 +57,7 @@ impl<'a> FromPyObject<'a> for BoolOp {
         let left = value[0].clone();
         let right = value[1].clone();
 
-        let op = match op_type {
+        let op = match op_type.as_ref() {
             "And" => BoolOps::And,
             "Or" => BoolOps::Or,
 

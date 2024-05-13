@@ -103,7 +103,7 @@ impl<'a> FromPyObject<'a> for StatementType {
             .expect(ob.error_message("<unknown>", err_msg.as_str()).as_str());
 
         debug!("statement...ob_type: {}...{}", ob_type, dump(ob, Some(4))?);
-        match ob_type {
+        match ob_type.as_ref() {
             "AsyncFunctionDef" => Ok(StatementType::AsyncFunctionDef(
                 FunctionDef::extract(ob).expect(
                     format!("Failed to extract async function: {}", dump(ob, Some(4))?).as_str(),

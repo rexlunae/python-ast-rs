@@ -69,7 +69,7 @@ impl<'a> FromPyObject<'a> for BinOp {
         );
         log::debug!("left: {}, right: {}", dump(left, None)?, dump(right, None)?);
 
-        let op = match op_type {
+        let op = match op_type.as_ref() {
             "Add" => BinOps::Add,
             "Sub" => BinOps::Sub,
             "Mult" => BinOps::Mult,

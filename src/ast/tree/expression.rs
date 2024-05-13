@@ -78,7 +78,7 @@ impl<'a> FromPyObject<'a> for ExprType {
         );
         log::debug!("expression type: {}, value: {}", expr_type, dump(ob, None)?);
 
-        let r = match expr_type {
+        let r = match expr_type.as_ref() {
             "Attribute" => {
                 let a = Attribute::extract(ob).expect(
                     ob.error_message(
@@ -274,7 +274,7 @@ impl<'a> FromPyObject<'a> for Expr {
             expr_type,
             dump(ob_value, None)?
         );
-        match expr_type {
+        match expr_type.as_ref() {
             "Atribute" => {
                 let a = Attribute::extract(ob_value).expect(
                     ob.error_message(

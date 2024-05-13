@@ -64,7 +64,7 @@ impl<'a> FromPyObject<'a> for Compare {
                 .as_str(),
             );
 
-            let op = match op_type {
+            let op = match op_type.as_ref() {
                 "Eq" => Compares::Eq,
                 "NotEq" => Compares::NotEq,
                 "Lt" => Compares::Lt,

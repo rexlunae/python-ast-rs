@@ -51,7 +51,7 @@ impl<'a> FromPyObject<'a> for Arg {
                 .as_str(),
         );
         // FIXME: Hangle the rest of argument types.
-        let r = match ob_type {
+        let r = match ob_type.as_ref() {
             "Constant" => {
                 let err_msg = format!("parsing argument {:?} as a constant", ob);
 
