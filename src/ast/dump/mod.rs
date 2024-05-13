@@ -7,7 +7,7 @@ pub fn dump(o: &PyAny, indent: Option<u8>) -> PyResult<String> {
 
     Python::with_gil(|py| -> PyResult<String> {
         // We want to call tokenize.tokenize from Python.
-        let pymodule = PyModule::from_code(py, pymodule_code, "dump.py", "parser")?;
+        let pymodule = PyModule::from_code_bound(py, pymodule_code, "dump.py", "parser")?;
         let t = pymodule.getattr("dump")?;
         assert!(t.is_callable());
         let args = (o, indent);

@@ -12,7 +12,7 @@ pub fn sys_path() -> PyResult<Vec<String>> {
     let pymodule_code = include_str!("path.py");
 
     Python::with_gil(|py| -> PyResult<Vec<String>> {
-        let pymodule = PyModule::from_code(py, pymodule_code, "path.py", "path")?;
+        let pymodule = PyModule::from_code_bound(py, pymodule_code, "path.py", "path")?;
         let t = pymodule
             .getattr("path")
             .expect("Reading path variable from interpretter");

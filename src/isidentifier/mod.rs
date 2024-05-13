@@ -7,7 +7,7 @@ fn isidentifier_to_py(input: impl AsRef<str>, py: Python<'_>) -> PyResult<PyObje
     let pymodule_code = include_str!("__init__.py");
 
     // We want to call tokenize.tokenize from Python.
-    let pymodule = PyModule::from_code(py, pymodule_code, "__init__.py", "isidentifier")?;
+    let pymodule = PyModule::from_code_bound(py, pymodule_code, "__init__.py", "isidentifier")?;
     let t = pymodule.getattr("isidentifier")?;
     assert!(t.is_callable());
     let args = (input.as_ref(),);
