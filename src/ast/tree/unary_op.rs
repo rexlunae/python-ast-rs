@@ -91,11 +91,7 @@ impl CodeGen for UnaryOp {
             Ops::Invert | Ops::Not => Ok(quote!(!#operand)),
             Ops::UAdd => Ok(quote!(+#operand)),
             Ops::USub => Ok(quote!(-#operand)),
-            _ => {
-                let error =
-                    Error::UnaryOpNotYetImplemented(self);
-                Err(error.into())
-            }
+            _ => Err(Error::UnaryOpNotYetImplemented(self).into())
         }
     }
 }

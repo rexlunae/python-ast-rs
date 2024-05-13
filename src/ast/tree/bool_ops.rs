@@ -106,7 +106,7 @@ impl<'a> CodeGen for BoolOp {
             BoolOps::Or => Ok(quote!((#left) || (#right))),
             BoolOps::And => Ok(quote!((#left) && (#right))),
 
-            _ => Err(Error::BoolOpNotYetImplemented(self).into())
+            _ => Err(Error::BoolOpNotYetImplemented(self).into()),
         }
     }
 }

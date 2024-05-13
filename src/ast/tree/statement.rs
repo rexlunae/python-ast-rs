@@ -100,14 +100,14 @@ impl<'a> FromPyObject<'a> for StatementType {
         let ob_type = ob
             .get_type()
             .name()
-            .expect(ob.error_message("<unknown>", err_msg.as_str()).as_str());
+            .unwrap_or_else(|_| panic!("{}", ob.error_message("<unknown>", err_msg)));
 
         debug!("statement...ob_type: {}...{}", ob_type, dump(ob, Some(4))?);
         match ob_type.as_ref() {
             "AsyncFunctionDef" => Ok(StatementType::AsyncFunctionDef(
-                FunctionDef::extract(ob).expect(
-                    format!("Failed to extract async function: {}", dump(ob, Some(4))?).as_str(),
-                ),
+                FunctionDef::extract(ob).unwrap_or_else(|_| {
+                    panic!("Failed to extract async function: {:?}", dump(ob, Some(4)))
+                }),
             )),
             "Assign" => {
                 let assignment = Assign::extract(ob).expect("reading assignment");
@@ -115,32 +115,34 @@ impl<'a> FromPyObject<'a> for StatementType {
             }
             "Pass" => Ok(StatementType::Pass),
             "Call" => {
-                let call = Call::extract(
-                    ob.getattr("value")
-                        .expect(format!("getting value from {:?} in call statement", ob).as_str()),
-                )
-                .expect(format!("extracting call statement {:?}", ob).as_str());
+                let call =
+                    Call::extract(ob.getattr("value").unwrap_or_else(|_| {
+                        panic!("getting value from {:?} in call statement", ob)
+                    }))
+                    .unwrap_or_else(|_| panic!("extracting call statement {:?}", ob));
                 debug!("call: {:?}", call);
                 Ok(StatementType::Call(call))
             }
             "ClassDef" => Ok(StatementType::ClassDef(
-                ClassDef::extract(ob).expect(format!("Class definition {:?}", ob).as_str()),
+                ClassDef::extract(ob).unwrap_or_else(|_| panic!("Class definition {:?}", ob)),
             )),
             "Continue" => Ok(StatementType::Continue),
             "Break" => Ok(StatementType::Break),
-            "FunctionDef" => Ok(StatementType::FunctionDef(FunctionDef::extract(ob).expect(
-                format!("Failed to extract function: {}", dump(ob, Some(4))?).as_str(),
-            ))),
+            "FunctionDef" => Ok(StatementType::FunctionDef(
+                FunctionDef::extract(ob).unwrap_or_else(|_| {
+                    panic!("Failed to extract function: {:?}", dump(ob, Some(4)))
+                }),
+            )),
             "Import" => Ok(StatementType::Import(
-                Import::extract(ob).expect(format!("Import {:?}", ob).as_str()),
+                Import::extract(ob).unwrap_or_else(|_| panic!("Import {:?}", ob)),
             )),
             "ImportFrom" => Ok(StatementType::ImportFrom(
-                ImportFrom::extract(ob).expect(format!("ImportFrom {:?}", ob).as_str()),
+                ImportFrom::extract(ob).unwrap_or_else(|_| panic!("ImportFrom {:?}", ob)),
             )),
             "Expr" => {
                 let expr = Expr::extract(
                     ob.extract()
-                        .expect(format!("extracting Expr {:?}", ob).as_str()),
+                        .unwrap_or_else(|_| panic!("extracting Expr {:?}", ob)),
                 )
                 .expect(format!("Expr {:?}", ob).as_str());
                 Ok(StatementType::Expr(expr))
@@ -149,9 +151,9 @@ impl<'a> FromPyObject<'a> for StatementType {
                 log::debug!("return expression: {}", dump(ob, None)?);
                 let expr = Expr::extract(
                     ob.extract()
-                        .expect(format!("extracting return Expr {:?}", ob).as_str()),
+                        .unwrap_or_else(|_| panic!("extracting return Expr {:?}", ob)),
                 )
-                .expect(format!("return Expr {}", dump(ob, None)?).as_str());
+                .unwrap_or_else(|_| panic!("return Expr {:?}", dump(ob, None)));
                 Ok(StatementType::Return(Some(expr)))
             }
             _ => Err(pyo3::exceptions::PyValueError::new_err(format!(
@@ -208,8 +210,7 @@ impl CodeGen for StatementType {
                 let exp = e
                     .clone()
                     .to_rust(ctx, options, symbols)
-                    .expect(format!("parsing expression {:#?}", e).as_str());
-
+                    .unwrap_or_else(|_| panic!("parsing expression {:#?}", e));
                 Ok(quote!(return #exp))
             }
             _ => {
