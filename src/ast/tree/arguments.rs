@@ -5,7 +5,7 @@ use quote::quote;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    CodeGen, CodeGenContext, Error, Constant, Node, PythonOptions, Result, SymbolTableScopes,
+    CodeGen, CodeGenContext, Constant, Error, Node, PythonOptions, SymbolTableScopes,
 };
 
 /// An argument.
