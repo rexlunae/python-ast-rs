@@ -2,6 +2,8 @@ use crate::{dump, Module, Name, *};
 
 use pyo3::prelude::*;
 
+use std::path::MAIN_SEPARATOR;
+
 /// Takes a string of Python code and emits a Python struct that represents the AST.
 fn parse_to_py(
     input: impl AsRef<str>,
@@ -41,7 +43,7 @@ pub fn parse(input: impl AsRef<str>, filename: impl AsRef<str>) -> PyResult<Modu
     })?;
     module.filename = Some(filename.into());
 
-    if let Some(name_str) = filename.strip_suffix(".py") {
+    if let Some(name_str) = filename.replace(MAIN_SEPARATOR, "__").strip_suffix(".py") {
         module.name =
             Some(Name::try_from(name_str).unwrap_or_else(|_| panic!("Invalid name {}", name_str)));
     }
