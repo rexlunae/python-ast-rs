@@ -19,7 +19,7 @@ impl<'a> FromPyObject<'a> for Call {
         let keywords = ob.getattr("keywords").expect("Call.keywords");
         Ok(Call {
             func: Box::new(func.extract().expect("Call.func")),
-            args: args.extract().expect("Call.args"),
+            args: args.extract().unwrap_or(vec!()),
             keywords: keywords.extract().expect("Call.keywords"),
         })
     }
