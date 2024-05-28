@@ -4,7 +4,7 @@ A Rust library for accessing a Python AST using the Python 3 ast library. Becaus
 
 This project is at a very early state, and should be considered completely unstable.
 
-## Useage
+## Usage
 
 Reading a Python file into an ast works like this:
 
