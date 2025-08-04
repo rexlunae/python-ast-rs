@@ -591,7 +591,7 @@ impl CodeGen for Expr {
         options: Self::Options,
         symbols: Self::SymbolTable,
     ) -> std::result::Result<TokenStream, Box<dyn std::error::Error>> {
-        let module_name = match ctx.clone() {
+        let _module_name = match ctx.clone() {
             CodeGenContext::Module(name) => name,
             _ => "unknown".to_string(),
         };

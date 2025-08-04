@@ -1,6 +1,5 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use pyo3::prelude::*;
 use pyo3::types::{PyAnyMethods, PyTypeMethods};
 use crate::{CodeGen, CodeGenContext, PythonOptions, SymbolTableScopes, ExprType};
 
@@ -53,14 +52,14 @@ pub trait BinaryOperation: Clone + std::fmt::Debug {
 /// Trait for extracting Python attributes with consistent error handling.
 pub trait PyAttributeExtractor {
     /// Extract an attribute with context-aware error messages.
-    fn extract_attr_with_context(&self, attr: &str, context: &str) -> pyo3::PyResult<pyo3::Bound<pyo3::PyAny>>;
+    fn extract_attr_with_context(&self, attr: &str, context: &str) -> pyo3::PyResult<pyo3::Bound<'_, pyo3::PyAny>>;
     
     /// Extract a type name with error handling.
     fn extract_type_name(&self, context: &str) -> pyo3::PyResult<String>;
 }
 
 impl<'py> PyAttributeExtractor for pyo3::Bound<'py, pyo3::PyAny> {
-    fn extract_attr_with_context(&self, attr: &str, context: &str) -> pyo3::PyResult<pyo3::Bound<pyo3::PyAny>> {
+    fn extract_attr_with_context(&self, attr: &str, context: &str) -> pyo3::PyResult<pyo3::Bound<'_, pyo3::PyAny>> {
         use crate::Node;
         self.getattr(attr).map_err(|_| {
             pyo3::exceptions::PyAttributeError::new_err(
@@ -71,7 +70,6 @@ impl<'py> PyAttributeExtractor for pyo3::Bound<'py, pyo3::PyAny> {
     
     fn extract_type_name(&self, context: &str) -> pyo3::PyResult<String> {
         use crate::Node;
-        use pyo3::prelude::*;
         
         let type_name = self.get_type().name().map_err(|_| {
             pyo3::exceptions::PyTypeError::new_err(

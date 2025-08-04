@@ -35,7 +35,7 @@ pub trait Object: Sized {
 
     /// __dir__ is called to list the attributes of the object.
     fn __dir__(&self) -> Vec<impl AsRef<str>> {
-        unimplemented!();
+        // TODO: Implement proper attribute introspection
         vec![
             "__class__",
             "__class_getitem__",

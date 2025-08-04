@@ -16,5 +16,5 @@ pub trait Class: Object + Default {
     }
 
     /// __init__ is called after __new__ and is used to initialize the object.
-    fn __init__<A>(&mut self, args: A) {}
+    fn __init__<A>(&mut self, _args: A) {}
 }
