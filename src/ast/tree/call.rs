@@ -3,12 +3,12 @@ use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods};
 use quote::quote;
 use serde::{Deserialize, Serialize};
 
-use crate::{Arg, CodeGen, CodeGenContext, ExprType, Keyword, PythonOptions, SymbolTableScopes};
+use crate::{CodeGen, CodeGenContext, ExprType, Keyword, PythonOptions, SymbolTableScopes};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Call {
     pub func: Box<ExprType>,
-    pub args: Vec<Arg>,
+    pub args: Vec<ExprType>,
     pub keywords: Vec<Keyword>,
 }
 

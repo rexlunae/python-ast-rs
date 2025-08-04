@@ -4,7 +4,7 @@ use quote::quote;
 
 use crate::{
     dump, Assign, Call, ClassDef, CodeGen, CodeGenContext, Error, Expr, FunctionDef, Import,
-    ImportFrom, Node, PythonOptions, SymbolTableScopes,
+    ImportFrom, Node, PythonOptions, SymbolTableScopes, If, For, While,
 };
 
 use log::debug;
@@ -94,6 +94,9 @@ pub enum StatementType {
     ImportFrom(ImportFrom),
     Expr(Expr),
     FunctionDef(FunctionDef),
+    If(If),
+    For(For),
+    While(While),
 
     Unimplemented(String),
 }
@@ -154,6 +157,21 @@ impl<'a> FromPyObject<'a> for StatementType {
                     .unwrap_or_else(|_| panic!("return Expr {:?}", dump(ob, None)));
                 Ok(StatementType::Return(Some(expr)))
             }
+            "If" => {
+                let if_stmt = If::extract_bound(ob)
+                    .unwrap_or_else(|_| panic!("If statement {:?}", dump(ob, None)));
+                Ok(StatementType::If(if_stmt))
+            }
+            "For" => {
+                let for_stmt = For::extract_bound(ob)
+                    .unwrap_or_else(|_| panic!("For statement {:?}", dump(ob, None)));
+                Ok(StatementType::For(for_stmt))
+            }
+            "While" => {
+                let while_stmt = While::extract_bound(ob)
+                    .unwrap_or_else(|_| panic!("While statement {:?}", dump(ob, None)));
+                Ok(StatementType::While(while_stmt))
+            }
             _ => Err(pyo3::exceptions::PyValueError::new_err(format!(
                 "Unimplemented statement type {}, {}",
                 ob_type,
@@ -176,6 +194,9 @@ impl CodeGen for StatementType {
             StatementType::Import(i) => i.find_symbols(symbols),
             StatementType::ImportFrom(i) => i.find_symbols(symbols),
             StatementType::Expr(e) => e.find_symbols(symbols),
+            StatementType::If(i) => i.find_symbols(symbols),
+            StatementType::For(f) => f.find_symbols(symbols),
+            StatementType::While(w) => w.find_symbols(symbols),
             _ => symbols,
         }
     }
@@ -211,6 +232,9 @@ impl CodeGen for StatementType {
                     .unwrap_or_else(|_| panic!("parsing expression {:#?}", e));
                 Ok(quote!(return #exp))
             }
+            StatementType::If(i) => i.to_rust(ctx, options, symbols),
+            StatementType::For(f) => f.to_rust(ctx, options, symbols),
+            StatementType::While(w) => w.to_rust(ctx, options, symbols),
             _ => {
                 let error = Error::StatementNotYetImplemented(self);
                 Err(Box::new(error))

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     dump, Attribute, Await, BinOp, BoolOp, Call, CodeGen, CodeGenContext, Compare, Constant, Error,
-    Name, NamedExpr, Node, PythonOptions, SymbolTableScopes, UnaryOp,
+    Name, NamedExpr, Node, PythonOptions, SymbolTableScopes, UnaryOp, Lambda, IfExp, Dict, Set, Tuple, Subscript,
 };
 
 /// Mostly this shouldn't be used, but it exists so that we don't have to manually implement FromPyObject on all of ExprType
@@ -33,11 +33,11 @@ pub enum ExprType {
     NamedExpr(NamedExpr),
     BinOp(BinOp),
     UnaryOp(UnaryOp),
-    /*Lambda(Lamda),
+    Lambda(Lambda),
     IfExp(IfExp),
     Dict(Dict),
     Set(Set),
-    ListComp(ListComp),
+    /*ListComp(ListComp),
     SetComp(SetComp),
     DictComp(DictComp),
     GeneratorExp(),*/
@@ -51,13 +51,13 @@ pub enum ExprType {
     Constant(Constant),
 
     /// These can appear in a few places, such as the left side of an assignment.
-    Attribute(Attribute), /*
-                          Subscript(),
-                          Starred(),*/
+    Attribute(Attribute),
+    Subscript(Subscript),
+    /*Starred(),*/
     Name(Name),
     List(Vec<ExprType>),
-    /*Tuple(),
-    Slice(),*/
+    Tuple(Tuple),
+    /*Slice(),*/
     NoneType(Constant),
 
     Unimplemented(String),
@@ -168,6 +168,66 @@ impl<'a> FromPyObject<'a> for ExprType {
                 );
                 Ok(Self::BinOp(c))
             }
+            "Lambda" => {
+                let l = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting Lambda in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::Lambda(l))
+            }
+            "IfExp" => {
+                let i = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting IfExp in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::IfExp(i))
+            }
+            "Dict" => {
+                let d = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting Dict in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::Dict(d))
+            }
+            "Set" => {
+                let s = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting Set in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::Set(s))
+            }
+            "Tuple" => {
+                let t = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting Tuple in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::Tuple(t))
+            }
+            "Subscript" => {
+                let s = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting Subscript in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::Subscript(s))
+            }
             _ => {
                 let err_msg = format!(
                     "Unimplemented expression type {}, {}",
@@ -201,6 +261,12 @@ impl<'a> CodeGen for ExprType {
             ExprType::Call(call) => call.to_rust(ctx, options, symbols),
             ExprType::Compare(c) => c.to_rust(ctx, options, symbols),
             ExprType::Constant(c) => c.to_rust(ctx, options, symbols),
+            ExprType::Lambda(l) => l.to_rust(ctx, options, symbols),
+            ExprType::IfExp(i) => i.to_rust(ctx, options, symbols),
+            ExprType::Dict(d) => d.to_rust(ctx, options, symbols),
+            ExprType::Set(s) => s.to_rust(ctx, options, symbols),
+            ExprType::Tuple(t) => t.to_rust(ctx, options, symbols),
+            ExprType::Subscript(s) => s.to_rust(ctx, options, symbols),
             ExprType::List(l) => {
                 let mut ts = TokenStream::new();
                 for li in l {
@@ -389,6 +455,90 @@ impl<'a> FromPyObject<'a> for Expr {
                 r.value = ExprType::UnaryOp(c);
                 Ok(r)
             }
+            "Lambda" => {
+                let l = ob_value.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!(
+                            "extracting Lambda in expression {:?}",
+                            dump(&ob_value, None)?
+                        ),
+                    )
+                    .as_str(),
+                );
+                r.value = ExprType::Lambda(l);
+                Ok(r)
+            }
+            "IfExp" => {
+                let i = ob_value.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!(
+                            "extracting IfExp in expression {:?}",
+                            dump(&ob_value, None)?
+                        ),
+                    )
+                    .as_str(),
+                );
+                r.value = ExprType::IfExp(i);
+                Ok(r)
+            }
+            "Dict" => {
+                let d = ob_value.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!(
+                            "extracting Dict in expression {:?}",
+                            dump(&ob_value, None)?
+                        ),
+                    )
+                    .as_str(),
+                );
+                r.value = ExprType::Dict(d);
+                Ok(r)
+            }
+            "Set" => {
+                let s = ob_value.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!(
+                            "extracting Set in expression {:?}",
+                            dump(&ob_value, None)?
+                        ),
+                    )
+                    .as_str(),
+                );
+                r.value = ExprType::Set(s);
+                Ok(r)
+            }
+            "Tuple" => {
+                let t = ob_value.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!(
+                            "extracting Tuple in expression {:?}",
+                            dump(&ob_value, None)?
+                        ),
+                    )
+                    .as_str(),
+                );
+                r.value = ExprType::Tuple(t);
+                Ok(r)
+            }
+            "Subscript" => {
+                let s = ob_value.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!(
+                            "extracting Subscript in expression {:?}",
+                            dump(&ob_value, None)?
+                        ),
+                    )
+                    .as_str(),
+                );
+                r.value = ExprType::Subscript(s);
+                Ok(r)
+            }
             // In sitations where an expression is optional, we may see a NoneType expressions.
             "NoneType" => {
                 r.value = ExprType::NoneType(Constant(None));
@@ -431,6 +581,12 @@ impl CodeGen for Expr {
             ExprType::Call(call) => call.to_rust(ctx.clone(), options, symbols),
             ExprType::Constant(constant) => constant.to_rust(ctx, options, symbols),
             ExprType::Compare(compare) => compare.to_rust(ctx, options, symbols),
+            ExprType::Lambda(l) => l.to_rust(ctx, options, symbols),
+            ExprType::IfExp(i) => i.to_rust(ctx, options, symbols),
+            ExprType::Dict(d) => d.to_rust(ctx, options, symbols),
+            ExprType::Set(s) => s.to_rust(ctx, options, symbols),
+            ExprType::Tuple(t) => t.to_rust(ctx, options, symbols),
+            ExprType::Subscript(s) => s.to_rust(ctx, options, symbols),
             ExprType::UnaryOp(operand) => operand.to_rust(ctx, options, symbols),
             ExprType::Name(name) => name.to_rust(ctx, options, symbols),
             // NoneType expressions generate no code.
