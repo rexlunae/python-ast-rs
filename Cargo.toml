@@ -19,7 +19,7 @@ num-derive = "0.4"
 log = "0.4"
 test-log = "0.2"
 env_logger = "0.11.0"
-litrs = "0.4.1"
+litrs = "0.5.1"
 encoding = "0.2.33"
 to_tokenstream = "0.1.3"
 
