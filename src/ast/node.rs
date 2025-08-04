@@ -1,7 +1,7 @@
 //! A module for AST elements that represent a position in a source file. Implementing the Node trait allows
 //! an ergonomic means of extracting line and column information from an item.
 
-use pyo3::{PyAny, PyResult};
+use pyo3::{Bound, PyAny, PyResult, prelude::PyAnyMethods};
 
 /// A trait for AST elements that represent a position in a source file. Implementing this trait allows
 /// an ergonomic means of extracting line and column information from an item.
@@ -38,8 +38,9 @@ pub trait Node {
     }
 }
 
-// These will only work on objects of Python's ast library's nodes, but you can try them on anything.
-impl Node for PyAny {
+// Note: Direct PyAny implementation removed in favor of Bound<PyAny> implementation below
+
+impl<'py> Node for &Bound<'py, PyAny> {
     /// A method for getting the starting line number of the node. This may not exist for all node types.
     fn lineno(&self) -> Option<usize> {
         let lineno = self.getattr("lineno");
@@ -99,4 +100,5 @@ impl Node for PyAny {
             None
         }
     }
+
 }

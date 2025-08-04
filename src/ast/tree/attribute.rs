@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use pyo3::FromPyObject;
+use pyo3::{Bound, PyAny, FromPyObject, PyResult, prelude::PyAnyMethods, types::PyTypeMethods};
 use quote::{format_ident, quote};
 
 use crate::{dump, CodeGen, CodeGenContext, ExprType, Node, PythonOptions, SymbolTableScopes};
@@ -15,7 +15,7 @@ pub struct Attribute {
 }
 
 impl<'a> FromPyObject<'a> for Attribute {
-    fn extract(ob: &pyo3::PyAny) -> pyo3::PyResult<Self> {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         let value = ob.getattr("value").expect("Attribute.value");
         let attr = ob.getattr("attr").expect("Attribute.attr");
         let ctx = ob
@@ -31,7 +31,7 @@ impl<'a> FromPyObject<'a> for Attribute {
                 .as_str(),
             );
         Ok(Attribute {
-            value: Box::new(ExprType::extract(&value).expect("Attribute.value")),
+            value: Box::new(value.extract().expect("Attribute.value")),
             attr: attr.extract().expect("Attribute.attr"),
             ctx: ctx.to_string(),
         })

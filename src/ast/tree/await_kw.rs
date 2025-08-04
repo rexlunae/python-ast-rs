@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use pyo3::FromPyObject;
+use pyo3::{Bound, PyAny, PyResult, FromPyObject, prelude::PyAnyMethods};
 use quote::quote;
 
 use crate::{CodeGen, CodeGenContext, ExprType, PythonOptions, SymbolTableScopes};
@@ -12,8 +12,8 @@ pub struct Await {
     pub value: Box<ExprType>,
 }
 
-impl FromPyObject<'_> for Await {
-    fn extract(ob: &pyo3::PyAny) -> pyo3::PyResult<Self> {
+impl<'a> FromPyObject<'a> for Await {
+    fn extract_bound(ob: &Bound<'_, PyAny>) -> PyResult<Self> {
         let value = ob.getattr("value").expect("Await.value");
         Ok(Await {
             value: Box::new(value.extract().expect("Await.value")),

@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use pyo3::{FromPyObject, PyAny, PyResult};
+use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods};
 use quote::{format_ident, quote};
 use serde::{Deserialize, Serialize};
 
@@ -16,7 +16,7 @@ pub struct Assign {
 }
 
 impl<'a> FromPyObject<'a> for Assign {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         let targets: Vec<Name> = ob
             .getattr("targets")
             .expect(
@@ -31,7 +31,7 @@ impl<'a> FromPyObject<'a> for Assign {
                 .as_str(),
         );
 
-        let value = ExprType::extract(python_value).expect(
+        let value = python_value.extract().expect(
             ob.error_message("<unknown>", "error getting value of assignment statement")
                 .as_str(),
         );

@@ -43,7 +43,7 @@ pub struct ParameterList {
     pub defaults: Vec<Arg>,
 }
 
-use pyo3::{PyAny, PyResult};
+use pyo3::{Bound, PyAny, PyResult, types::PyAnyMethods};
 
 // We have to manually implement the conversion of ParameterList objects
 // because under a number of conditions, attributes that should be lists
@@ -51,8 +51,8 @@ use pyo3::{PyAny, PyResult};
 // derived implementation to error when converting to a Vec type. It would
 // be nice if they generated empty Vecs instead, but since it doesn't, we
 // have to do it manually.
-impl<'source> FromPyObject<'source> for ParameterList {
-    fn extract(ob: &'source PyAny) -> PyResult<Self> {
+impl<'a> FromPyObject<'a> for ParameterList {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         let err_msg = ob.error_message("<unknown>", "failed extracting posonlyargs");
         let posonlyargs = ob.getattr("posonlyargs").expect(err_msg.as_str());
         let posonlyargs_list: Vec<Parameter> = posonlyargs

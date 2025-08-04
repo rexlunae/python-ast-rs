@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use pyo3::{FromPyObject, PyAny, PyResult};
+use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods, types::PyTypeMethods};
 use quote::quote;
 use serde::{Deserialize, Serialize};
 
@@ -15,7 +15,7 @@ pub enum BoolOps {
 }
 
 impl<'a> FromPyObject<'a> for BoolOps {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
             ob.error_message("<unknown>", err_msg),
@@ -31,7 +31,7 @@ pub struct BoolOp {
 }
 
 impl<'a> FromPyObject<'a> for BoolOp {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         log::debug!("ob: {}", dump(ob, None)?);
         let op = ob.getattr("op").expect(
             ob.error_message("<unknown>", "error getting unary operator")
@@ -51,13 +51,14 @@ impl<'a> FromPyObject<'a> for BoolOp {
                 .as_str(),
         );
 
-        println!("BoolOps values: {}", dump(values, None)?);
+        println!("BoolOps values: {}", dump(&values, None)?);
 
         let value: Vec<ExprType> = values.extract().expect("getting values from BoolOp");
         let left = value[0].clone();
         let right = value[1].clone();
 
-        let op = match op_type.as_ref() {
+        let op_type_str: String = op_type.extract()?;
+        let op = match op_type_str.as_str() {
             "And" => BoolOps::And,
             "Or" => BoolOps::Or,
 

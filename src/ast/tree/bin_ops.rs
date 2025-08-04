@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use pyo3::{FromPyObject, PyAny, PyResult};
+use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods, types::PyTypeMethods};
 use quote::quote;
 use serde::{Deserialize, Serialize};
 
@@ -27,7 +27,7 @@ pub enum BinOps {
 }
 
 impl<'a> FromPyObject<'a> for BinOps {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
             ob.error_message("<unknown>", err_msg),
@@ -43,7 +43,7 @@ pub struct BinOp {
 }
 
 impl<'a> FromPyObject<'a> for BinOp {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'_, PyAny>) -> PyResult<Self> {
         log::debug!("ob: {}", dump(ob, None)?);
         let op = ob.getattr("op").expect(
             ob.error_message("<unknown>", "error getting unary operator")
@@ -67,9 +67,10 @@ impl<'a> FromPyObject<'a> for BinOp {
             ob.error_message("<unknown>", "error getting binary operand")
                 .as_str(),
         );
-        log::debug!("left: {}, right: {}", dump(left, None)?, dump(right, None)?);
+        log::debug!("left: {}, right: {}", dump(&left, None)?, dump(&right, None)?);
 
-        let op = match op_type.as_ref() {
+        let op_type_str: String = op_type.extract()?;
+        let op = match op_type_str.as_ref() {
             "Add" => BinOps::Add,
             "Sub" => BinOps::Sub,
             "Mult" => BinOps::Mult,
@@ -92,14 +93,14 @@ impl<'a> FromPyObject<'a> for BinOp {
 
         log::debug!(
             "left: {}, right: {}, op: {:?}/{:?}",
-            dump(left, None)?,
-            dump(right, None)?,
-            op_type,
+            dump(&left, None)?,
+            dump(&right, None)?,
+            op_type_str,
             op
         );
 
-        let right = ExprType::extract(right).expect("getting binary operator operand");
-        let left = ExprType::extract(left).expect("getting binary operator operand");
+        let right = right.extract().expect("getting binary operator operand");
+        let left = left.extract().expect("getting binary operator operand");
 
         return Ok(BinOp {
             op: op,

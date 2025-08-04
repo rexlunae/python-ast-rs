@@ -2,7 +2,7 @@ use std::{collections::HashMap, default::Default};
 
 use log::info;
 use proc_macro2::TokenStream;
-use pyo3::{FromPyObject, PyAny, PyResult};
+use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods};
 use quote::{format_ident, quote};
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +14,7 @@ pub enum Type {
 }
 
 impl<'a> FromPyObject<'a> for Type {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         info!("Type: {:?}", ob);
         Ok(Type::Unimplemented)
     }
@@ -38,8 +38,8 @@ pub struct Module {
 }
 
 impl<'a> FromPyObject<'a> for Module {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
-        let raw_module = RawModule::extract(ob).expect("Failed parsing module.");
+    fn extract_bound(ob: &Bound<'_, PyAny>) -> PyResult<Self> {
+        let raw_module = ob.extract().expect("Failed parsing module.");
 
         Ok(Self {
             raw: raw_module,

@@ -4,12 +4,16 @@ use encoding::{all::ISO_8859_6, DecoderTrap, Encoding};
 use litrs::Literal;
 use log::debug;
 use proc_macro2::*;
-use pyo3::{FromPyObject, PyAny, PyResult};
+use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods};
 use quote::quote;
 
 use crate::{CodeGen, CodeGenContext, Node, PythonOptions, SymbolTableScopes};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+pub trait PyConstantTrait: Clone + Debug + PartialEq {
+    type RustType;
+}
 
 #[derive(Clone, Debug, PartialEq)]
 #[repr(transparent)]
@@ -44,14 +48,14 @@ impl std::string::ToString for Constant {
     }
 }
 
-pub fn try_string(value: &PyAny) -> PyResult<Option<Literal<String>>> {
+pub fn try_string(value: &Bound<PyAny>) -> PyResult<Option<Literal<String>>> {
     let v: String = value.extract()?;
     let l = Literal::parse(format!("\"{}\"", v)).expect("[4] Parsing the literal");
 
     Ok(Some(l))
 }
 
-pub fn try_bytes(value: &PyAny) -> PyResult<Option<Literal<String>>> {
+pub fn try_bytes(value: &Bound<PyAny>) -> PyResult<Option<Literal<String>>> {
     let v: &[u8] = value.extract()?;
     let l = Literal::parse(format!(
         "b\"{}\"",
@@ -64,21 +68,21 @@ pub fn try_bytes(value: &PyAny) -> PyResult<Option<Literal<String>>> {
     Ok(Some(l))
 }
 
-pub fn try_int(value: &PyAny) -> PyResult<Option<Literal<String>>> {
+pub fn try_int(value: &Bound<PyAny>) -> PyResult<Option<Literal<String>>> {
     let v: isize = value.extract()?;
     let l = Literal::parse(format!("{}", v)).expect("[4] Parsing the literal");
 
     Ok(Some(l))
 }
 
-pub fn try_float(value: &PyAny) -> PyResult<Option<Literal<String>>> {
+pub fn try_float(value: &Bound<PyAny>) -> PyResult<Option<Literal<String>>> {
     let v: f64 = value.extract()?;
     let l = Literal::parse(format!("{}", v)).expect("[4] Parsing the literal");
 
     Ok(Some(l))
 }
 
-pub fn try_bool(value: &PyAny) -> PyResult<Option<Literal<String>>> {
+pub fn try_bool(value: &Bound<PyAny>) -> PyResult<Option<Literal<String>>> {
     let v: bool = value.extract()?;
     let l = Literal::parse(format!("{}", v)).expect("[4] Parsing the literal");
 
@@ -86,14 +90,14 @@ pub fn try_bool(value: &PyAny) -> PyResult<Option<Literal<String>>> {
 }
 
 // This will mostly be invoked when the input is None.
-pub fn try_option(value: &PyAny) -> PyResult<Option<Literal<String>>> {
-    let v: Option<&PyAny> = value.extract()?;
-    debug!("extracted value {:?}", v);
+pub fn try_option(value: &Bound<PyAny>) -> PyResult<Option<Literal<String>>> {
+    let v: Option<Bound<PyAny>> = value.extract()?;
+    // debug!("extracted value {:?}", v); // Debug not implemented for PyAny
     // If we got None as a constant, return None
     match v {
         None => Ok(None),
         // See if we can parse whatever we got that wasn't None.
-        Some(_c) => {
+        Some(ref _c) => {
             let l = Literal::parse(format!("{:?}", v)).expect("[5] Parsing the literal");
             Ok(Some(l))
         }
@@ -102,7 +106,7 @@ pub fn try_option(value: &PyAny) -> PyResult<Option<Literal<String>>> {
 
 // This is the fun bit of code that is responsible from converting from Python constants to Rust ones.
 impl<'a> FromPyObject<'a> for Constant {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         // Extracts the values as a PyAny.
         let value = ob.getattr("value").expect(
             ob.error_message("<unknown>", "error getting constant value")
@@ -110,18 +114,18 @@ impl<'a> FromPyObject<'a> for Constant {
         );
         debug!("[2] constant value: {}", value);
 
-        let l = if let Ok(l) = try_string(value) {
+        let l = if let Ok(l) = try_string(&value) {
             l
-        } else if let Ok(l) = try_bytes(value) {
+        } else if let Ok(l) = try_bytes(&value) {
             l
         // We have to evaluaet bool before int because if a bool is evaluated as it, it will be cooerced to an in.
-        } else if let Ok(l) = try_bool(value) {
+        } else if let Ok(l) = try_bool(&value) {
             l
-        } else if let Ok(l) = try_float(value) {
+        } else if let Ok(l) = try_float(&value) {
             l
-        } else if let Ok(l) = try_int(value) {
+        } else if let Ok(l) = try_int(&value) {
             l
-        } else if let Ok(l) = try_option(value) {
+        } else if let Ok(l) = try_option(&value) {
             l
         } else {
             panic!("Failed to parse literal values {}", value);

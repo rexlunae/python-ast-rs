@@ -1,6 +1,7 @@
 use crate::{dump, Module, Name, *};
 
 use pyo3::prelude::*;
+use std::ffi::CString;
 
 use std::path::MAIN_SEPARATOR;
 
@@ -13,13 +14,14 @@ fn parse_to_py(
     let pymodule_code = include_str!("__init__.py");
 
     // We want to call tokenize.tokenize from Python.
-    let pymodule = PyModule::from_code(py, pymodule_code, "__init__.py", "parser")?;
+    let code_cstr = CString::new(pymodule_code)?;
+    let pymodule = PyModule::from_code(py, &code_cstr, c"__init__.py", c"parser")?;
     let t = pymodule.getattr("parse")?;
     assert!(t.is_callable());
     let args = (input.as_ref(), filename.as_ref());
 
     let py_tree = t.call1(args)?;
-    log::debug!("py_tree: {}", dump(py_tree, Some(4))?);
+    log::debug!("py_tree: {}", dump(&py_tree, Some(4))?);
 
     Ok(py_tree.into())
 }

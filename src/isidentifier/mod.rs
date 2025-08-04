@@ -1,13 +1,15 @@
 //! This module uses Python to determine if a given string is a valid Python identifier or not.
 //! See [here](https://docs.python.org/3/reference/lexical_analysis.html)
 use pyo3::prelude::*;
+use std::ffi::CString;
 
 /// Determines if a string is a valid Python idetifier, and returns a Python object wrapping a bool.
 fn isidentifier_to_py(input: impl AsRef<str>, py: Python<'_>) -> PyResult<PyObject> {
     let pymodule_code = include_str!("__init__.py");
 
     // We want to call tokenize.tokenize from Python.
-    let pymodule = PyModule::from_code_bound(py, pymodule_code, "__init__.py", "isidentifier")?;
+    let code_cstr = CString::new(pymodule_code)?;
+    let pymodule = PyModule::from_code(py, &code_cstr, c"__init__.py", c"isidentifier")?;
     let t = pymodule.getattr("isidentifier")?;
     assert!(t.is_callable());
     let args = (input.as_ref(),);

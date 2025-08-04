@@ -3,6 +3,7 @@ use proc_macro2::TokenStream;
 use pyo3::FromPyObject;
 use quote::{format_ident, quote};
 use serde::{Deserialize, Serialize};
+use crate::ast::tree::statement::PyStatementTrait;
 
 use crate::{
     CodeGen, CodeGenContext, ExprType, Object, ParameterList, PythonOptions, Statement,
@@ -15,6 +16,9 @@ pub struct FunctionDef {
     pub args: ParameterList,
     pub body: Vec<Statement>,
     pub decorator_list: Vec<String>,
+}
+
+impl PyStatementTrait for FunctionDef {
 }
 
 impl CodeGen for FunctionDef {

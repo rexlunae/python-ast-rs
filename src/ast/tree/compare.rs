@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use pyo3::{FromPyObject, PyAny, PyResult};
+use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods, types::PyTypeMethods};
 use quote::quote;
 use serde::{Deserialize, Serialize};
 
@@ -24,7 +24,7 @@ pub enum Compares {
 }
 
 impl<'a> FromPyObject<'a> for Compares {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
         Err(pyo3::exceptions::PyValueError::new_err(
             ob.error_message("<unknown>", err_msg),
@@ -40,11 +40,11 @@ pub struct Compare {
 }
 
 impl<'a> FromPyObject<'a> for Compare {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         log::debug!("ob: {}", dump(ob, None)?);
 
         // Python allows for multiple comparators, rust we only supports one, so we have to rewrite the comparison a little.
-        let ops: Vec<&PyAny> = ob
+        let ops_bound: Vec<Bound<PyAny>> = ob
             .getattr("ops")
             .expect(
                 ob.error_message("<unknown>", "error getting unary operator")
@@ -55,16 +55,17 @@ impl<'a> FromPyObject<'a> for Compare {
 
         let mut op_list = Vec::new();
 
-        for op in ops.iter() {
+        for op in ops_bound.iter() {
             let op_type = op.get_type().name().expect(
                 ob.error_message(
                     "<unknown>",
-                    format!("extracting type name {:?} for binary operator", op),
+                    "error extracting type name for binary operator",
                 )
                 .as_str(),
             );
 
-            let op = match op_type.as_ref() {
+            let op_type_str: String = op_type.extract()?;
+            let op = match op_type_str.as_str() {
                 "Eq" => Compares::Eq,
                 "NotEq" => Compares::NotEq,
                 "Lt" => Compares::Lt,
@@ -77,7 +78,7 @@ impl<'a> FromPyObject<'a> for Compare {
                 "NotIn" => Compares::NotIn,
 
                 _ => {
-                    log::debug!("Found unknown Compare {:?}", op);
+                    log::debug!("Found unknown Compare with type: {}", op_type_str);
                     Compares::Unknown
                 }
             };
@@ -95,11 +96,11 @@ impl<'a> FromPyObject<'a> for Compare {
         );
         log::debug!(
             "left: {}, comparators: {}",
-            dump(left, None)?,
-            dump(comparators, None)?
+            dump(&left, None)?,
+            dump(&comparators, None)?
         );
 
-        let left = ExprType::extract(left).expect("getting binary operator operand");
+        let left = left.extract().expect("getting binary operator operand");
         let comparators: Vec<ExprType> = comparators
             .extract()
             .expect("getting comparators from Compare");

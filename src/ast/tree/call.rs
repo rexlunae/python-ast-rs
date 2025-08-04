@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use pyo3::{FromPyObject, PyAny, PyResult};
+use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods};
 use quote::quote;
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +13,7 @@ pub struct Call {
 }
 
 impl<'a> FromPyObject<'a> for Call {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         let func = ob.getattr("func").expect("Call.func");
         let args = ob.getattr("args").expect("Call.args");
         let keywords = ob.getattr("keywords").expect("Call.keywords");

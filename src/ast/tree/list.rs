@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use pyo3::{FromPyObject, PyAny};
+use pyo3::{Bound, FromPyObject, PyAny, types::PyAnyMethods};
 use quote::quote;
 
 use crate::{dump, CodeGen, CodeGenContext, PythonOptions, SymbolTableScopes};
@@ -9,10 +9,27 @@ use crate::{dump, CodeGen, CodeGenContext, PythonOptions, SymbolTableScopes};
 // consistency, we're using the same type as we use to model
 pub type ListContents = crate::pytypes::List<dyn CodeGen>;
 
-#[derive(Clone, Debug, Default, FromPyObject)]
+#[derive(Clone, Default)]
 pub struct List<'a> {
-    pub elts: Vec<&'a PyAny>,
+    pub elts: Vec<Bound<'a, PyAny>>,
     pub ctx: Option<String>,
+}
+
+impl std::fmt::Debug for List<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("List")
+            .field("elts", &format!("Vec<Bound<PyAny>> (len: {})", self.elts.len()))
+            .field("ctx", &self.ctx)
+            .finish()
+    }
+}
+
+impl<'a> FromPyObject<'a> for List<'a> {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> pyo3::PyResult<Self> {
+        let elts: Vec<Bound<'a, PyAny>> = ob.getattr("elts")?.extract()?;
+        let ctx: Option<String> = ob.getattr("ctx").ok().and_then(|v| v.extract().ok());
+        Ok(List { elts, ctx })
+    }
 }
 
 impl<'a> CodeGen for List<'a> {
@@ -29,8 +46,7 @@ impl<'a> CodeGen for List<'a> {
         let ts = TokenStream::new();
         log::debug!("================self:{:#?}", self);
         for elt in self.elts {
-            let el: &PyAny = elt.extract()?;
-            log::debug!("elt: {}", dump(el, None)?);
+            log::debug!("elt: {}", dump(&elt, None)?);
             //ts.extend(elt.to_rust(ctx, options).expect("parsing list element"))
         }
         Ok(quote!(vec![#ts]))

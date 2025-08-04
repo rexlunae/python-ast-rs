@@ -1,6 +1,6 @@
 //! The module defines Python-syntax arguments and maps them into Rust-syntax versions.
 use proc_macro2::TokenStream;
-use pyo3::{FromPyObject, PyAny, PyResult};
+use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods, types::PyTypeMethods};
 use quote::quote;
 use serde::{Deserialize, Serialize};
 
@@ -45,18 +45,19 @@ impl<'a> CodeGen for Arg {
 }
 
 impl<'a> FromPyObject<'a> for Arg {
-    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         let ob_type = ob.get_type().name().expect(
             ob.error_message("<unknown>", "Could not extract argument type")
                 .as_str(),
         );
         // FIXME: Hangle the rest of argument types.
-        let r = match ob_type.as_ref() {
+        let ob_type_str: String = ob_type.extract()?;
+        let r = match ob_type_str.as_ref() {
             "Constant" => {
                 let err_msg = format!("parsing argument {:?} as a constant", ob);
 
                 Self::Constant(
-                    Constant::extract(ob)
+                    ob.extract()
                         .expect(ob.error_message("<unknown>", err_msg.as_str()).as_str()),
                 )
             }
