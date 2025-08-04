@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     dump, Attribute, Await, BinOp, BoolOp, Call, CodeGen, CodeGenContext, Compare, Constant, Error,
-    Name, NamedExpr, Node, PythonOptions, SymbolTableScopes, UnaryOp, Lambda, IfExp, Dict, Set, Tuple, Subscript, Starred,
+    Name, NamedExpr, Node, PythonOptions, SymbolTableScopes, UnaryOp, Lambda, IfExp, Dict, Set, Tuple, Subscript, Starred, ListComp, DictComp, SetComp, Yield, YieldFrom, JoinedStr, FormattedValue,
 };
 
 /// Mostly this shouldn't be used, but it exists so that we don't have to manually implement FromPyObject on all of ExprType
@@ -37,17 +37,17 @@ pub enum ExprType {
     IfExp(IfExp),
     Dict(Dict),
     Set(Set),
-    /*ListComp(ListComp),
-    SetComp(SetComp),
+    ListComp(ListComp),
     DictComp(DictComp),
-    GeneratorExp(),*/
+    SetComp(SetComp),
+    /*GeneratorExp(),*/
     Await(Await),
-    /*Yield(),
-    YieldFrom(),*/
+    Yield(Yield),
+    YieldFrom(YieldFrom),
     Compare(Compare),
     Call(Call),
-    /*FormattedValue(),
-    JoinedStr(),*/
+    FormattedValue(FormattedValue),
+    JoinedStr(JoinedStr),
     Constant(Constant),
 
     /// These can appear in a few places, such as the left side of an assignment.
@@ -100,6 +100,16 @@ impl<'a> FromPyObject<'a> for ExprType {
                 );
                 Ok(Self::Await(a))
             }
+            "BoolOp" => {
+                let b = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting BoolOp in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::BoolOp(b))
+            }
             "Call" => {
                 let et = ob.extract().expect(
                     ob.error_message(
@@ -147,6 +157,36 @@ impl<'a> FromPyObject<'a> for ExprType {
                 }
                 
                 Ok(Self::List(expr_list))
+            }
+            "ListComp" => {
+                let lc = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting ListComp in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::ListComp(lc))
+            }
+            "DictComp" => {
+                let dc = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting DictComp in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::DictComp(dc))
+            }
+            "SetComp" => {
+                let sc = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting SetComp in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::SetComp(sc))
             }
             "Name" => {
                 let name = ob.extract().expect(
@@ -248,6 +288,46 @@ impl<'a> FromPyObject<'a> for ExprType {
                 );
                 Ok(Self::Starred(s))
             }
+            "Yield" => {
+                let y = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting Yield in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::Yield(y))
+            }
+            "YieldFrom" => {
+                let yf = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting YieldFrom in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::YieldFrom(yf))
+            }
+            "JoinedStr" => {
+                let js = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting JoinedStr in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::JoinedStr(js))
+            }
+            "FormattedValue" => {
+                let fv = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting FormattedValue in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::FormattedValue(fv))
+            }
             _ => {
                 let err_msg = format!(
                     "Unimplemented expression type {}, {}",
@@ -285,9 +365,16 @@ impl<'a> CodeGen for ExprType {
             ExprType::IfExp(i) => i.to_rust(ctx, options, symbols),
             ExprType::Dict(d) => d.to_rust(ctx, options, symbols),
             ExprType::Set(s) => s.to_rust(ctx, options, symbols),
+            ExprType::ListComp(lc) => lc.to_rust(ctx, options, symbols),
+            ExprType::DictComp(dc) => dc.to_rust(ctx, options, symbols),
+            ExprType::SetComp(sc) => sc.to_rust(ctx, options, symbols),
             ExprType::Tuple(t) => t.to_rust(ctx, options, symbols),
             ExprType::Subscript(s) => s.to_rust(ctx, options, symbols),
             ExprType::Starred(s) => s.to_rust(ctx, options, symbols),
+            ExprType::Yield(y) => y.to_rust(ctx, options, symbols),
+            ExprType::YieldFrom(yf) => yf.to_rust(ctx, options, symbols),
+            ExprType::JoinedStr(js) => js.to_rust(ctx, options, symbols),
+            ExprType::FormattedValue(fv) => fv.to_rust(ctx, options, symbols),
             ExprType::List(l) => {
                 let mut ts = TokenStream::new();
                 for li in l {
@@ -572,6 +659,62 @@ impl<'a> FromPyObject<'a> for Expr {
                 r.value = ExprType::Subscript(s);
                 Ok(r)
             }
+            "Yield" => {
+                let y = ob_value.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!(
+                            "extracting Yield in expression {:?}",
+                            dump(&ob_value, None)?
+                        ),
+                    )
+                    .as_str(),
+                );
+                r.value = ExprType::Yield(y);
+                Ok(r)
+            }
+            "YieldFrom" => {
+                let yf = ob_value.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!(
+                            "extracting YieldFrom in expression {:?}",
+                            dump(&ob_value, None)?
+                        ),
+                    )
+                    .as_str(),
+                );
+                r.value = ExprType::YieldFrom(yf);
+                Ok(r)
+            }
+            "JoinedStr" => {
+                let js = ob_value.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!(
+                            "extracting JoinedStr in expression {:?}",
+                            dump(&ob_value, None)?
+                        ),
+                    )
+                    .as_str(),
+                );
+                r.value = ExprType::JoinedStr(js);
+                Ok(r)
+            }
+            "FormattedValue" => {
+                let fv = ob_value.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!(
+                            "extracting FormattedValue in expression {:?}",
+                            dump(&ob_value, None)?
+                        ),
+                    )
+                    .as_str(),
+                );
+                r.value = ExprType::FormattedValue(fv);
+                Ok(r)
+            }
             // In sitations where an expression is optional, we may see a NoneType expressions.
             "NoneType" => {
                 r.value = ExprType::NoneType(Constant(None));
@@ -622,6 +765,10 @@ impl CodeGen for Expr {
             ExprType::Subscript(s) => s.to_rust(ctx, options, symbols),
             ExprType::UnaryOp(operand) => operand.to_rust(ctx, options, symbols),
             ExprType::Name(name) => name.to_rust(ctx, options, symbols),
+            ExprType::Yield(y) => y.to_rust(ctx, options, symbols),
+            ExprType::YieldFrom(yf) => yf.to_rust(ctx, options, symbols),
+            ExprType::JoinedStr(js) => js.to_rust(ctx, options, symbols),
+            ExprType::FormattedValue(fv) => fv.to_rust(ctx, options, symbols),
             // NoneType expressions generate no code.
             ExprType::NoneType(_c) => Ok(quote!()),
             _ => {

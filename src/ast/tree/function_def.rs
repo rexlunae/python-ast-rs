@@ -1,6 +1,6 @@
 use log::debug;
 use proc_macro2::TokenStream;
-use pyo3::FromPyObject;
+use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods};
 use quote::{format_ident, quote};
 use serde::{Deserialize, Serialize};
 use crate::ast::tree::statement::PyStatementTrait;
@@ -10,12 +10,30 @@ use crate::{
     StatementType, SymbolTableNode, SymbolTableScopes,
 };
 
-#[derive(Clone, Debug, FromPyObject, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct FunctionDef {
     pub name: String,
     pub args: ParameterList,
     pub body: Vec<Statement>,
-    pub decorator_list: Vec<String>,
+    pub decorator_list: Vec<ExprType>,
+}
+
+impl<'a> FromPyObject<'a> for FunctionDef {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
+        let name: String = ob.getattr("name")?.extract()?;
+        let args: ParameterList = ob.getattr("args")?.extract()?;
+        let body: Vec<Statement> = ob.getattr("body")?.extract()?;
+        
+        // Extract decorator_list as Vec<ExprType>
+        let decorator_list: Vec<ExprType> = ob.getattr("decorator_list")?.extract().unwrap_or_default();
+        
+        Ok(FunctionDef {
+            name,
+            args,
+            body,
+            decorator_list,
+        })
+    }
 }
 
 impl PyStatementTrait for FunctionDef {

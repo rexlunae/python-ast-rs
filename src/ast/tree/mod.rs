@@ -46,6 +46,9 @@ pub use keyword::*;
 pub mod list;
 pub use list::*;
 
+pub mod list_comp;
+pub use list_comp::*;
+
 pub mod parameters;
 pub use parameters::*;
 
@@ -93,3 +96,24 @@ pub use for_stmt::*;
 
 pub mod while_stmt;
 pub use while_stmt::*;
+
+pub mod try_stmt;
+pub use try_stmt::*;
+
+pub mod async_with;
+pub use async_with::*;
+
+pub mod async_for;
+pub use async_for::*;
+
+pub mod yield_expr;
+pub use yield_expr::*;
+
+pub mod raise_stmt;
+pub use raise_stmt::*;
+
+pub mod f_string;
+pub use f_string::*;
+
+pub mod with_stmt;
+pub use with_stmt::*;

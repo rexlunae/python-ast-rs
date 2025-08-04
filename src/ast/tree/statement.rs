@@ -4,7 +4,7 @@ use quote::quote;
 
 use crate::{
     dump, Assign, AugAssign, Call, ClassDef, CodeGen, CodeGenContext, Error, Expr, FunctionDef, Import,
-    ImportFrom, Node, PythonOptions, SymbolTableScopes, If, For, While,
+    ImportFrom, Node, PythonOptions, SymbolTableScopes, If, For, While, Try, AsyncWith, AsyncFor, Raise, With,
 };
 
 use log::debug;
@@ -98,6 +98,11 @@ pub enum StatementType {
     If(If),
     For(For),
     While(While),
+    Try(Try),
+    AsyncWith(AsyncWith),
+    AsyncFor(AsyncFor),
+    Raise(Raise),
+    With(With),
 
     Unimplemented(String),
 }
@@ -203,6 +208,31 @@ impl<'a> FromPyObject<'a> for StatementType {
                     .unwrap_or_else(|_| panic!("While statement {:?}", dump(ob, None)));
                 Ok(StatementType::While(while_stmt))
             }
+            "Try" => {
+                let try_stmt = Try::extract_bound(ob)
+                    .unwrap_or_else(|_| panic!("Try statement {:?}", dump(ob, None)));
+                Ok(StatementType::Try(try_stmt))
+            }
+            "AsyncWith" => {
+                let async_with_stmt = AsyncWith::extract_bound(ob)
+                    .unwrap_or_else(|_| panic!("AsyncWith statement {:?}", dump(ob, None)));
+                Ok(StatementType::AsyncWith(async_with_stmt))
+            }
+            "AsyncFor" => {
+                let async_for_stmt = AsyncFor::extract_bound(ob)
+                    .unwrap_or_else(|_| panic!("AsyncFor statement {:?}", dump(ob, None)));
+                Ok(StatementType::AsyncFor(async_for_stmt))
+            }
+            "Raise" => {
+                let raise_stmt = Raise::extract_bound(ob)
+                    .unwrap_or_else(|_| panic!("Raise statement {:?}", dump(ob, None)));
+                Ok(StatementType::Raise(raise_stmt))
+            }
+            "With" => {
+                let with_stmt = With::extract_bound(ob)
+                    .unwrap_or_else(|_| panic!("With statement {:?}", dump(ob, None)));
+                Ok(StatementType::With(with_stmt))
+            }
             _ => Err(pyo3::exceptions::PyValueError::new_err(format!(
                 "Unimplemented statement type {}, {}",
                 ob_type,
@@ -229,6 +259,11 @@ impl CodeGen for StatementType {
             StatementType::If(i) => i.find_symbols(symbols),
             StatementType::For(f) => f.find_symbols(symbols),
             StatementType::While(w) => w.find_symbols(symbols),
+            StatementType::Try(t) => t.find_symbols(symbols),
+            StatementType::AsyncWith(aw) => aw.find_symbols(symbols),
+            StatementType::AsyncFor(af) => af.find_symbols(symbols),
+            StatementType::Raise(r) => r.find_symbols(symbols),
+            StatementType::With(w) => w.find_symbols(symbols),
             _ => symbols,
         }
     }
@@ -268,6 +303,11 @@ impl CodeGen for StatementType {
             StatementType::If(i) => i.to_rust(ctx, options, symbols),
             StatementType::For(f) => f.to_rust(ctx, options, symbols),
             StatementType::While(w) => w.to_rust(ctx, options, symbols),
+            StatementType::Try(t) => t.to_rust(ctx, options, symbols),
+            StatementType::AsyncWith(aw) => aw.to_rust(ctx, options, symbols),
+            StatementType::AsyncFor(af) => af.to_rust(ctx, options, symbols),
+            StatementType::Raise(r) => r.to_rust(ctx, options, symbols),
+            StatementType::With(w) => w.to_rust(ctx, options, symbols),
             _ => {
                 let error = Error::StatementNotYetImplemented(self);
                 Err(Box::new(error))
