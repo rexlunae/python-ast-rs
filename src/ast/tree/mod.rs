@@ -7,6 +7,9 @@ pub use attribute::*;
 pub mod assign;
 pub use assign::*;
 
+pub mod aug_assign;
+pub use aug_assign::*;
+
 pub mod await_kw;
 pub use await_kw::*;
 
@@ -72,6 +75,9 @@ pub use dict::*;
 
 pub mod set;
 pub use set::*;
+
+pub mod starred;
+pub use starred::*;
 
 pub mod tuple;
 pub use tuple::*;

@@ -36,23 +36,23 @@ impl<'a> CodeGen for Call {
         options: Self::Options,
         symbols: Self::SymbolTable,
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let name = self
-            .func
-            .to_rust(ctx.clone(), options.clone(), symbols.clone())
-            .expect("Call.func");
-        // XXX - How are we going to figure out the parameter list?
-        //let symbol = symbols.get(&self.func.id).expect(format!("looking up function {}", self.func.id).as_str());
-        //println!("symbol: {:?}", symbol);
-        let mut args = TokenStream::new();
+        let name = self.func.to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+        
+        let mut all_args = Vec::new();
+        
+        // Add positional arguments
         for arg in self.args {
-            let arg = arg
-                .clone()
-                .to_rust(ctx.clone(), options.clone(), symbols.clone())
-                .expect(format!("Call.args {:?}", arg).as_str());
-            args.extend(arg);
-            args.extend(quote!(,));
+            let rust_arg = arg.to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+            all_args.push(rust_arg);
         }
-        Ok(quote!(#name(#args)))
+        
+        // Add keyword arguments
+        for keyword in self.keywords {
+            let rust_kw = keyword.to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+            all_args.push(rust_kw);
+        }
+        
+        Ok(quote!(#name(#(#all_args),*)))
     }
 }
 

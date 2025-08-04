@@ -1,30 +1,30 @@
 use proc_macro2::TokenStream;
 use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods};
-use quote::{format_ident, quote};
+use quote::quote;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    CodeGen, CodeGenContext, ExprType, Name, Node, PythonOptions, SymbolTableNode,
+    CodeGen, CodeGenContext, ExprType, Node, PythonOptions, SymbolTableNode,
     SymbolTableScopes,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Assign {
-    pub targets: Vec<Name>,
+    pub targets: Vec<ExprType>,
     pub value: ExprType,
     pub type_comment: Option<String>,
 }
 
 impl<'a> FromPyObject<'a> for Assign {
     fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
-        let targets: Vec<Name> = ob
+        let targets: Vec<ExprType> = ob
             .getattr("targets")
             .expect(
-                ob.error_message("<unknown>", "error getting unary operator")
+                ob.error_message("<unknown>", "error getting assignment targets")
                     .as_str(),
             )
             .extract()
-            .expect("1");
+            .expect("extracting assignment targets");
 
         let python_value = ob.getattr("value").expect(
             ob.error_message("<unknown>", "assignment statement value not found")
@@ -53,13 +53,17 @@ impl<'a> CodeGen for Assign {
         let mut symbols = symbols;
         let mut position = 0;
         for target in self.targets {
-            symbols.insert(
-                target.id,
-                SymbolTableNode::Assign {
-                    position: position,
-                    value: self.value.clone(),
-                },
-            );
+            // Only add symbols for Name assignments, not for Attribute assignments
+            if let ExprType::Name(name) = target {
+                symbols.insert(
+                    name.id,
+                    SymbolTableNode::Assign {
+                        position: position,
+                        value: self.value.clone(),
+                    },
+                );
+            }
+            // Could also handle other target types here if needed
             position += 1;
         }
         symbols
@@ -71,12 +75,27 @@ impl<'a> CodeGen for Assign {
         options: Self::Options,
         symbols: Self::SymbolTable,
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let mut stream = TokenStream::new();
-        for target in self.targets.into_iter().map(|n| n.id) {
-            let ident = format_ident!("{}", target);
-            stream.extend(quote!(#ident));
+        let mut target_streams = Vec::new();
+        
+        // Convert each target to Rust code
+        for target in self.targets {
+            let target_code = target.to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+            target_streams.push(target_code);
         }
+        
         let value = self.value.to_rust(ctx, options, symbols)?;
-        Ok(quote!(#stream = #value))
+        
+        // For multiple targets, we need to handle them separately in Rust
+        if target_streams.len() == 1 {
+            let target = &target_streams[0];
+            Ok(quote!(#target = #value))
+        } else {
+            // For multiple assignment targets like: a, b = 1, 2
+            // This is more complex in Rust and might need tuple destructuring
+            Ok(quote! {
+                // Multiple assignment targets
+                #(#target_streams = #value.clone();)*
+            })
+        }
     }
 }

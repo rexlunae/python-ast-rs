@@ -3,7 +3,7 @@ use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods, types::P
 use quote::quote;
 
 use crate::{
-    dump, Assign, Call, ClassDef, CodeGen, CodeGenContext, Error, Expr, FunctionDef, Import,
+    dump, Assign, AugAssign, Call, ClassDef, CodeGen, CodeGenContext, Error, Expr, FunctionDef, Import,
     ImportFrom, Node, PythonOptions, SymbolTableScopes, If, For, While,
 };
 
@@ -84,6 +84,7 @@ impl CodeGen for Statement {
 pub enum StatementType {
     AsyncFunctionDef(FunctionDef),
     Assign(Assign),
+    AugAssign(AugAssign),
     Break,
     Continue,
     ClassDef(ClassDef),
@@ -120,6 +121,10 @@ impl<'a> FromPyObject<'a> for StatementType {
                 let assignment = Assign::extract_bound(ob).expect("reading assignment");
                 Ok(StatementType::Assign(assignment))
             }
+            "AugAssign" => {
+                let aug_assignment = AugAssign::extract_bound(ob).expect("reading augmented assignment");
+                Ok(StatementType::AugAssign(aug_assignment))
+            }
             "Pass" => Ok(StatementType::Pass),
             "Call" => {
                 let call =
@@ -153,9 +158,35 @@ impl<'a> FromPyObject<'a> for StatementType {
             }
             "Return" => {
                 log::debug!("return expression: {}", dump(ob, None)?);
-                let expr = ob.extract()
-                    .unwrap_or_else(|_| panic!("return Expr {:?}", dump(ob, None)));
-                Ok(StatementType::Return(Some(expr)))
+                // Extract the return value from the Return statement's 'value' field
+                let return_value = if let Ok(value_attr) = ob.getattr("value") {
+                    if value_attr.is_none() {
+                        // Bare 'return' statement - create a NoneType Expr
+                        Some(Expr {
+                            value: crate::tree::ExprType::NoneType(crate::tree::Constant(None)),
+                            ctx: None,
+                            lineno: ob.lineno(),
+                            col_offset: ob.col_offset(),
+                            end_lineno: ob.end_lineno(),
+                            end_col_offset: ob.end_col_offset(),
+                        })
+                    } else {
+                        // Return with actual expression - extract as ExprType then wrap in Expr
+                        let expr_value: crate::tree::ExprType = value_attr.extract()
+                            .unwrap_or_else(|_| panic!("return value ExprType {:?}", dump(&value_attr, None).unwrap_or_else(|_| "unknown".to_string())));
+                        Some(Expr {
+                            value: expr_value,
+                            ctx: None,
+                            lineno: ob.lineno(),
+                            col_offset: ob.col_offset(),
+                            end_lineno: ob.end_lineno(),
+                            end_col_offset: ob.end_col_offset(),
+                        })
+                    }
+                } else {
+                    None
+                };
+                Ok(StatementType::Return(return_value))
             }
             "If" => {
                 let if_stmt = If::extract_bound(ob)
@@ -189,6 +220,7 @@ impl CodeGen for StatementType {
     fn find_symbols(self, symbols: Self::SymbolTable) -> Self::SymbolTable {
         match self {
             StatementType::Assign(a) => a.find_symbols(symbols),
+            StatementType::AugAssign(a) => a.find_symbols(symbols),
             StatementType::ClassDef(c) => c.find_symbols(symbols),
             StatementType::FunctionDef(f) => f.find_symbols(symbols),
             StatementType::Import(i) => i.find_symbols(symbols),
@@ -215,6 +247,7 @@ impl CodeGen for StatementType {
                 Ok(quote!(#func_def))
             }
             StatementType::Assign(a) => a.to_rust(ctx, options, symbols),
+            StatementType::AugAssign(a) => a.to_rust(ctx, options, symbols),
             StatementType::Break => Ok(quote! {break;}),
             StatementType::Call(c) => c.to_rust(ctx, options, symbols),
             StatementType::ClassDef(c) => c.to_rust(ctx, options, symbols),

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     dump, Attribute, Await, BinOp, BoolOp, Call, CodeGen, CodeGenContext, Compare, Constant, Error,
-    Name, NamedExpr, Node, PythonOptions, SymbolTableScopes, UnaryOp, Lambda, IfExp, Dict, Set, Tuple, Subscript,
+    Name, NamedExpr, Node, PythonOptions, SymbolTableScopes, UnaryOp, Lambda, IfExp, Dict, Set, Tuple, Subscript, Starred,
 };
 
 /// Mostly this shouldn't be used, but it exists so that we don't have to manually implement FromPyObject on all of ExprType
@@ -53,7 +53,7 @@ pub enum ExprType {
     /// These can appear in a few places, such as the left side of an assignment.
     Attribute(Attribute),
     Subscript(Subscript),
-    /*Starred(),*/
+    Starred(Starred),
     Name(Name),
     List(Vec<ExprType>),
     Tuple(Tuple),
@@ -238,6 +238,16 @@ impl<'a> FromPyObject<'a> for ExprType {
                 );
                 Ok(Self::Subscript(s))
             }
+            "Starred" => {
+                let s = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting Starred in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::Starred(s))
+            }
             _ => {
                 let err_msg = format!(
                     "Unimplemented expression type {}, {}",
@@ -277,6 +287,7 @@ impl<'a> CodeGen for ExprType {
             ExprType::Set(s) => s.to_rust(ctx, options, symbols),
             ExprType::Tuple(t) => t.to_rust(ctx, options, symbols),
             ExprType::Subscript(s) => s.to_rust(ctx, options, symbols),
+            ExprType::Starred(s) => s.to_rust(ctx, options, symbols),
             ExprType::List(l) => {
                 let mut ts = TokenStream::new();
                 for li in l {
