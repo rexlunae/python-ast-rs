@@ -26,16 +26,24 @@ fn parse_to_py(
     Ok(py_tree.into())
 }
 
-/// Takes a string of bytes and returns the Python-tokenized version of it.
+/// Parses Python code and returns the AST as a Module.
+/// 
+/// This function accepts any type that can be converted to a string reference,
+/// making it flexible for different input types.
+/// 
+/// # Arguments
+/// * `input` - The Python source code to parse
+/// * `filename` - The filename to associate with the parsed code
+/// 
+/// # Returns
+/// * `PyResult<Module>` - The parsed AST module or a Python error
+/// 
+/// # Examples
+/// ```rust
 /// use python_ast::parse;
-///
-/// ```Rust
-/// fn read_python_file(input: std::path::Path) {
-///    let py = read_to_string(input).unwrap();
-///    let ast = parse(&py, "__main__").unwrap();
-///
-///    println!("{:?}", ast);
-///}
+/// 
+/// let code = "x = 1 + 2";
+/// let module = parse(code, "example.py").unwrap();
 /// ```
 pub fn parse(input: impl AsRef<str>, filename: impl AsRef<str>) -> PyResult<Module> {
     let filename = filename.as_ref();
