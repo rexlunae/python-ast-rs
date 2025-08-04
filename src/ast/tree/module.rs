@@ -183,7 +183,7 @@ def foo():
 
     #[test]
     fn can_we_import2() {
-        let result = crate::parse("import ast.test as test", "ast.py").unwrap();
+        let result = crate::parse("import ast as test", "ast.py").unwrap();
         let options = PythonOptions::default();
         info!("{:?}", result);
 
