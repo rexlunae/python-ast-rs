@@ -258,7 +258,7 @@ impl CodeGen for Arguments {
         // Process *args
         if let Some(vararg) = self.vararg {
             let vararg_name = quote::format_ident!("{}", vararg.arg);
-            params.push(quote!(#vararg_name: Vec<PyObject>));
+            params.push(quote!(#vararg_name: impl IntoIterator<Item = impl Into<PyObject>>));
         }
         
         // Process keyword-only arguments
@@ -287,7 +287,7 @@ impl CodeGen for Arguments {
         // Process **kwargs
         if let Some(kwarg) = self.kwarg {
             let kwarg_name = quote::format_ident!("{}", kwarg.arg);
-            params.push(quote!(#kwarg_name: std::collections::HashMap<String, PyObject>));
+            params.push(quote!(#kwarg_name: impl IntoIterator<Item = (impl AsRef<str>, impl Into<PyObject>)>));
         }
         
         Ok(quote!(#(#params),*))

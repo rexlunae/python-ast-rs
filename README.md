@@ -11,7 +11,7 @@ A Rust library for parsing Python code into Abstract Syntax Trees (AST) and expe
 - **🐍 Python AST Parsing**: Parse any valid Python code into Rust data structures
 - **🔄 Comprehensive Node Support**: Supports expressions, statements, functions, classes, and more
 - **📚 Rich Documentation**: Automatically extracts and converts Python docstrings to Rust documentation
-- **🦀 Experimental Rust Code Generation**: Transpile Python code to Rust (highly experimental)
+- **🦀 Generic Rust Code Generation**: Transpile Python code to highly generic Rust using trait bounds
 - **🔧 Extensible**: Built with traits and macros for easy extension
 
 ## 🚀 Quick Start
@@ -37,14 +37,13 @@ python-ast = "1.0.0"
 
 ```rust
 use python_ast::parse;
-use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Read Python source code
-    let python_code = fs::read_to_string("example.py")?;
+    // Parse Python source code
+    let python_code = "def hello():\n    return 'world'";
     
     // Parse into AST
-    let ast = parse(&python_code, "example.py")?;
+    let ast = parse(python_code, "example.py")?;
     
     println!("Parsed {} statements", ast.raw.body.len());
     println!("AST: {:#?}", ast);
@@ -79,6 +78,17 @@ def fibonacci(n):
         Ok(rust_code) => {
             println!("Generated Rust code:");
             println!("{}", rust_code);
+            /* Output would be:
+            use stdpython::*;
+            #[doc = "Calculate the nth Fibonacci number."]
+            pub fn fibonacci(n: impl Into<PyObject>) -> impl Into<PyObject> {
+                "Calculate the nth Fibonacci number.";
+                if ((n) <= (1)) {
+                    return n
+                };
+                return (fibonacci((n) - (1))) + (fibonacci((n) - (2)));
+            }
+            */
         }
         Err(e) => {
             println!("Code generation failed: {}", e);
@@ -138,6 +148,8 @@ def calculate_area(radius):
 Becomes:
 
 ```rust
+use std::ops::Mul;
+
 /// Calculate the area of a circle.
 /// 
 /// # Arguments
@@ -145,7 +157,13 @@ Becomes:
 /// 
 /// # Returns
 /// The area of the circle
-pub fn calculate_area(radius: PyObject) -> PyObject { ... }
+pub fn calculate_area<T>(radius: T) -> T 
+where 
+    T: Copy + Mul<Output = T> + From<f64>,
+{
+    // Generated from Python AST: return 3.14159 * radius * radius
+    T::from(3.14159) * radius * radius
+}
 ```
 
 ## 🧪 Testing
@@ -153,8 +171,10 @@ pub fn calculate_area(radius: PyObject) -> PyObject { ... }
 Run the test suite:
 
 ```bash
-# Run all tests
+# Run all integration tests
 cargo test
+# Run unit tests.
+cargo test --lib
 
 # Run specific test categories
 cargo test ast::tree        # AST node tests
@@ -190,7 +210,10 @@ cargo run --bin readme_example
 
 ## 🆕 Recent Improvements (v1.0.0)
 
+- **Generic Code Generation**: Functions now use trait bounds like `impl Into<PyObject>`, `impl AsRef<str>`
 - **Enhanced Documentation**: Python docstrings now convert to proper Rust doc comments
+- **Flexible Parameters**: Variadic args use `impl IntoIterator<Item = impl Into<PyObject>>`
+- **Generic Keyword Args**: **kwargs use `impl IntoIterator<Item = (impl AsRef<str>, impl Into<PyObject>)>`
 - **Expanded AST Coverage**: Added support for Lambda, IfExp, Dict, Set, Tuple, Subscript expressions
 - **Control Flow**: Implemented If, For, While statement parsing and generation
 - **Improved Parsing**: Fixed List expression parsing and enhanced error handling
@@ -221,22 +244,67 @@ Currently, this should be viewed as a **proof of concept** and research tool rat
 ```rust
 use python_ast::parse;
 
-// Parse a simple function
-let ast = parse("def hello(): return 'world'", "hello.py")?;
-
-// Parse a class with methods
-let ast = parse(r#"
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Parse a simple function
+    let ast = parse("def hello(): return 'world'", "hello.py")?;
+    
+    // Parse a class with methods
+    let ast = parse(r#"
 class Calculator:
     def add(self, a, b):
         return a + b
 "#, "calc.py")?;
-
-// Parse control flow
-let ast = parse(r#"
+    
+    // Parse control flow
+    let ast = parse(r#"
 for i in range(10):
     if i % 2 == 0:
         print(i)
 "#, "loop.py")?;
+    
+    Ok(())
+}
+```
+
+### Advanced Code Generation with Generic Parameters
+
+The library generates highly generic Rust code using trait bounds for maximum flexibility:
+
+```rust
+use python_ast::{parse, CodeGen, CodeGenContext, PythonOptions, SymbolTableScopes};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let python_code = r#"
+def process_data(name, values, *args, **kwargs):
+    """Process data with flexible parameter types."""
+    return f"Processing {name} with {len(values)} items"
+"#;
+    
+    let ast = parse(python_code, "example.py")?;
+    let options = PythonOptions::default();
+    let symbols = SymbolTableScopes::new();
+    let context = CodeGenContext::Module("example".to_string());
+    
+    match ast.to_rust(context, options, symbols) {
+        Ok(rust_code) => {
+            println!("Generated generic Rust code:");
+            println!("{}", rust_code);
+            /* Output includes generic parameters like:
+            pub fn process_data(
+                name: impl Into<PyObject>,
+                values: impl Into<PyObject>,
+                args: impl IntoIterator<Item = impl Into<PyObject>>,
+                kwargs: impl IntoIterator<Item = (impl AsRef<str>, impl Into<PyObject>)>
+            ) -> impl Into<PyObject> { ... }
+            */
+        }
+        Err(e) => {
+            println!("Code generation failed: {}", e);
+        }
+    }
+    
+    Ok(())
+}
 ```
 
 ### Working with AST Nodes
@@ -244,19 +312,23 @@ for i in range(10):
 ```rust
 use python_ast::{parse, StatementType, ExprType};
 
-let ast = parse("x = [1, 2, 3]", "list.py")?;
-
-match &ast.raw.body[0].statement {
-    StatementType::Assign(assign) => {
-        println!("Assignment to: {:?}", assign.targets);
-        match &assign.value.value {
-            ExprType::List(elements) => {
-                println!("List with {} elements", elements.len());
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let ast = parse("x = [1, 2, 3]", "list.py")?;
+    
+    match &ast.raw.body[0].statement {
+        StatementType::Assign(assign) => {
+            println!("Assignment to: {:?}", assign.targets);
+            match &assign.value {
+                ExprType::List(elements) => {
+                    println!("List with {} elements", elements.len());
+                }
+                _ => {}
             }
-            _ => {}
         }
+        _ => {}
     }
-    _ => {}
+    
+    Ok(())
 }
 ```
 
