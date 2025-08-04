@@ -8,9 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Key Features:**
 - Parse Python code into Rust AST structures that mirror Python's AST
+- Comprehensive support for expressions, statements, functions, classes, and control flow
+- Rich documentation extraction and conversion from Python docstrings to Rust docs
 - Dump AST structures for debugging using Python's `ast.dump()` function
-- Experimental Python-to-Rust code generation (highly unstable)
+- Experimental Python-to-Rust code generation (highly unstable but improving)
 - Symbol table and scope analysis
+- Extensible architecture with traits and macros
 
 ## Development Commands
 
@@ -67,20 +70,55 @@ The codebase is organized into several key modules:
 - **`datamodel/`** - Python data model implementations (classes, namespaces, numbers)
 - **`pytypes.rs`** - Python type system representations
 - **`isidentifier/`** - Python identifier validation
+- **`traits.rs`** - Common traits for AST operations and PyO3 integration
+- **`macros.rs`** - Macros for reducing boilerplate code
+- **`parser_utils.rs`** - Generic utilities for parsing Python AST objects
 
 ### Key Dependencies
-- **PyO3** - Python-Rust interop (version 0.21)
+- **PyO3** - Python-Rust interop (version 0.25)
 - **serde** - Serialization for converting Python objects to Rust
 - **syn/quote/proc-macro2** - Rust code generation utilities
-- **thiserror** - Error handling
+- **thiserror** - Error handling (version 2.0.12)
 
 ### AST Structure
 The AST nodes in `src/ast/tree/` correspond to Python AST node types:
-- `expression.rs` - Expression nodes
-- `statement.rs` - Statement nodes  
+
+**Core Infrastructure:**
+- `expression.rs` - Expression nodes and ExprType enum
+- `statement.rs` - Statement nodes and StatementType enum  
 - `module.rs` - Module-level constructs
+- `node.rs` - Base Node trait and utilities
+
+**Expression Types:**
+- `lambda.rs` - Lambda expressions
+- `if_exp.rs` - Conditional expressions (ternary operator)
+- `dict.rs` - Dictionary literals
+- `set.rs` - Set literals
+- `tuple.rs` - Tuple literals
+- `subscript.rs` - Subscript operations (indexing)
+- `bin_ops.rs` - Binary operators
+- `bool_ops.rs` - Boolean operators
+- `unary_op.rs` - Unary operators
+- `compare.rs` - Comparison operations
+- `call.rs` - Function calls
+- `constant.rs` - Literal constants
+- `name.rs` - Variable names
+- `attribute.rs` - Attribute access
+- `list.rs` - List literals
+
+**Statement Types:**
 - `function_def.rs` - Function definitions
-- Individual nodes for operators, literals, etc.
+- `class_def.rs` - Class definitions
+- `if_stmt.rs` - If statements
+- `for_stmt.rs` - For loops
+- `while_stmt.rs` - While loops
+- `assign.rs` - Assignment statements
+- `import.rs` - Import statements
+
+**Support Structures:**
+- `arguments.rs` - Function arguments and parameters
+- `parameters.rs` - Parameter lists
+- `keyword.rs` - Keyword arguments
 
 ### Code Generation Flow
 1. Parse Python code using `parser::parse()` which calls Python's ast.parse()
