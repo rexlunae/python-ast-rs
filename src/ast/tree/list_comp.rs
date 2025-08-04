@@ -36,6 +36,20 @@ pub struct SetComp {
     pub end_col_offset: Option<usize>,
 }
 
+/// Generator expression (e.g., (x for x in range(10) if x % 2 == 0))
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct GeneratorExp {
+    /// The element expression being computed
+    pub elt: Box<ExprType>,
+    /// The generators (for clauses)
+    pub generators: Vec<Comprehension>,
+    /// Position information
+    pub lineno: Option<usize>,
+    pub col_offset: Option<usize>,
+    pub end_lineno: Option<usize>,
+    pub end_col_offset: Option<usize>,
+}
+
 /// Dictionary comprehension (e.g., {k: v for k, v in items.items()})
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DictComp {
@@ -105,6 +119,26 @@ impl<'a> FromPyObject<'a> for SetComp {
     }
 }
 
+impl<'a> FromPyObject<'a> for GeneratorExp {
+    fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
+        // Extract the element expression
+        let elt = ob.extract_attr_with_context("elt", "generator expression element")?;
+        let elt: ExprType = elt.extract()?;
+        
+        // Extract generators
+        let generators: Vec<Comprehension> = extract_list(ob, "generators", "generator expression generators")?;
+        
+        Ok(GeneratorExp {
+            elt: Box::new(elt),
+            generators,
+            lineno: ob.lineno(),
+            col_offset: ob.col_offset(),
+            end_lineno: ob.end_lineno(),
+            end_col_offset: ob.end_col_offset(),
+        })
+    }
+}
+
 impl<'a> FromPyObject<'a> for DictComp {
     fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
         // Extract the key expression
@@ -163,6 +197,13 @@ impl Node for ListComp {
 }
 
 impl Node for SetComp {
+    fn lineno(&self) -> Option<usize> { self.lineno }
+    fn col_offset(&self) -> Option<usize> { self.col_offset }
+    fn end_lineno(&self) -> Option<usize> { self.end_lineno }
+    fn end_col_offset(&self) -> Option<usize> { self.end_col_offset }
+}
+
+impl Node for GeneratorExp {
     fn lineno(&self) -> Option<usize> { self.lineno }
     fn col_offset(&self) -> Option<usize> { self.col_offset }
     fn end_lineno(&self) -> Option<usize> { self.end_lineno }
@@ -283,6 +324,61 @@ impl CodeGen for SetComp {
             // For now, return a placeholder
             Ok(quote! {
                 std::collections::HashSet::new() // Complex set comprehension with multiple generators not fully supported
+            })
+        }
+    }
+}
+
+impl CodeGen for GeneratorExp {
+    type Context = CodeGenContext;
+    type Options = PythonOptions;
+    type SymbolTable = SymbolTableScopes;
+
+    fn find_symbols(self, symbols: Self::SymbolTable) -> Self::SymbolTable {
+        // Process the element and generators
+        let symbols = (*self.elt).clone().find_symbols(symbols);
+        self.generators.into_iter().fold(symbols, |acc, generator| {
+            let acc = generator.target.find_symbols(acc);
+            let acc = generator.iter.find_symbols(acc);
+            generator.ifs.into_iter().fold(acc, |acc, if_expr| if_expr.find_symbols(acc))
+        })
+    }
+
+    fn to_rust(
+        self,
+        ctx: Self::Context,
+        options: Self::Options,
+        symbols: Self::SymbolTable,
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        // For now, generate a simple iterator since Rust doesn't have generator expressions
+        // This is a simplified translation that doesn't handle all cases
+        if self.generators.len() == 1 {
+            let generator = &self.generators[0];
+            let elt = (*self.elt).clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+            let iter_expr = generator.iter.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+            
+            if generator.ifs.is_empty() {
+                // Simple case: (expr for x in iter) -> iter.map(|x| expr)
+                Ok(quote! {
+                    (#iter_expr).into_iter().map(|_item| #elt)
+                })
+            } else {
+                // With conditions: (expr for x in iter if cond) -> iter.filter(cond).map(expr)
+                let conditions: Result<Vec<_>, _> = generator.ifs.iter()
+                    .map(|if_expr| if_expr.clone().to_rust(ctx.clone(), options.clone(), symbols.clone()))
+                    .collect();
+                let conditions = conditions?;
+                Ok(quote! {
+                    (#iter_expr).into_iter()
+                        .filter(|_item| { #(#conditions)&&* })
+                        .map(|_item| #elt)
+                })
+            }
+        } else {
+            // Multiple generators would need nested iteration - this is complex
+            // For now, return a placeholder
+            Ok(quote! {
+                std::iter::empty() // Complex generator expression with multiple generators not fully supported
             })
         }
     }

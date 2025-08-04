@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     dump, Attribute, Await, BinOp, BoolOp, Call, CodeGen, CodeGenContext, Compare, Constant, Error,
-    Name, NamedExpr, Node, PythonOptions, SymbolTableScopes, UnaryOp, Lambda, IfExp, Dict, Set, Tuple, Subscript, Starred, ListComp, DictComp, SetComp, Yield, YieldFrom, JoinedStr, FormattedValue,
+    Name, NamedExpr, Node, PythonOptions, SymbolTableScopes, UnaryOp, Lambda, IfExp, Dict, Set, Tuple, Subscript, Starred, ListComp, DictComp, SetComp, GeneratorExp, Yield, YieldFrom, JoinedStr, FormattedValue,
 };
 
 /// Mostly this shouldn't be used, but it exists so that we don't have to manually implement FromPyObject on all of ExprType
@@ -40,7 +40,7 @@ pub enum ExprType {
     ListComp(ListComp),
     DictComp(DictComp),
     SetComp(SetComp),
-    /*GeneratorExp(),*/
+    GeneratorExp(GeneratorExp),
     Await(Await),
     Yield(Yield),
     YieldFrom(YieldFrom),
@@ -187,6 +187,16 @@ impl<'a> FromPyObject<'a> for ExprType {
                     .as_str(),
                 );
                 Ok(Self::SetComp(sc))
+            }
+            "GeneratorExp" => {
+                let ge = ob.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!("extracting GeneratorExp in expression {}", dump(ob, None)?),
+                    )
+                    .as_str(),
+                );
+                Ok(Self::GeneratorExp(ge))
             }
             "Name" => {
                 let name = ob.extract().expect(
@@ -368,6 +378,7 @@ impl<'a> CodeGen for ExprType {
             ExprType::ListComp(lc) => lc.to_rust(ctx, options, symbols),
             ExprType::DictComp(dc) => dc.to_rust(ctx, options, symbols),
             ExprType::SetComp(sc) => sc.to_rust(ctx, options, symbols),
+            ExprType::GeneratorExp(ge) => ge.to_rust(ctx, options, symbols),
             ExprType::Tuple(t) => t.to_rust(ctx, options, symbols),
             ExprType::Subscript(s) => s.to_rust(ctx, options, symbols),
             ExprType::Starred(s) => s.to_rust(ctx, options, symbols),
@@ -715,6 +726,20 @@ impl<'a> FromPyObject<'a> for Expr {
                 r.value = ExprType::FormattedValue(fv);
                 Ok(r)
             }
+            "GeneratorExp" => {
+                let ge = ob_value.extract().expect(
+                    ob.error_message(
+                        "<unknown>",
+                        format!(
+                            "extracting GeneratorExp in expression {:?}",
+                            dump(&ob_value, None)?
+                        ),
+                    )
+                    .as_str(),
+                );
+                r.value = ExprType::GeneratorExp(ge);
+                Ok(r)
+            }
             // In sitations where an expression is optional, we may see a NoneType expressions.
             "NoneType" => {
                 r.value = ExprType::NoneType(Constant(None));
@@ -761,6 +786,7 @@ impl CodeGen for Expr {
             ExprType::IfExp(i) => i.to_rust(ctx, options, symbols),
             ExprType::Dict(d) => d.to_rust(ctx, options, symbols),
             ExprType::Set(s) => s.to_rust(ctx, options, symbols),
+            ExprType::GeneratorExp(ge) => ge.to_rust(ctx, options, symbols),
             ExprType::Tuple(t) => t.to_rust(ctx, options, symbols),
             ExprType::Subscript(s) => s.to_rust(ctx, options, symbols),
             ExprType::UnaryOp(operand) => operand.to_rust(ctx, options, symbols),
