@@ -132,11 +132,21 @@ impl<'a> FromPyObject<'a> for ExprType {
                 Ok(Self::Constant(c))
             }
             "List" => {
-                //let list = crate::pytypes::List::<ExprType>::new();
-                let list: Vec<ExprType> = ob
-                    .extract()
-                    .expect(format!("extracting List {}", dump(ob, None)?).as_str());
-                Ok(Self::List(list))
+                // Extract the list elements using the 'elts' attribute
+                let elts_attr = ob.getattr("elts")
+                    .expect(format!("getting elts attribute from List {}", dump(ob, None)?).as_str());
+                let elts_vec: Vec<Bound<PyAny>> = elts_attr.extract()
+                    .expect(format!("extracting elts as Vec<Bound<PyAny>> from List {}", dump(ob, None)?).as_str());
+                
+                // Convert each element to ExprType
+                let mut expr_list = Vec::new();
+                for elt in elts_vec {
+                    let expr: ExprType = elt.extract()
+                        .expect(format!("extracting list element {}", dump(&elt, None)?).as_str());
+                    expr_list.push(expr);
+                }
+                
+                Ok(Self::List(expr_list))
             }
             "Name" => {
                 let name = ob.extract().expect(
@@ -425,9 +435,21 @@ impl<'a> FromPyObject<'a> for Expr {
                 Ok(r)
             }
             "List" => {
-                //let list = crate::pytypes::List::<ExprType>::new();
-                let list: Vec<ExprType> = ob.extract().expect("extracting List");
-                r.value = ExprType::List(list);
+                // Extract the list elements using the 'elts' attribute
+                let elts_attr = ob_value.getattr("elts")
+                    .expect("getting elts attribute from List");
+                let elts_vec: Vec<Bound<PyAny>> = elts_attr.extract()
+                    .expect("extracting elts as Vec<Bound<PyAny>> from List");
+                
+                // Convert each element to ExprType
+                let mut expr_list = Vec::new();
+                for elt in elts_vec {
+                    let expr: ExprType = elt.extract()
+                        .expect(&format!("extracting list element {}", dump(&elt, None).unwrap_or_else(|_| "unknown".to_string())));
+                    expr_list.push(expr);
+                }
+                
+                r.value = ExprType::List(expr_list);
                 Ok(r)
             }
             "Name" => {
