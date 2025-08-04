@@ -1,7 +1,7 @@
 use python_ast::{parse, CodeGenContext, PythonOptions, SymbolTableScopes, CodeGen};
 
 fn main() {
-    let code = std::fs::read_to_string("test_comprehensive.py")
+    let code = std::fs::read_to_string("test_docstring.py")
         .expect("Failed to read test file");
     
     println!("Testing comprehensive Python code parsing...");
@@ -23,8 +23,21 @@ fn main() {
             match ast.to_rust(ctx, options, symbols) {
                 Ok(tokens) => {
                     println!("✅ Rust code generation successful!");
-                    println!("Generated {} tokens", tokens.to_string().len());
-                    println!("Generated code preview:\n{}", tokens.to_string());
+                    println!("Generated {} characters", tokens.to_string().len());
+                    println!("\n=== GENERATED RUST CODE ===");
+                    
+                    // Pretty print the generated code by adding line breaks
+                    let code = tokens.to_string();
+                    let formatted = code
+                        .replace("# [doc = ", "\n/// ")
+                        .replace("] pub fn ", "\npub fn ")
+                        .replace("] pub struct ", "\npub struct ")
+                        .replace("{ ", "{\n    ")
+                        .replace(" ; ", ";\n    ")
+                        .replace(" } ", "\n}\n");
+                    
+                    println!("{}", formatted);
+                    println!("=== END GENERATED CODE ===\n");
                 }
                 Err(e) => {
                     println!("❌ Rust code generation failed: {}", e);

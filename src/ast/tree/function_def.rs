@@ -76,32 +76,106 @@ impl CodeGen for FunctionDef {
             streams.extend(quote!(;));
         }
 
-        let docstring = if let Some(d) = self.get_docstring() {
-            format!("{}", d)
+        let function = if let Some(docstring) = self.get_docstring() {
+            // Convert docstring to Rust doc comments
+            let doc_lines: Vec<_> = docstring
+                .lines()
+                .map(|line| {
+                    if line.trim().is_empty() {
+                        quote! { #[doc = ""] }
+                    } else {
+                        let doc_line = format!("{}", line);
+                        quote! { #[doc = #doc_line] }
+                    }
+                })
+                .collect();
+            
+            quote! {
+                #(#doc_lines)*
+                #visibility #is_async fn #fn_name(#parameters) {
+                    #streams
+                }
+            }
         } else {
-            "".to_string()
-        };
-
-        let function = quote! {
-            #[doc = #docstring]
-            #visibility #is_async fn #fn_name(#parameters) {
-                #streams
+            quote! {
+                #visibility #is_async fn #fn_name(#parameters) {
+                    #streams
+                }
             }
         };
 
         debug!("function: {}", function);
         Ok(function)
     }
+}
 
+impl FunctionDef {
     fn get_docstring(&self) -> Option<String> {
+        if self.body.is_empty() {
+            return None;
+        }
+        
         let expr = self.body[0].clone();
         match expr.statement {
             StatementType::Expr(e) => match e.value {
-                ExprType::Constant(c) => Some(c.to_string()),
+                ExprType::Constant(c) => {
+                    let raw_string = c.to_string();
+                    // Clean up the docstring for Rust documentation
+                    Some(self.format_docstring(&raw_string))
+                },
                 _ => None,
             },
             _ => None,
         }
+    }
+    
+    fn format_docstring(&self, raw: &str) -> String {
+        // Remove surrounding quotes
+        let content = raw.trim_matches('"');
+        
+        // Split into lines and clean up Python-style indentation
+        let lines: Vec<&str> = content.lines().collect();
+        if lines.is_empty() {
+            return String::new();
+        }
+        
+        // First line is usually the summary
+        let mut formatted = vec![lines[0].trim().to_string()];
+        
+        if lines.len() > 1 {
+            // Add empty line after summary if there are more lines
+            if !lines[0].trim().is_empty() && !lines[1].trim().is_empty() {
+                formatted.push(String::new());
+            }
+            
+            // Process remaining lines, cleaning up indentation
+            for line in lines.iter().skip(1) {
+                let cleaned = line.trim();
+                if cleaned.starts_with("Args:") {
+                    formatted.push(String::new());
+                    formatted.push("# Arguments".to_string());
+                } else if cleaned.starts_with("Returns:") {
+                    formatted.push(String::new());
+                    formatted.push("# Returns".to_string());
+                } else if cleaned.starts_with("Example:") {
+                    formatted.push(String::new());
+                    formatted.push("# Examples".to_string());
+                } else if cleaned.starts_with(">>>") {
+                    // Convert Python examples to Rust doc test format
+                    formatted.push(format!("```rust"));
+                    formatted.push(format!("// {}", cleaned));
+                } else if !cleaned.is_empty() {
+                    formatted.push(cleaned.to_string());
+                }
+            }
+            
+            // Close any open code blocks
+            if content.contains(">>>") {
+                formatted.push("```".to_string());
+            }
+        }
+        
+        formatted.join("\n")
     }
 }
 
