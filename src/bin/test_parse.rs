@@ -1,7 +1,7 @@
 use python_ast::{parse, CodeGenContext, PythonOptions, SymbolTableScopes, CodeGen};
 
 fn main() {
-    let code = std::fs::read_to_string("test_syntax_errors.py")
+    let code = std::fs::read_to_string("test_simple_main.py")
         .expect("Failed to read test file");
     
     println!("Testing comprehensive Python code parsing...");
