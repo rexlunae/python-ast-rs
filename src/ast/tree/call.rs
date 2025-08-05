@@ -1,9 +1,9 @@
 use proc_macro2::TokenStream;
-use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods};
+use pyo3::{Bound, FromPyObject, PyAny, PyResult};
 use quote::quote;
 use serde::{Deserialize, Serialize};
 
-use crate::{CodeGen, CodeGenContext, ExprType, Keyword, PythonOptions, SymbolTableScopes};
+use crate::{CodeGen, CodeGenContext, ExprType, Keyword, PythonOptions, SymbolTableScopes, extract_required_attr};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct Call {
@@ -14,13 +14,14 @@ pub struct Call {
 
 impl<'a> FromPyObject<'a> for Call {
     fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
-        let func = ob.getattr("func").expect("Call.func");
-        let args = ob.getattr("args").expect("Call.args");
-        let keywords = ob.getattr("keywords").expect("Call.keywords");
+        let func: ExprType = extract_required_attr(ob, "func", "function call expression")?;
+        let args: Vec<ExprType> = extract_required_attr(ob, "args", "function call arguments")?;
+        let keywords: Vec<Keyword> = extract_required_attr(ob, "keywords", "function call keywords")?;
+        
         Ok(Call {
-            func: Box::new(func.extract().expect("Call.func")),
-            args: args.extract().expect("Call.args"),
-            keywords: keywords.extract().expect("Call.keywords"),
+            func: Box::new(func),
+            args,
+            keywords,
         })
     }
 }
@@ -52,7 +53,27 @@ impl<'a> CodeGen for Call {
             all_args.push(rust_kw);
         }
         
-        Ok(quote!(#name(#(#all_args),*)))
+        // Check if we're in an async context and if the function being called is async
+        let call_expr = quote!(#name(#(#all_args),*));
+        
+        match ctx {
+            CodeGenContext::Async(_) => {
+                // In async context, we assume Python async functions need .await
+                // We'll check if the function name suggests it's async
+                let name_str = format!("{}", name);
+                if name_str.contains("async") || 
+                   name_str.starts_with("a") || // Common async function naming
+                   // TODO: Better async function detection based on symbol table
+                   false {
+                    Ok(quote!(#call_expr.await))
+                } else {
+                    // For now, just return the regular call
+                    // In a full implementation, we'd track which functions are async
+                    Ok(call_expr)
+                }
+            },
+            _ => Ok(call_expr)
+        }
     }
 }
 
@@ -71,14 +92,12 @@ foo(b=9)",
             "test.py",
         )
         .unwrap();
-        println!("Python tree: {:#?}", result);
-        let code = result
+        let _code = result
             .to_rust(
                 CodeGenContext::Module("test".to_string()),
                 options,
                 SymbolTableScopes::new(),
             )
             .unwrap();
-        println!("Rust code: {}", code);
     }
 }

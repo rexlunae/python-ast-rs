@@ -192,3 +192,64 @@ mod tests {
         assert!(error_string.contains("test details"));
     }
 }
+
+/// Enhanced error handling utilities for parsing Python AST objects
+
+/// Get an attribute from a Python object with better error messaging
+pub fn get_attr_with_context<'a>(
+    ob: &Bound<'a, PyAny>,
+    attr_name: &str,
+    context: &str,
+) -> PyResult<Bound<'a, PyAny>> {
+    ob.getattr(attr_name).map_err(|e| {
+        let type_name = ob.get_type().name()
+            .map(|s| s.to_string())
+            .unwrap_or_else(|_| "<unknown>".to_string());
+        let enhanced_msg = format!(
+            "Failed to get attribute '{}' from {} ({}): {}",
+            attr_name,
+            context,
+            type_name,
+            e
+        );
+        pyo3::exceptions::PyAttributeError::new_err(enhanced_msg)
+    })
+}
+
+/// Extract a value from PyAny with better error messaging
+pub fn extract_with_context<'py, T>(
+    value: &Bound<'py, PyAny>,
+    context: &str,
+    attr_name: &str,
+) -> PyResult<T>
+where
+    T: pyo3::FromPyObject<'py>,
+{
+    value.extract().map_err(|e| {
+        let type_name = value.get_type().name()
+            .map(|s| s.to_string())
+            .unwrap_or_else(|_| "<unknown>".to_string());
+        let enhanced_msg = format!(
+            "Failed to extract {} for attribute '{}': {}. Expected type: {}, got: {}",
+            context,
+            attr_name,
+            e,
+            std::any::type_name::<T>(),
+            type_name
+        );
+        pyo3::exceptions::PyTypeError::new_err(enhanced_msg)
+    })
+}
+
+/// Extract a required attribute with enhanced error messaging  
+pub fn extract_required_attr<'py, T>(
+    ob: &Bound<'py, PyAny>,
+    attr_name: &str,
+    context: &str,
+) -> PyResult<T>
+where
+    T: pyo3::FromPyObject<'py>,
+{
+    let attr = get_attr_with_context(ob, attr_name, context)?;
+    extract_with_context(&attr, context, attr_name)
+}

@@ -368,6 +368,7 @@ impl<'a> CodeGen for ExprType {
             ExprType::Attribute(attribute) => attribute.to_rust(ctx, options, symbols),
             ExprType::Await(func) => func.to_rust(ctx, options, symbols),
             ExprType::BinOp(binop) => binop.to_rust(ctx, options, symbols),
+            ExprType::BoolOp(boolop) => boolop.to_rust(ctx, options, symbols),
             ExprType::Call(call) => call.to_rust(ctx, options, symbols),
             ExprType::Compare(c) => c.to_rust(ctx, options, symbols),
             ExprType::Constant(c) => c.to_rust(ctx, options, symbols),
@@ -387,16 +388,15 @@ impl<'a> CodeGen for ExprType {
             ExprType::JoinedStr(js) => js.to_rust(ctx, options, symbols),
             ExprType::FormattedValue(fv) => fv.to_rust(ctx, options, symbols),
             ExprType::List(l) => {
-                let mut ts = TokenStream::new();
+                let mut elements = Vec::new();
                 for li in l {
                     let code = li
                         .clone()
                         .to_rust(ctx.clone(), options.clone(), symbols.clone())
                         .expect(format!("Extracting list item {:?}", li).as_str());
-                    ts.extend(code);
-                    ts.extend(quote!(,));
+                    elements.push(code);
                 }
-                Ok(ts)
+                Ok(quote!(vec![#(#elements),*]))
             }
             ExprType::Name(name) => name.to_rust(ctx, options, symbols),
             ExprType::NoneType(c) => c.to_rust(ctx, options, symbols),
@@ -790,6 +790,17 @@ impl CodeGen for Expr {
             ExprType::Tuple(t) => t.to_rust(ctx, options, symbols),
             ExprType::Subscript(s) => s.to_rust(ctx, options, symbols),
             ExprType::UnaryOp(operand) => operand.to_rust(ctx, options, symbols),
+            ExprType::List(l) => {
+                let mut elements = Vec::new();
+                for li in l {
+                    let code = li
+                        .clone()
+                        .to_rust(ctx.clone(), options.clone(), symbols.clone())
+                        .expect(format!("Extracting list item {:?}", li).as_str());
+                    elements.push(code);
+                }
+                Ok(quote!(vec![#(#elements),*]))
+            }
             ExprType::Name(name) => name.to_rust(ctx, options, symbols),
             ExprType::Yield(y) => y.to_rust(ctx, options, symbols),
             ExprType::YieldFrom(yf) => yf.to_rust(ctx, options, symbols),
@@ -830,7 +841,6 @@ mod tests {
     #[test]
     fn check_call_expression() {
         let expression = crate::parse("test()", "test.py").unwrap();
-        println!("Python tree: {:#?}", expression);
         let mut options = PythonOptions::default();
         options.with_std_python = false;
         let symbols = SymbolTableScopes::new();
@@ -838,7 +848,6 @@ mod tests {
             .clone()
             .to_rust(CodeGenContext::Module("test".to_string()), options, symbols)
             .unwrap();
-        println!("Rust tokens: {}", tokens.to_string());
         assert_eq!(tokens.to_string(), quote!(test()).to_string());
     }
 }

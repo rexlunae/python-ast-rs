@@ -1,4 +1,4 @@
-use crate::{dump, Module, Name, *};
+use crate::{dump, Module, Name, SourceLocation, Error, Result as CrateResult, *};
 
 use pyo3::prelude::*;
 use std::ffi::CString;
@@ -26,17 +26,89 @@ fn parse_to_py(
     Ok(py_tree.into())
 }
 
-/// Parses Python code and returns the AST as a Module.
+/// Parses Python code and returns the AST as a Module with improved error handling.
 /// 
 /// This function accepts any type that can be converted to a string reference,
-/// making it flexible for different input types.
+/// making it flexible for different input types. It provides detailed error information
+/// including file location and helpful guidance when parsing fails.
 /// 
 /// # Arguments
 /// * `input` - The Python source code to parse
 /// * `filename` - The filename to associate with the parsed code
 /// 
 /// # Returns
-/// * `PyResult<Module>` - The parsed AST module or a Python error
+/// * `CrateResult<Module>` - The parsed AST module or a detailed error with location info
+/// 
+/// # Examples
+/// ```rust
+/// use python_ast::parse_enhanced;
+/// 
+/// let code = "x = 1 + 2";
+/// let module = parse_enhanced(code, "example.py").unwrap();
+/// ```
+pub fn parse_enhanced(input: impl AsRef<str>, filename: impl AsRef<str>) -> CrateResult<Module> {
+    let filename = filename.as_ref();
+    let input_str = input.as_ref();
+    let location = SourceLocation::new(filename);
+    
+    // Empty files are valid in Python (they create empty modules), so we don't treat them as errors
+    
+    let mut module: Module = Python::with_gil(|py| {
+        let py_tree = parse_to_py(input_str, filename, py)
+            .map_err(|py_err| {
+                // Convert PyO3 errors to our more detailed error format
+                let error_msg = format!("Python parsing failed: {}", py_err);
+                let help_msg = if error_msg.contains("SyntaxError") {
+                    "Check your Python syntax. Common issues include missing colons, incorrect indentation, or unclosed brackets."
+                } else if error_msg.contains("IndentationError") {
+                    "Fix indentation issues. Python requires consistent indentation (use either spaces or tabs, not both)."
+                } else {
+                    "Ensure the input contains valid Python code. Check for syntax errors or unsupported constructs."
+                };
+                
+                Error::parsing_error(location.clone(), error_msg, help_msg)
+            })?;
+            
+        py_tree.extract(py)
+            .map_err(|py_err| {
+                Error::parsing_error(
+                    location.clone(),
+                    format!("Failed to extract AST: {}", py_err),
+                    "The Python code was parsed but could not be converted to our AST format. This may indicate unsupported Python features."
+                )
+            })
+    })?;
+    
+    module.filename = Some(filename.into());
+
+    if let Some(name_str) = filename.replace(MAIN_SEPARATOR, "__").strip_suffix(".py") {
+        module.name = Some(Name::try_from(name_str).map_err(|_| {
+            Error::parsing_error(
+                location,
+                format!("Invalid module name derived from filename: '{}'", name_str),
+                "Use a valid Python identifier for the filename (without special characters except underscores)."
+            )
+        })?);
+    }
+
+    log::debug!("module: {:#?}", module);
+    for item in module.__dir__() {
+        log::debug!("module.__dir__: {:#?}", item.as_ref());
+    }
+    Ok(module)
+}
+
+/// Parses Python code and returns the AST as a Module (backward compatible version).
+/// 
+/// This is the original parse function that returns PyResult for backward compatibility.
+/// For better error messages with location information, use `parse_enhanced` instead.
+/// 
+/// # Arguments
+/// * `input` - The Python source code to parse
+/// * `filename` - The filename to associate with the parsed code
+/// 
+/// # Returns
+/// * `PyResult<Module>` - The parsed AST module or a PyO3 error
 /// 
 /// # Examples
 /// ```rust
@@ -46,23 +118,8 @@ fn parse_to_py(
 /// let module = parse(code, "example.py").unwrap();
 /// ```
 pub fn parse(input: impl AsRef<str>, filename: impl AsRef<str>) -> PyResult<Module> {
-    let filename = filename.as_ref();
-    let mut module: Module = Python::with_gil(|py| {
-        let py_tree = parse_to_py(input, filename, py)?;
-        py_tree.extract(py)
-    })?;
-    module.filename = Some(filename.into());
-
-    if let Some(name_str) = filename.replace(MAIN_SEPARATOR, "__").strip_suffix(".py") {
-        module.name =
-            Some(Name::try_from(name_str).unwrap_or_else(|_| panic!("Invalid name {}", name_str)));
-    }
-
-    println!("module: {:#?}", module);
-    for item in module.__dir__() {
-        println!("module.__dir__: {:#?}", item.as_ref());
-    }
-    Ok(module)
+    // Use the enhanced version but convert the error type for backward compatibility
+    parse_enhanced(input, filename).map_err(|e| e.into())
 }
 
 #[cfg(test)]

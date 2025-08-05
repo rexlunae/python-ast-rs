@@ -140,11 +140,9 @@ mod tests {
         let test_function = "def foo6(a, c=7):\n    pass\n";
         let module = setup(test_function).unwrap();
 
-        println!("module: {:#?}", module);
         let function_def_statement = module.raw.body[0].clone();
 
         if let StatementType::FunctionDef(f) = function_def_statement.statement {
-            println!("{:?}", f);
             assert_eq!(f.args.args.len(), 2);
             assert_eq!(f.args.defaults.len(), 1);
             //assert_eq!(f.args.defaults[0], Arg::Constant(crate::Constant(Literal::parse(String::from("7")).unwrap())));

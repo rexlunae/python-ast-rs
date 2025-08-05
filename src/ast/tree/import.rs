@@ -45,20 +45,45 @@ impl CodeGen for Import {
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let mut tokens = TokenStream::new();
         for alias in self.names.iter() {
-            let names = format_ident!("{}", alias.name.replace(".", "::"));
-            let code = match &alias.asname {
-                None => {
-                    //options.clone().import(names, name);
-                    quote! {use #names;}
+            // Check if this is a Python standard library module that needs special handling
+            let rust_import = match alias.name.as_str() {
+                // Python stdlib modules that don't have direct Rust equivalents
+                "os" | "sys" | "subprocess" | "json" | "urllib" | "xml" | "asyncio" => {
+                    // These will be provided by the stdpython runtime
+                    // Generate a comment instead of a use statement
+                    quote! {
+                        // Python module '{}' will be provided by stdpython runtime
+                    }
                 }
-                Some(n) => {
-                    //options.clone().import(&full_mod_name, &String::from(n));
-
-                    let name = format_ident!("{}", n);
-                    quote! {use #names as #name;}
+                "os.path" => {
+                    quote! {
+                        // Python os.path module will be provided by stdpython runtime
+                    }
+                }
+                _ => {
+                    // Handle other imports normally
+                    let names = if alias.name.contains('.') {
+                        let parts: Vec<&str> = alias.name.split('.').collect();
+                        let idents: Vec<_> = parts.iter().map(|part| format_ident!("{}", part)).collect();
+                        quote!(#(#idents)::*)
+                    } else {
+                        let single_name = format_ident!("{}", alias.name);
+                        quote!(#single_name)
+                    };
+                    
+                    match &alias.asname {
+                        None => {
+                            quote! {use #names;}
+                        }
+                        Some(n) => {
+                            let name = format_ident!("{}", n);
+                            quote! {use #names as #name;}
+                        }
+                    }
                 }
             };
-            tokens.extend(code);
+            
+            tokens.extend(rust_import);
         }
         debug!("context: {:?}", ctx);
         debug!("options: {:?}", options);

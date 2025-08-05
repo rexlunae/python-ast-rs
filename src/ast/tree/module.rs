@@ -99,20 +99,355 @@ impl CodeGen for Module {
             stream.extend(quote!(use #stdpython::*;));
         }
         
+        // Add async runtime dependency if async functions are detected
+        // We'll check this early so we can add the import at the top
+        let needs_async_runtime = self.raw.body.iter().any(|s| {
+            matches!(&s.statement, crate::StatementType::AsyncFunctionDef(_))
+        });
+        
+        if needs_async_runtime {
+            let runtime_import = format_ident!("{}", options.async_runtime.import());
+            stream.extend(quote!(use #runtime_import;));
+        }
+        
+        let mut main_body_stmts = Vec::new();
+        let mut has_main_code = false;
+        let mut has_async_functions = false;
+        let mut module_init_stmts = Vec::new();
+        let mut has_module_init_code = false;
+        let mut is_simple_main_call_pattern = false;
+        
         for s in self.raw.body {
+            // Check if this statement is an async function
+            if let crate::StatementType::AsyncFunctionDef(_) = &s.statement {
+                has_async_functions = true;
+            }
+            
+            // Check for if __name__ == "__main__" blocks at the AST level before generating code
+            if let crate::StatementType::If(if_stmt) = &s.statement {
+                let test_str = format!("{:?}", if_stmt.test);
+                if test_str.contains("__name__") && test_str.contains("__main__") {
+                    // Check if this is a simple main() call pattern
+                    let is_simple_main_call = Self::is_simple_main_call_block(&if_stmt.body);
+                    
+                    if is_simple_main_call {
+                        // For simple main() calls, we'll use the user's main function directly
+                        // Set a flag to indicate we should not rename the main function
+                        has_main_code = true;
+                        is_simple_main_call_pattern = true;
+                        // Don't collect the main body statements - we'll use user's main directly
+                    } else {
+                        // This is a complex __name__ == "__main__" block - collect its body for main function
+                        for body_stmt in &if_stmt.body {
+                            let stmt_token = body_stmt
+                                .clone()
+                                .to_rust(ctx.clone(), options.clone(), symbols.clone())
+                                .expect("parsing if __name__ body statement");
+                            if !stmt_token.to_string().trim().is_empty() {
+                                main_body_stmts.push(stmt_token);
+                                has_main_code = true;
+                            }
+                        }
+                    }
+                    // Skip generating this if statement - we've processed its contents
+                    continue;
+                }
+            }
+            
+            // Categorize statements into declarations vs executable code
+            let is_declaration = Self::is_declaration_statement(&s.statement);
+            
             let statement = s
                 .clone()
                 .to_rust(ctx.clone(), options.clone(), symbols.clone())
                 .expect(format!("parsing statement {:?} in module", s).as_str());
+            
             if statement.to_string() != "" {
-                stream.extend(statement);
+                if is_declaration {
+                    // Declarations go at module level (functions, classes, imports)
+                    stream.extend(statement);
+                } else {
+                    // Executable statements go in module initialization function
+                    module_init_stmts.push(statement);
+                    has_module_init_code = true;
+                }
             }
+        }
+        
+        // Generate module initialization function if needed
+        if has_module_init_code {
+            stream.extend(quote! {
+                fn __module_init__() {
+                    #(#module_init_stmts)*
+                }
+            });
+        }
+        
+        // If we collected any main code, generate a single consolidated main function
+        if has_main_code {
+            if is_simple_main_call_pattern {
+                // Simple main() call pattern - use user's main function directly as Rust entry point
+                // Don't rename the user's main function, just add module init call if needed
+                let stream_str = stream.to_string();
+                
+                // Check if the user's main function is async
+                let user_main_is_async = stream_str.contains("pub async fn main (");
+                
+                if user_main_is_async {
+                    // User's async main becomes the Rust entry point
+                    let runtime_attr = options.async_runtime.main_attribute();
+                    let attr_tokens: proc_macro2::TokenStream = runtime_attr.parse()
+                        .unwrap_or_else(|_| quote!(tokio::main)); // fallback to tokio::main
+                    
+                    // Replace the user's function signature and add attributes
+                    let new_stream_str = stream_str
+                        .replace("pub async fn main (", &format!("#[{}] async fn main(", runtime_attr));
+                    stream = new_stream_str.parse::<proc_macro2::TokenStream>()
+                        .unwrap_or_else(|_| stream);
+                        
+                    // If we have module init code, we need to modify the user's main to call it first
+                    if has_module_init_code {
+                        // This is more complex - we'd need to modify the user's main function body
+                        // For now, let's fall back to the rename approach for async functions with module init
+                        let renamed_stream_str = Self::rename_main_function_and_references(&stream_str);
+                        stream = renamed_stream_str.parse::<proc_macro2::TokenStream>()
+                            .unwrap_or_else(|_| stream);
+                        
+                        stream.extend(quote! {
+                            #[#attr_tokens]
+                            async fn main() {
+                                __module_init__();
+                                python_main();
+                            }
+                        });
+                    }
+                } else {
+                    // User's sync main becomes the Rust entry point
+                    // Need to modify the function to match Rust main signature requirements
+                    let new_stream_str = Self::convert_python_main_to_rust_entry_point(&stream_str);
+                    stream = new_stream_str.parse::<proc_macro2::TokenStream>()
+                        .unwrap_or_else(|_| stream);
+                    
+                    // If we have module init code, we need to modify the user's main to call it first
+                    if has_module_init_code {
+                        // For simplicity, we'll use the rename approach when module init is needed
+                        let renamed_stream_str = Self::rename_main_function_and_references(&stream_str);
+                        stream = renamed_stream_str.parse::<proc_macro2::TokenStream>()
+                            .unwrap_or_else(|_| stream);
+                        
+                        stream.extend(quote! {
+                            fn main() {
+                                __module_init__();
+                                python_main();
+                            }
+                        });
+                    }
+                }
+            } else {
+                // Complex main block - use existing behavior (rename user's main)
+                let stream_str = stream.to_string();
+                let has_python_main = stream_str.contains("pub fn main (") || stream_str.contains("pub async fn main (");
+                
+                if has_python_main {
+                    // Rename the Python function to avoid conflict with Rust entry point
+                    let new_stream_str = Self::rename_main_function_and_references(&stream_str);
+                    stream = new_stream_str.parse::<proc_macro2::TokenStream>()
+                        .unwrap_or_else(|_| stream);
+                    
+                    // Update main_body_stmts to call python_main instead of main
+                    for stmt in &mut main_body_stmts {
+                        let stmt_str = stmt.to_string();
+                        let updated_stmt_str = Self::update_main_references(&stmt_str);
+                        if updated_stmt_str != stmt_str {
+                            if let Ok(new_stmt) = updated_stmt_str.parse::<proc_macro2::TokenStream>() {
+                                *stmt = new_stmt;
+                            }
+                        }
+                    }
+                }
+                
+                // Generate the Rust entry point as main() - async if needed
+                if needs_async_runtime || has_async_functions {
+                    // Parse the runtime attribute string into tokens
+                    let runtime_attr = options.async_runtime.main_attribute();
+                    let attr_tokens: proc_macro2::TokenStream = runtime_attr.parse()
+                        .unwrap_or_else(|_| quote!(tokio::main)); // fallback to tokio::main
+                    
+                    if has_module_init_code {
+                        stream.extend(quote! {
+                            #[#attr_tokens]
+                            async fn main() {
+                                __module_init__();
+                                #(#main_body_stmts)*
+                            }
+                        });
+                    } else {
+                        stream.extend(quote! {
+                            #[#attr_tokens]
+                            async fn main() {
+                                #(#main_body_stmts)*
+                            }
+                        });
+                    }
+                } else {
+                    if has_module_init_code {
+                        stream.extend(quote! {
+                            fn main() {
+                                __module_init__();
+                                #(#main_body_stmts)*
+                            }
+                        });
+                    } else {
+                        stream.extend(quote! {
+                            fn main() {
+                                #(#main_body_stmts)*
+                            }
+                        });
+                    }
+                }
+            }
+        } else if has_module_init_code {
+            // No main block, but we have module initialization code
+            // Generate a main function that just runs module initialization
+            stream.extend(quote! {
+                fn main() {
+                    __module_init__();
+                }
+            });
         }
         Ok(stream)
     }
 }
 
 impl Module {
+    /// Check if the __name__ == "__main__" block contains only a simple call to main()
+    /// This includes patterns like:
+    /// - main()
+    /// - result = main()
+    /// - sys.exit(main())
+    fn is_simple_main_call_block(body: &[crate::Statement]) -> bool {
+        // Must have exactly one statement
+        if body.len() != 1 {
+            return false;
+        }
+        
+        let stmt = &body[0];
+        match &stmt.statement {
+            // Pattern 1: main() - direct call as expression statement
+            crate::StatementType::Expr(expr) => {
+                Self::is_main_function_call(&expr.value)
+            },
+            // Pattern 2: result = main() - assignment from main call
+            crate::StatementType::Assign(assign) => {
+                // Should have exactly one target and the value should be a main() call
+                assign.targets.len() == 1 && Self::is_main_function_call(&assign.value)
+            },
+            // Pattern 3: sys.exit(main()) - call with main() as argument
+            crate::StatementType::Call(call) => {
+                // Check if any of the arguments is a main() call
+                call.args.iter().any(|arg| Self::is_main_function_call(arg))
+            },
+            _ => false,
+        }
+    }
+    
+    /// Check if an expression is a call to a function named "main"
+    fn is_main_function_call(expr: &crate::ExprType) -> bool {
+        match expr {
+            crate::ExprType::Call(call) => {
+                match call.func.as_ref() {
+                    crate::ExprType::Name(name) => name.id == "main",
+                    _ => false,
+                }
+            },
+            _ => false,
+        }
+    }
+    
+    /// Determine if a statement is a declaration (can stay at module level) or executable code (needs to go in init function)
+    fn is_declaration_statement(stmt_type: &crate::StatementType) -> bool {
+        use crate::StatementType::*;
+        match stmt_type {
+            // These are declarations that can stay at module level
+            FunctionDef(_) | AsyncFunctionDef(_) | ClassDef(_) | Import(_) | ImportFrom(_) => true,
+            
+            // These are executable statements that must go in the init function
+            Assign(_) | AugAssign(_) | Expr(_) | Call(_) | Return(_) |
+            If(_) | For(_) | While(_) | Try(_) | With(_) | AsyncWith(_) | AsyncFor(_) |
+            Raise(_) | Pass | Break | Continue => false,
+            
+            // Handle unimplemented statements conservatively as executable
+            Unimplemented(_) => false,
+        }
+    }
+    
+    /// Rename the main function definition and update all references to it throughout the code
+    fn rename_main_function_and_references(code: &str) -> String {
+        // First, rename the function definitions
+        let code = code
+            .replace("pub async fn main (", "pub async fn python_main (")
+            .replace("pub fn main (", "pub fn python_main (");
+        
+        // Then update all references using the comprehensive reference updater
+        Self::update_main_references(&code)
+    }
+    
+    /// Convert a Python main function to be suitable as a Rust entry point
+    /// This handles return value conversion and signature requirements
+    fn convert_python_main_to_rust_entry_point(code: &str) -> String {
+        use regex::Regex;
+        
+        // Replace "pub fn main (" with "fn main("
+        let code = code.replace("pub fn main (", "fn main(");
+        
+        // Handle return statements in the main function
+        // We need to wrap the function body to ignore return values
+        let main_fn_pattern = Regex::new(r"fn main\(\s*\)\s*\{([^}]*)\}").unwrap();
+        
+        if let Some(captures) = main_fn_pattern.captures(&code) {
+            let body = captures.get(1).map_or("", |m| m.as_str());
+            
+            // Check if the body contains return statements
+            if body.contains("return ") {
+                // Wrap the original function as python_main and create new main that ignores return
+                let new_code = code.replace("fn main(", "fn python_main(");
+                format!("{}\n\nfn main() {{\n    let _ = python_main();\n}}", new_code)
+            } else {
+                // No return statements, use the function as-is
+                code
+            }
+        } else {
+            // Couldn't parse the function, fall back to original
+            code
+        }
+    }
+    
+    /// Update all references to main() function calls with python_main() calls
+    /// This uses regex to handle various call patterns with parameters
+    fn update_main_references(code: &str) -> String {
+        use regex::Regex;
+        
+        // Pattern 1: main(...) - function calls with any arguments (including empty)
+        // This pattern matches "main(" and lets us replace the function name
+        let call_pattern = Regex::new(r"\bmain\s*\(").unwrap();
+        let mut result = call_pattern.replace_all(code, "python_main(").to_string();
+        
+        // Pattern 2: Handle method calls like obj.call_main() -> obj.call_python_main()
+        let method_pattern = Regex::new(r"\.call_main\s*\(").unwrap();
+        result = method_pattern.replace_all(&result, ".call_python_main(").to_string();
+        
+        // Pattern 3: Handle assignment patterns like "result = main" (without parentheses)
+        // We need to be careful not to match function definitions or other contexts
+        let assignment_pattern = Regex::new(r"=\s+main\b").unwrap();
+        result = assignment_pattern.replace_all(&result, "= python_main").to_string();
+        
+        // Pattern 4: Handle return statements like "return main"
+        let return_pattern = Regex::new(r"return\s+main\b").unwrap();
+        result = return_pattern.replace_all(&result, "return python_main").to_string();
+        
+        result
+    }
+    
     fn get_module_docstring(&self) -> Option<String> {
         if self.raw.body.is_empty() {
             return None;

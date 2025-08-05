@@ -16,10 +16,25 @@ pub enum BoolOps {
 
 impl<'a> FromPyObject<'a> for BoolOps {
     fn extract_bound(ob: &Bound<'a, PyAny>) -> PyResult<Self> {
-        let err_msg = format!("Unimplemented unary op {}", dump(ob, None)?);
-        Err(pyo3::exceptions::PyValueError::new_err(
-            ob.error_message("<unknown>", err_msg),
-        ))
+        let op_type = ob.get_type().name().expect(
+            ob.error_message(
+                "<unknown>",
+                format!("extracting type name {:?} for boolean operator", ob),
+            )
+            .as_str(),
+        );
+
+        let op_type_str: String = op_type.extract()?;
+        let op = match op_type_str.as_str() {
+            "And" => BoolOps::And,
+            "Or" => BoolOps::Or,
+            _ => {
+                log::debug!("Found unknown BoolOp {:?}", op_type_str);
+                BoolOps::Unknown
+            }
+        };
+
+        Ok(op)
     }
 }
 
@@ -51,7 +66,7 @@ impl<'a> FromPyObject<'a> for BoolOp {
                 .as_str(),
         );
 
-        println!("BoolOps values: {}", dump(&values, None)?);
+        log::debug!("BoolOps values: {}", dump(&values, None)?);
 
         let value: Vec<ExprType> = values.extract().expect("getting values from BoolOp");
         let left = value[0].clone();
@@ -103,9 +118,28 @@ impl<'a> CodeGen for BoolOp {
             .right
             .clone()
             .to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+            
+        // Python's boolean operators are different from Rust's - they return operands, not booleans
+        // For now, we'll use a simplified approach that works for common cases
+        let right_str = right.to_string();
+        
         match self.op {
-            BoolOps::Or => Ok(quote!((#left) || (#right))),
-            BoolOps::And => Ok(quote!((#left) && (#right))),
+            BoolOps::Or => {
+                if right_str.trim() == "None" {
+                    // Special case for `x or None` - just return the left operand
+                    // This avoids the type mismatch error with || None
+                    Ok(quote!(#left))
+                } else {
+                    // Use simple boolean OR for other cases
+                    // TODO: Implement proper Python `or` semantics
+                    Ok(quote!((#left) || (#right)))
+                }
+            },
+            BoolOps::And => {
+                // Use simple boolean AND
+                // TODO: Implement proper Python `and` semantics
+                Ok(quote!((#left) && (#right)))
+            },
 
             _ => Err(Error::BoolOpNotYetImplemented(self).into()),
         }

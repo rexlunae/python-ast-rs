@@ -49,7 +49,7 @@ impl TryFrom<&str> for Name {
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         let parts = s.split('.');
-        println!("parts: {:?}", parts);
+        log::debug!("parts: {:?}", parts);
 
         let mut v = Vec::new();
         for part in parts {
@@ -84,8 +84,15 @@ impl CodeGen for Name {
         _options: Self::Options,
         _symbols: Self::SymbolTable,
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let name = format_ident!("{}", self.id);
-        Ok(quote!(#name))
+        // Handle dotted names (like "os.path") by converting them to Rust module paths
+        if self.id.contains('.') {
+            let parts: Vec<&str> = self.id.split('.').collect();
+            let idents: Vec<_> = parts.iter().map(|part| format_ident!("{}", part)).collect();
+            Ok(quote!(#(#idents)::*))
+        } else {
+            let name = format_ident!("{}", self.id);
+            Ok(quote!(#name))
+        }
     }
 }
 

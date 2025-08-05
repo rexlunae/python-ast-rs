@@ -184,7 +184,6 @@ mod tests {
     #[test]
     fn parse_bytes() {
         let s = crate::parse("b'I ate a bug'", "test.py").unwrap();
-        println!("parsed value: {:?}", s);
         let ast = s
             .to_rust(
                 crate::CodeGenContext::Module("test".to_string()),
@@ -192,7 +191,6 @@ mod tests {
                 SymbolTableScopes::new(),
             )
             .unwrap();
-        println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; b\"I ate a bug\"", ast.to_string());
     }
@@ -200,7 +198,6 @@ mod tests {
     #[test]
     fn parse_number_int() {
         let s = crate::parse("871234234", "test.py").unwrap();
-        println!("parsed value: {:?}", s);
         let ast = s
             .to_rust(
                 crate::CodeGenContext::Module("test".to_string()),
@@ -208,7 +205,6 @@ mod tests {
                 SymbolTableScopes::new(),
             )
             .unwrap();
-        println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; 871234234", ast.to_string());
     }
@@ -216,7 +212,6 @@ mod tests {
     #[test]
     fn parse_number_neg_int() {
         let s = crate::parse("-871234234", "test.py").unwrap();
-        println!("parsed value: {:?}", s);
         let ast = s
             .to_rust(
                 crate::CodeGenContext::Module("test".to_string()),
@@ -224,7 +219,6 @@ mod tests {
                 SymbolTableScopes::new(),
             )
             .unwrap();
-        println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; - 871234234", ast.to_string());
     }
@@ -232,7 +226,6 @@ mod tests {
     #[test]
     fn parse_number_float() {
         let s = crate::parse("87123.4234", "test.py").unwrap();
-        println!("parsed value: {:?}", s);
         let ast = s
             .to_rust(
                 crate::CodeGenContext::Module("test".to_string()),
@@ -240,7 +233,6 @@ mod tests {
                 SymbolTableScopes::new(),
             )
             .unwrap();
-        println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; 87123.4234", ast.to_string());
     }
@@ -248,7 +240,6 @@ mod tests {
     #[test]
     fn parse_bool() {
         let s = crate::parse("True", "test.py").unwrap();
-        println!("parsed value: {:?}", s);
         let ast = s
             .to_rust(
                 crate::CodeGenContext::Module("test".to_string()),
@@ -256,7 +247,6 @@ mod tests {
                 SymbolTableScopes::new(),
             )
             .unwrap();
-        println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; true", ast.to_string());
     }
@@ -264,7 +254,6 @@ mod tests {
     #[test]
     fn parse_none() {
         let s = crate::parse("None", "test.py").unwrap();
-        println!("parsed value: {:?}", s);
         let ast = s
             .to_rust(
                 crate::CodeGenContext::Module("test".to_string()),
@@ -272,7 +261,6 @@ mod tests {
                 SymbolTableScopes::new(),
             )
             .unwrap();
-        println!("ast: {:?}", ast);
 
         assert_eq!("use stdpython :: * ; None", ast.to_string());
     }

@@ -60,6 +60,7 @@ impl CodeGen for If {
         options: Self::Options,
         symbols: Self::SymbolTable,
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        // Regular if statement handling
         let test = self.test.to_rust(ctx.clone(), options.clone(), symbols.clone())?;
         
         let body_stmts: Result<Vec<_>, _> = self.body

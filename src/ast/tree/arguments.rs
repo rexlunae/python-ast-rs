@@ -365,13 +365,12 @@ mod tests {
         // Generate Rust code
         let options = PythonOptions::default();
         let symbols = SymbolTableScopes::new();
-        let rust_code = result.to_rust(
+        let _rust_code = result.to_rust(
             CodeGenContext::Module("test".to_string()),
             options,
             symbols,
         ).unwrap();
         
-        println!("Generated code: {}", rust_code);
         // Should generate function call with positional arguments
     }
 
@@ -382,13 +381,12 @@ mod tests {
         
         let options = PythonOptions::default();
         let symbols = SymbolTableScopes::new();
-        let rust_code = result.to_rust(
+        let _rust_code = result.to_rust(
             CodeGenContext::Module("test".to_string()),
             options,
             symbols,
         ).unwrap();
         
-        println!("Generated code: {}", rust_code);
         // Should generate function call with keyword arguments
     }
 
@@ -399,13 +397,12 @@ mod tests {
         
         let options = PythonOptions::default();
         let symbols = SymbolTableScopes::new();
-        let rust_code = result.to_rust(
+        let _rust_code = result.to_rust(
             CodeGenContext::Module("test".to_string()),
             options,
             symbols,
         ).unwrap();
         
-        println!("Generated code: {}", rust_code);
         // Should generate function call with mixed positional and keyword arguments
     }
 
@@ -419,13 +416,12 @@ def func(a, b=2, c=3):
         
         let options = PythonOptions::default();
         let symbols = SymbolTableScopes::new();
-        let rust_code = result.to_rust(
+        let _rust_code = result.to_rust(
             CodeGenContext::Module("test".to_string()),
             options,
             symbols,
         ).unwrap();
         
-        println!("Generated function: {}", rust_code);
         // Should generate function with optional parameters
     }
 
@@ -439,13 +435,12 @@ def func(a, *args):
         
         let options = PythonOptions::default();
         let symbols = SymbolTableScopes::new();
-        let rust_code = result.to_rust(
+        let _rust_code = result.to_rust(
             CodeGenContext::Module("test".to_string()),
             options,
             symbols,
         ).unwrap();
         
-        println!("Generated function: {}", rust_code);
         // Should generate function with variable arguments
     }
 
@@ -459,13 +454,12 @@ def func(a, **kwargs):
         
         let options = PythonOptions::default();
         let symbols = SymbolTableScopes::new();
-        let rust_code = result.to_rust(
+        let _rust_code = result.to_rust(
             CodeGenContext::Module("test".to_string()),
             options,
             symbols,
         ).unwrap();
         
-        println!("Generated function: {}", rust_code);
         // Should generate function with keyword arguments dict
     }
 
@@ -479,13 +473,12 @@ def func(a, b=2, *args, c, d=4, **kwargs):
         
         let options = PythonOptions::default();
         let symbols = SymbolTableScopes::new();
-        let rust_code = result.to_rust(
+        let _rust_code = result.to_rust(
             CodeGenContext::Module("test".to_string()),
             options,
             symbols,
         ).unwrap();
         
-        println!("Generated function: {}", rust_code);
         // Should generate function with all argument types
     }
 
@@ -499,13 +492,12 @@ def func(a, *, b, c=3):
         
         let options = PythonOptions::default();
         let symbols = SymbolTableScopes::new();
-        let rust_code = result.to_rust(
+        let _rust_code = result.to_rust(
             CodeGenContext::Module("test".to_string()),
             options,
             symbols,
         ).unwrap();
         
-        println!("Generated function: {}", rust_code);
         // Should generate function with keyword-only arguments
     }
 
@@ -526,11 +518,11 @@ def func(a, *, b, c=3):
                 );
                 
                 match rust_code {
-                    Ok(code) => println!("Generated code: {}", code),
-                    Err(e) => println!("Expected error for unimplemented feature: {}", e),
+                    Ok(_code) => { /* Code generation succeeded as expected */ },
+                    Err(_e) => { /* Expected error for unimplemented feature */ },
                 }
             }
-            Err(e) => println!("Parse error (expected for unimplemented features): {}", e),
+            Err(_e) => { /* Parse error expected for unimplemented features */ },
         }
     }
 
@@ -550,7 +542,6 @@ def func(a, *, b, c=3):
             symbols,
         ).unwrap();
         
-        println!("Constant arg code: {}", rust_code);
         assert!(rust_code.to_string().contains("42"));
     }
 
@@ -570,7 +561,6 @@ def func(a, *, b, c=3):
             symbols,
         ).unwrap();
         
-        println!("Name arg code: {}", rust_code);
         assert!(rust_code.to_string().contains("variable"));
     }
 }
