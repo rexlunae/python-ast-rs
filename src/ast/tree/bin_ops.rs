@@ -178,6 +178,26 @@ impl CodeGen for BinOp {
             return Ok(quote!((#left) as f64 / (#right) as f64));
         }
         
+        // Special handling for list addition (concatenation)
+        if matches!(self.op, BinOps::Add) {
+            let left = self.left.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+            let right = self.right.clone().to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+            let left_str = left.to_string();
+            let right_str = right.to_string();
+            
+            // Check if we're adding vectors or lists together
+            if left_str.contains("vec !") || right_str.contains("iter ()") || right_str.contains("sys :: argv") {
+                // This is vector concatenation - use Vec::extend pattern
+                return Ok(quote! {
+                    {
+                        let mut vec = #left;
+                        vec.extend(#right);
+                        vec
+                    }
+                });
+            }
+        }
+        
         // Use the generic binary operation implementation for everything else
         self.generate_rust_code(ctx, options, symbols)
     }

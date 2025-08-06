@@ -65,11 +65,11 @@ impl CodeGen for FunctionDef {
         // The Python convention is that functions that begin with a single underscore,
         // it's private. Otherwise, it's public. We formalize that by default.
         let visibility = if self.name.starts_with("_") && !self.name.starts_with("__") {
-            format_ident!("")
+            quote!()  // private, no visibility modifier
         } else if self.name.starts_with("__") && self.name.ends_with("__") {
-            format_ident!("pub(crate)")
+            quote!(pub(crate))  // dunder methods are crate-visible
         } else {
-            format_ident!("pub")
+            quote!(pub)  // regular methods are public
         };
 
         let is_async = match ctx.clone() {

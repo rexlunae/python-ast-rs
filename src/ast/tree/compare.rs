@@ -147,16 +147,16 @@ impl CodeGen for Compare {
                 .clone()
                 .to_rust(ctx.clone(), options.clone(), symbols.clone())?;
             let tokens = match op {
-                Compares::Eq => quote!(((#left) == (#comparator))),
-                Compares::NotEq => quote!(((#left) != (#comparator))),
-                Compares::Lt => quote!(((#left) < (#comparator))),
-                Compares::LtE => quote!(((#left) <= (#comparator))),
-                Compares::Gt => quote!(((#left) > (#comparator))),
-                Compares::GtE => quote!(((#left) >= (#comparator))),
-                Compares::Is => quote!((&(#left) == &(#comparator))),
-                Compares::IsNot => quote!((&(#left) != &(#comparator))),
-                Compares::In => quote!(((#comparator).get(#left) == Some(_))),
-                Compares::NotIn => quote!(((#comparator).get(#left) == None)),
+                Compares::Eq => quote!((#left) == (#comparator)),
+                Compares::NotEq => quote!((#left) != (#comparator)),
+                Compares::Lt => quote!((#left) < (#comparator)),
+                Compares::LtE => quote!((#left) <= (#comparator)),
+                Compares::Gt => quote!((#left) > (#comparator)),
+                Compares::GtE => quote!((#left) >= (#comparator)),
+                Compares::Is => quote!(&#left == &#comparator),
+                Compares::IsNot => quote!(&#left != &#comparator),
+                Compares::In => quote!((#comparator).get(#left) == Some(_)),
+                Compares::NotIn => quote!((#comparator).get(#left) == None),
 
                 _ => return Err(Error::CompareNotYetImplemented(self).into()),
             };

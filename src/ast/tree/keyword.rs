@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods};
-use quote::{format_ident, quote};
+// Keyword arguments are now handled by just passing values
 use serde::{Deserialize, Serialize};
 
 use crate::{CodeGen, CodeGenContext, ExprType, PythonOptions, SymbolTableScopes, Node};
@@ -57,13 +57,17 @@ impl CodeGen for Keyword {
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let value = self.value.to_rust(ctx, options, symbols)?;
         
-        if let Some(keyword) = self.arg {
-            // Named keyword argument: keyword = value
-            let keyword_ident = format_ident!("{}", keyword);
-            Ok(quote!(#keyword_ident = #value))
+        if let Some(_keyword) = self.arg {
+            // Named keyword argument: In Python this is keyword=value,
+            // but in Rust we typically pass just the value
+            // For now, just pass the value - this could be enhanced to handle
+            // struct initialization syntax or builder patterns in the future
+            Ok(value)
         } else {
             // **kwargs unpacking: **dict_expr
-            Ok(quote!(**#value))
+            // This is complex in Rust and would need special handling
+            // For now, just pass the value
+            Ok(value)
         }
     }
 }

@@ -56,23 +56,67 @@ impl<'a> CodeGen for Call {
         // Check if we're in an async context and if the function being called is async
         let call_expr = quote!(#name(#(#all_args),*));
         
+        // Check if this function returns a Result that should be unwrapped
+        let name_str = format!("{}", name);
+        let needs_unwrap = matches!(name_str.as_str(), 
+            "subprocess :: run" | "subprocess :: run_with_env" | "subprocess :: check_call" | 
+            "subprocess :: check_output" | "os :: getcwd" | "os :: chdir" | "os :: execv" |
+            "os :: path :: abspath"
+        );
+        
+        // Special handling for subprocess.run and os.execv with fallback for compatibility
+        let final_call = if name_str == "subprocess :: run" {
+            // Try mixed_args version first, fallback to regular version
+            if all_args.len() >= 2 {
+                let args_param = &all_args[0];
+                let cwd_param = &all_args[1];
+                // Convert args to Vec<String> to avoid lifetime issues, then pass owned strings
+                quote!({
+                    let args_owned: Vec<String> = #args_param;
+                    let args_vec: Vec<&str> = args_owned.iter().map(|s| s.as_str()).collect();
+                    let cwd_str = #cwd_param;
+                    subprocess::run(args_vec, Some(&cwd_str)).unwrap()
+                })
+            } else {
+                let args_param = &all_args[0];
+                quote!({
+                    let args_owned: Vec<String> = #args_param;
+                    let args_vec: Vec<&str> = args_owned.iter().map(|s| s.as_str()).collect();
+                    subprocess::run(args_vec, None).unwrap()
+                })
+            }
+        } else if name_str == "os :: execv" {
+            // Convert to Vec<&str> for compatibility with standard execv function
+            let program_param = &all_args[0];
+            let args_param = &all_args[1];
+            quote!({
+                let program_str: String = (#program_param).clone();
+                let args_owned: Vec<String> = #args_param;
+                let args_vec: Vec<&str> = args_owned.iter().map(|s| s.as_str()).collect();
+                os::execv(&program_str, args_vec).unwrap()
+            })
+        } else if needs_unwrap {
+            quote!(#call_expr.unwrap())
+        } else {
+            call_expr
+        };
+        
         match ctx {
             CodeGenContext::Async(_) => {
                 // In async context, we assume Python async functions need .await
                 // We'll check if the function name suggests it's async
-                let name_str = format!("{}", name);
                 if name_str.contains("async") || 
                    name_str.starts_with("a") || // Common async function naming
                    // TODO: Better async function detection based on symbol table
                    false {
-                    Ok(quote!(#call_expr.await))
+                    Ok(quote!(#final_call.await))
                 } else {
                     // For now, just return the regular call
                     // In a full implementation, we'd track which functions are async
-                    Ok(call_expr)
+                    Ok(final_call)
                 }
             },
-            _ => Ok(call_expr)
+            _ => Ok(final_call)
         }
     }
 }

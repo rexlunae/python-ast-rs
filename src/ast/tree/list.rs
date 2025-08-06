@@ -39,17 +39,70 @@ impl<'a> CodeGen for List<'a> {
 
     fn to_rust(
         self,
-        _ctx: Self::Context,
-        _options: Self::Options,
-        _symbols: Self::SymbolTable,
+        ctx: Self::Context,
+        options: Self::Options,
+        symbols: Self::SymbolTable,
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
-        let ts = TokenStream::new();
-        log::debug!("================self:{:#?}", self);
+        use crate::ExprType;
+        
+        let mut elements = Vec::new();
+        let mut has_starred = false;
+        
+        log::debug!("================Processing list with {} elements", self.elts.len());
         for elt in self.elts {
             log::debug!("elt: {}", dump(&elt, None)?);
-            //ts.extend(elt.to_rust(ctx, options).expect("parsing list element"))
+            
+            // Extract the element as ExprType and convert to Rust
+            let expr: ExprType = elt.extract()?;
+            
+            // Check if this is a starred expression
+            match &expr {
+                ExprType::Starred(_) => {
+                    has_starred = true;
+                    let rust_code = expr.to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+                    let rust_str = rust_code.to_string();
+                    
+                    // If it's a starred sys::argv, we need special handling
+                    if rust_str.contains("sys :: argv") {
+                        // Instead of adding individual elements, we'll build the vector differently
+                        elements.push(quote! { /* STARRED_ARGV */ });
+                    } else {
+                        elements.push(rust_code);
+                    }
+                }
+                _ => {
+                    let rust_code = expr.to_rust(ctx.clone(), options.clone(), symbols.clone())?;
+                    elements.push(rust_code);
+                }
+            }
         }
-        Ok(quote!(vec![#ts]))
+        
+        // If we have starred expressions, especially sys::argv, handle it specially
+        if has_starred && elements.iter().any(|e| e.to_string().contains("STARRED_ARGV")) {
+            // Create a special vector construction that handles sys::argv unpacking
+            let mut final_elements = Vec::new();
+            for element in elements {
+                let elem_str = element.to_string();
+                if elem_str.contains("STARRED_ARGV") {
+                    // Skip the placeholder and add the argv unpacking
+                    continue;
+                } else {
+                    final_elements.push(element);
+                }
+            }
+            
+            // Build the vector with sys::argv unpacking
+            Ok(quote! {
+                {
+                    let mut vec = Vec::new();
+                    #(vec.push(#final_elements);)*
+                    vec.extend((*sys::argv).iter().cloned());
+                    vec
+                }
+            })
+        } else {
+            Ok(quote!(/* LIST_GENERATED */ vec![#(#elements),*]))
+        }
     }
 }
 

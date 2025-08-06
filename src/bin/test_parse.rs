@@ -1,8 +1,21 @@
 use python_ast::{parse, CodeGenContext, PythonOptions, SymbolTableScopes, CodeGen};
 
 fn main() {
-    let code = std::fs::read_to_string("test_simple_main.py")
-        .expect("Failed to read test file");
+    let code = r#"#!/usr/bin/env python3
+
+import sys
+import os
+import subprocess
+
+# Test the exact same code pattern that was failing  
+python = sys.executable
+if python != sys.executable:
+    os.execv(python, [python] + sys.argv)
+
+proc = subprocess.run([sys.executable, "-u", "-m", "pyperformance.tests"], 
+                      cwd=os.path.dirname(__file__))
+sys.exit(proc.returncode)
+"#;
     
     println!("Testing comprehensive Python code parsing...");
     

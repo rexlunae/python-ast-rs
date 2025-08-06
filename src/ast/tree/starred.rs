@@ -67,12 +67,13 @@ impl CodeGen for Starred {
         symbols: Self::SymbolTable,
     ) -> Result<TokenStream, Box<dyn std::error::Error>> {
         let value = (*self.value).clone().to_rust(ctx, options, symbols)?;
+        let _value_str = value.to_string();
         
-        // In Rust, starred expressions are typically used for spreading/unpacking
-        // This would be context-dependent - for function calls, it would be flattening
-        // For now, we'll generate a simple spread syntax comment as this is experimental
+        // Handle starred expressions for unpacking collections
+        // In Rust context, we need to indicate this is an unpacking operation
+        // The parent context (like vec! or function call) will handle the actual unpacking
         Ok(quote! {
-            // Starred expression: *#value
+            // STARRED: This indicates unpacking - parent context should handle
             #value
         })
     }

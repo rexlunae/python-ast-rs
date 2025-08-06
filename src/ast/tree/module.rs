@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{CodeGen, CodeGenContext, Name, Object, PythonOptions, Statement, StatementType, ExprType, SymbolTableScopes};
 
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Type {
     Unimplemented,
@@ -94,9 +95,10 @@ impl CodeGen for Module {
             }
         }
         
-        let stdpython = format_ident!("{}", options.stdpython);
         if options.with_std_python {
-            stream.extend(quote!(use #stdpython::*;));
+            // For imports, always use "stdpython" since that's the actual crate name
+            // The runtime specification is just for dependency management
+            stream.extend(quote!(use stdpython::*;));
         }
         
         // Add async runtime dependency if async functions are detected
@@ -175,12 +177,7 @@ impl CodeGen for Module {
         }
         
         // Generate module initialization function if needed
-        // But not for single-statement modules (for test compatibility)
-        if has_module_init_code && module_init_stmts.len() == 1 && !has_main_code {
-            // For single-statement modules with no main code, keep the statement at module level
-            stream.extend(module_init_stmts[0].clone());
-            has_module_init_code = false; // Don't reference it in main function
-        } else if has_module_init_code {
+        if has_module_init_code {
             stream.extend(quote! {
                 fn __module_init__() {
                     #(#module_init_stmts)*

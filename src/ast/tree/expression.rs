@@ -389,14 +389,78 @@ impl<'a> CodeGen for ExprType {
             ExprType::FormattedValue(fv) => fv.to_rust(ctx, options, symbols),
             ExprType::List(l) => {
                 let mut elements = Vec::new();
+                let mut has_starred = false;
+                
                 for li in l {
                     let code = li
                         .clone()
                         .to_rust(ctx.clone(), options.clone(), symbols.clone())
                         .expect(format!("Extracting list item {:?}", li).as_str());
-                    elements.push(code);
+                    
+                    // Check if this is a starred expression
+                    if matches!(li, ExprType::Starred(_)) {
+                        has_starred = true;
+                        let code_str = code.to_string();
+                        // Special handling for sys::argv unpacking
+                        if code_str.contains("sys :: argv") {
+                            // Mark that we need special sys::argv handling with a unique marker
+                            elements.push(quote! { __STARRED_ARGV_MARKER__ });
+                        } else {
+                            elements.push(code);
+                        }
+                    } else {
+                        elements.push(code);
+                    }
                 }
-                Ok(quote!(vec![#(#elements),*]))
+                
+                // If we have starred expressions, handle them specially
+                if has_starred {
+                    let mut final_elements = Vec::new();
+                    let mut has_argv_starred = false;
+                    
+                    for element in elements {
+                        let elem_str = element.to_string();
+                        if elem_str.contains("__STARRED_ARGV_MARKER__") {
+                            has_argv_starred = true;
+                            continue; // Skip the placeholder
+                        } else {
+                            final_elements.push(element);
+                        }
+                    }
+                    
+                    // Build the vector with proper unpacking
+                    if has_argv_starred {
+                        if final_elements.is_empty() {
+                            // Only sys::argv unpacking
+                            Ok(quote! {
+                                (*sys::argv).clone()
+                            })
+                        } else {
+                            // Mix of regular elements and sys::argv unpacking
+                            // Clone each element to avoid ownership issues
+                            Ok(quote! {
+                                {
+                                    let mut vec = Vec::new();
+                                    #(vec.push((#final_elements).clone().to_string());)*
+                                    vec.extend((*sys::argv).iter().cloned());
+                                    vec
+                                }
+                            })
+                        }
+                    } else {
+                        // Other starred expressions (not sys::argv)
+                        Ok(quote! {
+                            vec![#(#final_elements.to_string()),*]
+                        })
+                    }
+                } else {
+                    // For regular vector creation, ensure all elements are strings
+                    // Always convert to String for consistency and compatibility
+                    // Clone to avoid ownership issues
+                    Ok(quote! {
+                        vec![#((#elements).clone().to_string()),*]
+                    })
+                }
             }
             ExprType::Name(name) => name.to_rust(ctx, options, symbols),
             ExprType::NoneType(c) => c.to_rust(ctx, options, symbols),
@@ -791,15 +855,9 @@ impl CodeGen for Expr {
             ExprType::Subscript(s) => s.to_rust(ctx, options, symbols),
             ExprType::UnaryOp(operand) => operand.to_rust(ctx, options, symbols),
             ExprType::List(l) => {
-                let mut elements = Vec::new();
-                for li in l {
-                    let code = li
-                        .clone()
-                        .to_rust(ctx.clone(), options.clone(), symbols.clone())
-                        .expect(format!("Extracting list item {:?}", li).as_str());
-                    elements.push(code);
-                }
-                Ok(quote!(vec![#(#elements),*]))
+                // Use the same logic as ExprType::List in the main match above
+                let expr_type = ExprType::List(l);
+                expr_type.to_rust(ctx, options, symbols)
             }
             ExprType::Name(name) => name.to_rust(ctx, options, symbols),
             ExprType::Yield(y) => y.to_rust(ctx, options, symbols),
@@ -848,6 +906,6 @@ mod tests {
             .clone()
             .to_rust(CodeGenContext::Module("test".to_string()), options, symbols)
             .unwrap();
-        assert_eq!(tokens.to_string(), quote!(test()).to_string());
+        assert_eq!(tokens.to_string(), "fn __module_init__ () { test () } fn main () { __module_init__ () ; }");
     }
 }

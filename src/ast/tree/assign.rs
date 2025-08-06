@@ -85,16 +85,17 @@ impl<'a> CodeGen for Assign {
         
         let value = self.value.to_rust(ctx, options, symbols)?;
         
-        // For multiple targets, we need to handle them separately in Rust
+        // For single target assignment
         if target_streams.len() == 1 {
             let target = &target_streams[0];
-            Ok(quote!(#target = #value))
+            // Check if this is a new variable declaration or reassignment
+            // For now, we'll use `let` for new declarations
+            Ok(quote!(let #target = #value;))
         } else {
             // For multiple assignment targets like: a, b = 1, 2
-            // This is more complex in Rust and might need tuple destructuring
+            // Use tuple destructuring in Rust
             Ok(quote! {
-                // Multiple assignment targets
-                #(#target_streams = #value.clone();)*
+                let (#(#target_streams),*) = #value;
             })
         }
     }
