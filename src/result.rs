@@ -208,7 +208,9 @@ pub struct UnknownType(pub String);
 //      help, expected, found, …) so structured logging sees them as fields.
 // ---------------------------------------------------------------------------
 
-fn wrap<E>(typed: E) -> Error
+/// Wrap a typed error struct into a structured [`Error`], preserving the
+/// typed payload as the source so callers can recover it via `downcast_ref`.
+fn into_error<E>(typed: E) -> Error
 where
     E: std::error::Error + Send + Sync + 'static,
 {
@@ -222,7 +224,7 @@ pub fn parsing_error(
     help: impl std::fmt::Display,
 ) -> Error {
     let location_str = location.to_string();
-    wrap(ParseError { location })
+    into_error(ParseError { location })
         .with_field("location", location_str)
         .with_field("message", message)
         .with_field("help", help)
@@ -235,7 +237,7 @@ pub fn codegen_error(
     help: impl std::fmt::Display,
 ) -> Error {
     let location_str = location.to_string();
-    wrap(CodeGenError { location })
+    into_error(CodeGenError { location })
         .with_field("location", location_str)
         .with_field("message", message)
         .with_field("help", help)
@@ -249,7 +251,7 @@ pub fn unsupported_feature(
 ) -> Error {
     let feature = feature.into();
     let location_str = location.to_string();
-    wrap(UnsupportedFeature {
+    into_error(UnsupportedFeature {
         location,
         feature: feature.clone(),
     })
@@ -267,7 +269,7 @@ pub fn type_error(
     help: impl std::fmt::Display,
 ) -> Error {
     let location_str = location.to_string();
-    wrap(TypeError { location })
+    into_error(TypeError { location })
         .with_field("location", location_str)
         .with_field("message", message)
         .with_field("expected", expected)
@@ -282,7 +284,7 @@ pub fn syntax_error(
     help: impl std::fmt::Display,
 ) -> Error {
     let location_str = location.to_string();
-    wrap(SyntaxError { location })
+    into_error(SyntaxError { location })
         .with_field("location", location_str)
         .with_field("message", message)
         .with_field("help", help)
