@@ -1,4 +1,4 @@
-use python_ast::{parse_enhanced, SourceLocation, Error};
+use python_ast::{parse_enhanced, SourceLocation};
 
 fn main() {
     println!("Testing improved error handling...\n");

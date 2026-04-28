@@ -1,18 +1,24 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 use pyo3::types::{PyAnyMethods, PyTypeMethods};
-use crate::{CodeGen, CodeGenContext, ExprType, PythonOptions, Result, SymbolTableScopes};
+use crate::{CodeGen, CodeGenContext, ExprType, PythonOptions, SymbolTableScopes};
 
 /// Common trait for Python operators that can be converted to Rust tokens.
 pub trait PythonOperator: Clone + std::fmt::Debug {
     /// Convert the operator to its Rust equivalent TokenStream.
-    fn to_rust_op(&self) -> Result<TokenStream>;
-    
+    ///
+    /// The error type is `Box<dyn std::error::Error>` to remain compatible
+    /// with the upstream `to_tokenstream::CodeGen` trait. Implementors
+    /// should still construct structured [`crate::Error`] values
+    /// (`anyhow_tracing::Error`) underneath — those flow transparently into
+    /// the boxed return type and remain downcast-able.
+    fn to_rust_op(&self) -> Result<TokenStream, Box<dyn std::error::Error>>;
+
     /// Get the operator precedence for proper parenthesization.
     fn precedence(&self) -> u8 {
         0 // Default precedence
     }
-    
+
     /// Check if this operator is unknown/unimplemented.
     fn is_unknown(&self) -> bool;
 }
@@ -20,31 +26,30 @@ pub trait PythonOperator: Clone + std::fmt::Debug {
 /// Common trait for binary operations (binary ops, bool ops, comparisons).
 pub trait BinaryOperation: Clone + std::fmt::Debug {
     type OperatorType: PythonOperator;
-    
+
     /// Get the operator type.
     fn operator(&self) -> &Self::OperatorType;
-    
+
     /// Get the left operand.
     fn left(&self) -> &ExprType;
-    
+
     /// Get the right operand.
     fn right(&self) -> &ExprType;
-    
+
     /// Generate Rust code for this binary operation.
     fn generate_rust_code(
         &self,
         ctx: CodeGenContext,
         options: PythonOptions,
         symbols: SymbolTableScopes,
-    ) -> Result<TokenStream> {
-        let left = self.left()
+    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+        let left = self
+            .left()
             .clone()
             .to_rust(ctx.clone(), options.clone(), symbols.clone())?;
-        let right = self.right()
-            .clone()
-            .to_rust(ctx, options, symbols)?;
+        let right = self.right().clone().to_rust(ctx, options, symbols)?;
         let op = self.operator().to_rust_op()?;
-        
+
         Ok(quote!((#left) #op (#right)))
     }
 }
@@ -119,7 +124,7 @@ pub trait ChainableOperation {
         ctx: CodeGenContext,
         options: PythonOptions,
         symbols: SymbolTableScopes,
-    ) -> Result<TokenStream>;
+    ) -> Result<TokenStream, Box<dyn std::error::Error>>;
 }
 
 /// Helper trait for converting Python string literals to enum variants.
