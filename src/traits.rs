@@ -1,12 +1,12 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 use pyo3::types::{PyAnyMethods, PyTypeMethods};
-use crate::{CodeGen, CodeGenContext, PythonOptions, SymbolTableScopes, ExprType};
+use crate::{CodeGen, CodeGenContext, ExprType, PythonOptions, Result, SymbolTableScopes};
 
 /// Common trait for Python operators that can be converted to Rust tokens.
 pub trait PythonOperator: Clone + std::fmt::Debug {
     /// Convert the operator to its Rust equivalent TokenStream.
-    fn to_rust_op(&self) -> Result<TokenStream, Box<dyn std::error::Error>>;
+    fn to_rust_op(&self) -> Result<TokenStream>;
     
     /// Get the operator precedence for proper parenthesization.
     fn precedence(&self) -> u8 {
@@ -36,7 +36,7 @@ pub trait BinaryOperation: Clone + std::fmt::Debug {
         ctx: CodeGenContext,
         options: PythonOptions,
         symbols: SymbolTableScopes,
-    ) -> Result<TokenStream, Box<dyn std::error::Error>> {
+    ) -> Result<TokenStream> {
         let left = self.left()
             .clone()
             .to_rust(ctx.clone(), options.clone(), symbols.clone())?;
@@ -119,7 +119,7 @@ pub trait ChainableOperation {
         ctx: CodeGenContext,
         options: PythonOptions,
         symbols: SymbolTableScopes,
-    ) -> Result<TokenStream, Box<dyn std::error::Error>>;
+    ) -> Result<TokenStream>;
 }
 
 /// Helper trait for converting Python string literals to enum variants.
