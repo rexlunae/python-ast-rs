@@ -3,7 +3,8 @@ use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods, types::P
 use quote::quote;
 
 use crate::{
-    dump, CodeGen, CodeGenContext, Error, ExprType, Node, PythonOptions, SymbolTableScopes,
+    dump, err_from, CodeGen, CodeGenContext, ExprType, Node, PythonOptions, SymbolTableScopes,
+    UnaryOpNotYetImplemented,
 };
 
 use serde::{Deserialize, Serialize};
@@ -95,7 +96,7 @@ impl CodeGen for UnaryOp {
             Ops::Invert | Ops::Not => Ok(quote!(!#operand)),
             Ops::UAdd => Ok(quote!(+#operand)),
             Ops::USub => Ok(quote!(-#operand)),
-            _ => Err(Error::UnaryOpNotYetImplemented(self).into())
+            _ => Err(err_from(UnaryOpNotYetImplemented(self)).into())
         }
     }
 }

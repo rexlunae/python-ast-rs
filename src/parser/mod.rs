@@ -1,4 +1,4 @@
-use crate::{dump, Module, Name, SourceLocation, Error, Result as CrateResult, *};
+use crate::{dump, error_to_pyerr, parsing_error, Module, Name, Result as CrateResult, SourceLocation, *};
 
 use pyo3::prelude::*;
 use std::ffi::CString;
@@ -56,38 +56,44 @@ pub fn parse_enhanced(input: impl AsRef<str>, filename: impl AsRef<str>) -> Crat
     let mut module: Module = Python::with_gil(|py| {
         let py_tree = parse_to_py(input_str, filename, py)
             .map_err(|py_err| {
-                // Convert PyO3 errors to our more detailed error format
-                let error_msg = format!("Python parsing failed: {}", py_err);
-                let help_msg = if error_msg.contains("SyntaxError") {
-                    "Check your Python syntax. Common issues include missing colons, incorrect indentation, or unclosed brackets."
-                } else if error_msg.contains("IndentationError") {
+                // Convert PyO3 errors to our more detailed error format.
+                // The PyErr is preserved as a structured `py_err` debug field
+                // (instead of being prematurely stringified into a message)
+                // so tracing subscribers can see the original Python error
+                // object.
+                let help_msg = if format!("{}", py_err).contains("IndentationError") {
                     "Fix indentation issues. Python requires consistent indentation (use either spaces or tabs, not both)."
+                } else if format!("{}", py_err).contains("SyntaxError") {
+                    "Check your Python syntax. Common issues include missing colons, incorrect indentation, or unclosed brackets."
                 } else {
                     "Ensure the input contains valid Python code. Check for syntax errors or unsupported constructs."
                 };
-                
-                Error::parsing_error(location.clone(), error_msg, help_msg)
+
+                parsing_error(location.clone(), "Python parsing failed", help_msg)
+                    .with_field_debug("py_err", &py_err)
             })?;
-            
+
         py_tree.extract(py)
             .map_err(|py_err| {
-                Error::parsing_error(
+                parsing_error(
                     location.clone(),
-                    format!("Failed to extract AST: {}", py_err),
+                    "Failed to extract AST",
                     "The Python code was parsed but could not be converted to our AST format. This may indicate unsupported Python features."
                 )
+                .with_field_debug("py_err", &py_err)
             })
     })?;
-    
+
     module.filename = Some(filename.into());
 
     if let Some(name_str) = filename.replace(MAIN_SEPARATOR, "__").strip_suffix(".py") {
         module.name = Some(Name::try_from(name_str).map_err(|_| {
-            Error::parsing_error(
+            parsing_error(
                 location,
-                format!("Invalid module name derived from filename: '{}'", name_str),
-                "Use a valid Python identifier for the filename (without special characters except underscores)."
+                "Invalid module name derived from filename",
+                "Use a valid Python identifier for the filename (without special characters except underscores).",
             )
+            .with_field("name", name_str)
         })?);
     }
 
@@ -119,7 +125,7 @@ pub fn parse_enhanced(input: impl AsRef<str>, filename: impl AsRef<str>) -> Crat
 /// ```
 pub fn parse(input: impl AsRef<str>, filename: impl AsRef<str>) -> PyResult<Module> {
     // Use the enhanced version but convert the error type for backward compatibility
-    parse_enhanced(input, filename).map_err(|e| e.into())
+    parse_enhanced(input, filename).map_err(error_to_pyerr)
 }
 
 #[cfg(test)]

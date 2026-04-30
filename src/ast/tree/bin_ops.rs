@@ -4,8 +4,8 @@ use quote::quote;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dump, CodeGen, CodeGenContext, Error, ExprType, Node, PythonOptions, SymbolTableScopes,
-    PythonOperator, BinaryOperation, FromPythonString, PyAttributeExtractor,
+    dump, err_from, BinOpNotYetImplemented, BinaryOperation, CodeGen, CodeGenContext, ExprType,
+    FromPythonString, Node, PyAttributeExtractor, PythonOperator, PythonOptions, SymbolTableScopes,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -67,11 +67,11 @@ impl PythonOperator for BinOps {
             BinOps::BitOr => Ok(quote!(|)),
             BinOps::BitXor => Ok(quote!(^)),
             BinOps::BitAnd => Ok(quote!(&)),
-            _ => Err(Error::BinOpNotYetImplemented(BinOp { 
-                op: self.clone(), 
+            _ => Err(err_from(BinOpNotYetImplemented(BinOp {
+                op: self.clone(),
                 left: Box::new(ExprType::Name(crate::Name { id: "unknown".to_string() })),
                 right: Box::new(ExprType::Name(crate::Name { id: "unknown".to_string() })),
-            }).into()),
+            })).into()),
         }
     }
     

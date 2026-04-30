@@ -3,8 +3,9 @@ use pyo3::{Bound, FromPyObject, PyAny, PyResult, prelude::PyAnyMethods, types::P
 use quote::quote;
 
 use crate::{
-    dump, Assign, AugAssign, Call, ClassDef, CodeGen, CodeGenContext, Error, Expr, FunctionDef, Import,
-    ImportFrom, Node, PythonOptions, SymbolTableScopes, If, For, While, Try, AsyncWith, AsyncFor, Raise, With,
+    dump, err_from, Assign, AsyncFor, AsyncWith, AugAssign, Call, ClassDef, CodeGen,
+    CodeGenContext, Expr, For, FunctionDef, If, Import, ImportFrom, Node, PythonOptions, Raise,
+    StatementNotYetImplemented, SymbolTableScopes, Try, While, With,
 };
 
 use tracing::debug;
@@ -309,8 +310,8 @@ impl CodeGen for StatementType {
             StatementType::Raise(r) => r.to_rust(ctx, options, symbols),
             StatementType::With(w) => w.to_rust(ctx, options, symbols),
             _ => {
-                let error = Error::StatementNotYetImplemented(self);
-                Err(Box::new(error))
+                let error = err_from(StatementNotYetImplemented(self));
+                Err(error.into())
             }
         }
     }

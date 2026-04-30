@@ -4,8 +4,10 @@ use quote::quote;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dump, Attribute, Await, BinOp, BoolOp, Call, CodeGen, CodeGenContext, Compare, Constant, Error,
-    Name, NamedExpr, Node, PythonOptions, SymbolTableScopes, UnaryOp, Lambda, IfExp, Dict, Set, Tuple, Subscript, Starred, ListComp, DictComp, SetComp, GeneratorExp, Yield, YieldFrom, JoinedStr, FormattedValue,
+    dump, err_from, Attribute, Await, BinOp, BoolOp, Call, CodeGen, CodeGenContext, Compare,
+    Constant, Dict, DictComp, ExprTypeNotYetImplemented, FormattedValue, GeneratorExp, IfExp,
+    JoinedStr, Lambda, ListComp, Name, NamedExpr, Node, PythonOptions, Set, SetComp, Starred,
+    Subscript, SymbolTableScopes, Tuple, UnaryOp, Yield, YieldFrom,
 };
 
 /// Mostly this shouldn't be used, but it exists so that we don't have to manually implement FromPyObject on all of ExprType
@@ -467,7 +469,7 @@ impl<'a> CodeGen for ExprType {
             ExprType::UnaryOp(operand) => operand.to_rust(ctx, options, symbols),
 
             _ => {
-                let error = Error::ExprTypeNotYetImplemented(self);
+                let error = err_from(ExprTypeNotYetImplemented(self));
                 Err(error.into())
             }
         }
@@ -867,7 +869,7 @@ impl CodeGen for Expr {
             // NoneType expressions generate no code.
             ExprType::NoneType(_c) => Ok(quote!()),
             _ => {
-                let error = Error::ExprTypeNotYetImplemented(self.value);
+                let error = err_from(ExprTypeNotYetImplemented(self.value));
                 Err(error.into())
             }
         }
